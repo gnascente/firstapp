@@ -1,0 +1,24 @@
+{
+  "name": "app",
+  "version": "1.0.0",
+  "description": "Este é um template básico para iniciar uma aplicação \"Hello World\" no Cloudflare Pages.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gnascente/firstapp.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/gnascente/firstapp/issues"
+  },
+  "homepage": "https://github.com/gnascente/firstapp#readme",
+  "devDependencies": {
+    "canvas": "^3.2.3"
+  }
+}
