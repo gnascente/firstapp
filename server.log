@@ -1,0 +1,16 @@
+127.0.0.1 - - [20/Sep/2026 23:15:19] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [20/Sep/2026 23:15:20] code 404, message File not found
+127.0.0.1 - - [20/Sep/2026 23:15:20] "GET /api/env HTTP/1.1" 404 -
+127.0.0.1 - - [20/Sep/2026 23:15:20] "GET /sw.js HTTP/1.1" 200 -
+127.0.0.1 - - [20/Sep/2026 23:15:20] "GET /manifest.json HTTP/1.1" 200 -
+127.0.0.1 - - [20/Sep/2026 23:15:20] "GET /index.html HTTP/1.1" 200 -
+127.0.0.1 - - [20/Sep/2026 23:15:20] "GET /icons/icon-192x192.png HTTP/1.1" 200 -
+127.0.0.1 - - [20/Sep/2026 23:15:20] "GET /icons/icon-512x512.png HTTP/1.1" 200 -
+127.0.0.1 - - [20/Sep/2026 23:17:42] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [20/Sep/2026 23:17:43] code 404, message File not found
+127.0.0.1 - - [20/Sep/2026 23:17:43] "GET /api/env HTTP/1.1" 404 -
+127.0.0.1 - - [20/Sep/2026 23:17:43] "GET /sw.js HTTP/1.1" 200 -
+127.0.0.1 - - [20/Sep/2026 23:17:43] "GET /index.html HTTP/1.1" 200 -
+127.0.0.1 - - [20/Sep/2026 23:17:43] "GET /manifest.json HTTP/1.1" 200 -
+127.0.0.1 - - [20/Sep/2026 23:17:43] "GET /icons/icon-192x192.png HTTP/1.1" 200 -
+127.0.0.1 - - [20/Sep/2026 23:17:43] "GET /icons/icon-512x512.png HTTP/1.1" 200 -
