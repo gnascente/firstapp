@@ -181,8 +181,10 @@
             <h2 id="form-title" style="margin-top: 0;">Novo Card</h2>
             <form id="card-form">
                 <input type="hidden" id="card-id">
+                <input type="hidden" id="card-image-path">
                 <input type="text" id="card-title-input" placeholder="Título do Card" required>
                 <textarea id="card-content-input" placeholder="Conteúdo do Card" rows="3" required></textarea>
+                <input type="file" id="card-image-input" accept="image/*" style="margin-bottom: 1rem; color: #e2e8f0;">
                 <button type="submit" class="btn">Salvar</button>
                 <button type="button" class="btn" id="btn-cancel" style="display: none; background-color: #718096;">Cancelar</button>
                 <button type="button" class="btn" id="btn-logout" style="background-color: #e53e3e; float: right;">Sair</button>
@@ -214,6 +216,8 @@
         const titleInput = document.getElementById('card-title-input');
         const contentInput = document.getElementById('card-content-input');
         const idInput = document.getElementById('card-id');
+        const imagePathInput = document.getElementById('card-image-path');
+        const imageInput = document.getElementById('card-image-input');
         const formTitle = document.getElementById('form-title');
         const btnCancel = document.getElementById('btn-cancel');
 
@@ -296,7 +300,9 @@
             }
 
             container.innerHTML = '';
-            cards.forEach(card => {
+
+            // Usando for...of para permitir chamadas async (createSignedUrl)
+            for (const card of cards) {
                 const div = document.createElement('div');
                 div.className = 'card';
 
@@ -310,8 +316,21 @@
                     `;
                 }
 
+                let imageHTML = '';
+                if (card.image_path) {
+                    const { data, error: urlError } = await supabaseClient
+                        .storage
+                        .from('firstappfiles')
+                        .createSignedUrl(card.image_path, 60);
+
+                    if (!urlError && data) {
+                        imageHTML = `<img src="${data.signedUrl}" alt="Imagem do card" style="max-width: 100%; border-radius: 4px; margin-bottom: 1rem;">`;
+                    }
+                }
+
                 div.innerHTML = `
                     <div>
+                        ${imageHTML}
                         <h2 class="card-title">${escapeHTML(card.title)}</h2>
                         <p class="card-content">${escapeHTML(card.content)}</p>
                     </div>
@@ -320,7 +339,7 @@
 
                 if (session) {
                     div.querySelector('.btn-edit').addEventListener('click', () => {
-                        editCard(card.id, card.title, card.content);
+                        editCard(card.id, card.title, card.content, card.image_path);
                     });
 
                     div.querySelector('.btn-delete').addEventListener('click', () => {
@@ -329,7 +348,7 @@
                 }
 
                 container.appendChild(div);
-            });
+            }
         }
 
         form.addEventListener('submit', async (e) => {
@@ -337,19 +356,36 @@
             const title = titleInput.value.trim();
             const content = contentInput.value.trim();
             const id = idInput.value;
+            let imagePath = imagePathInput.value;
+
+            const file = imageInput.files[0];
+            if (file) {
+                const fileExt = file.name.split('.').pop();
+                const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+                const { data: uploadData, error: uploadError } = await supabaseClient
+                    .storage
+                    .from('firstappfiles')
+                    .upload(fileName, file);
+
+                if (uploadError) {
+                    alert('Erro no upload da imagem: ' + uploadError.message);
+                    return;
+                }
+                imagePath = uploadData.path;
+            }
 
             if (id) {
                 // Update
                 const { error } = await supabaseClient
                     .from('cards')
-                    .update({ title, content })
+                    .update({ title, content, image_path: imagePath })
                     .eq('id', id);
                 if (error) alert('Erro ao atualizar: ' + error.message);
             } else {
                 // Insert
                 const { error } = await supabaseClient
                     .from('cards')
-                    .insert([{ title, content }]);
+                    .insert([{ title, content, image_path: imagePath }]);
                 if (error) alert('Erro ao criar: ' + error.message);
             }
 
@@ -364,10 +400,12 @@
             else loadCards();
         };
 
-        window.editCard = function(id, title, content) {
+        window.editCard = function(id, title, content, imagePath) {
             idInput.value = id;
             titleInput.value = title;
             contentInput.value = content;
+            imagePathInput.value = imagePath || '';
+            imageInput.value = '';
             formTitle.innerText = 'Editar Card';
             btnCancel.style.display = 'inline-block';
             window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -379,6 +417,8 @@
             idInput.value = '';
             titleInput.value = '';
             contentInput.value = '';
+            imagePathInput.value = '';
+            imageInput.value = '';
             formTitle.innerText = 'Novo Card';
             btnCancel.style.display = 'none';
         }
