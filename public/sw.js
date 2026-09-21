@@ -26,7 +26,7 @@ self.addEventListener('fetch', event => {
   }
 
   // Se for uma requisição de imagem do Supabase (bucket firstappfiles), usar Cache First com ignoreSearch
-  if (event.request.url.includes('supabase.co/storage/v1/object/sign/firstappfiles/')) {
+  if (event.request.url.includes('supabase.co/storage/v1/object/public/firstappfiles/')) {
     event.respondWith(
       caches.match(event.request, { ignoreSearch: true }).then(cachedResponse => {
         if (cachedResponse) {
