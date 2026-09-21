@@ -1,5 +1,6 @@
 name = "firstapp"
 compatibility_date = "2023-10-30"
+main = "worker.js"
 
 [assets]
 directory = "public"
