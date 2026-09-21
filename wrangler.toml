@@ -11,4 +11,10 @@ enabled = true
 invocation_logs = true
 persist = true
 # ...
+# ...
+[vars]
+SUPABASE_PUBLISHABLE_KEY = "sb_publishable_ABMBNom80X3Bwf9wzY7doQ_qgPsqV4W"
+SUPABASE_URL = "https://fhmcmprjyxncbpeirmnu.supabase.co"
+# ...
+
 
