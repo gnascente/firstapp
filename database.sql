@@ -33,3 +33,11 @@ CREATE POLICY "Enable delete for authenticated users only" ON public.cards
     FOR DELETE
     TO authenticated
     USING (true);
+
+-- Configuração do RLS para o Storage
+-- Permite que usuários autenticados façam upload de arquivos para o bucket 'firstappfiles'
+CREATE POLICY "Allow authenticated uploads"
+ON storage.objects
+FOR INSERT
+TO authenticated
+WITH CHECK (bucket_id = 'firstappfiles');
