@@ -1,6 +1,6 @@
 {
   "name": "app",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Este é um template básico para iniciar uma aplicação \"Hello World\" no Cloudflare Pages.",
   "main": "index.js",
   "scripts": {
