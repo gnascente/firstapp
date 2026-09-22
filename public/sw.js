@@ -1,4 +1,4 @@
-const CACHE_NAME = 'firstapp-v2';
+const CACHE_NAME = 'firstapp-v3';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -20,9 +20,30 @@ self.addEventListener('install', event => {
 
 // Fetch Event
 self.addEventListener('fetch', event => {
-  // Ignorar requests de API para não colocar no cache offline e requests com query params
-  if (event.request.url.includes('/api/env') || event.request.url.includes('supabase.co')) {
+  // Ignorar requests de API para não colocar no cache offline, exceto imagens do bucket
+  if (event.request.url.includes('/api/env') || (event.request.url.includes('supabase.co') && !event.request.url.includes('firstappfiles'))) {
      return;
+  }
+
+  // Se for uma requisição de imagem do Supabase (bucket firstappfiles), usar Cache First com ignoreSearch
+  if (event.request.url.includes('supabase.co/storage/v1/object/public/firstappfiles/')) {
+    event.respondWith(
+      caches.match(event.request, { ignoreSearch: true }).then(cachedResponse => {
+        if (cachedResponse) {
+          return cachedResponse;
+        }
+        return fetch(event.request).then(networkResponse => {
+          if (networkResponse && (networkResponse.status === 200 || networkResponse.type === 'opaque')) {
+            const responseClone = networkResponse.clone();
+            caches.open(CACHE_NAME).then(cache => {
+              cache.put(event.request, responseClone);
+            });
+          }
+          return networkResponse;
+        });
+      })
+    );
+    return;
   }
 
   // Network First strategy
