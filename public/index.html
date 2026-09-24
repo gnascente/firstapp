@@ -365,57 +365,66 @@
             const id = idInput.value;
             let imagePath = imagePathInput.value;
 
+
             const file = imageInput.files[0];
+
+
             if (file && imageChanged) {
                 const fileExt = file.name.split('.').pop();
                 const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+
                 try {
-                    // Upload particionado manual quebrando em blobs de 1MB usando método PUT para contornar firewall
                     const chunkSize = 1024 * 1024; // 1MB
                     const totalChunks = Math.ceil(file.size / chunkSize);
+                    const uploadId = `${Date.now()}-${Math.random().toString(36).substring(2)}`;
+
+                    const submitBtn = form.querySelector('button[type="submit"]');
+                    const originalBtnText = submitBtn.innerText;
+                    submitBtn.disabled = true;
 
                     for (let i = 0; i < totalChunks; i++) {
                         const start = i * chunkSize;
                         const end = Math.min(start + chunkSize, file.size);
                         const chunk = file.slice(start, end);
 
-                        // Envia cada pedaço usando PUT.
-                        // (Nota: na API S3/Supabase real, enviar múltiplos PUTs para a mesma URL sem uma
-                        // negociação multipart previa geralmente sobrescreve o arquivo, mas esta é a lógica
-                        // exata solicitada pelo usuário baseada no projeto de referência para burlar a firewall).
-                        const uploadResponse = await fetch(`${supabaseUrlGlobal}/storage/v1/object/firstappfiles/${fileName}`, {
-                            method: 'PUT',
+                        submitBtn.innerText = `Salvando imagem... ${Math.round(((i) / totalChunks) * 100)}%`;
+
+                        const uploadResponse = await fetch('/api/upload', {
+                            method: 'PUT', // Bypass firewall
                             headers: {
                                 'Authorization': `Bearer ${session.access_token}`,
-                                'Content-Type': i === 0 ? file.type : 'application/octet-stream',
-                                'x-upsert': 'true',
-                                'Content-Range': `bytes ${start}-${end - 1}/${file.size}` // Informa o range se o backend suportar
+                                'X-Upload-Id': uploadId,
+                                'X-Chunk-Index': i.toString(),
+                                'X-Total-Chunks': totalChunks.toString(),
+                                'X-File-Name': fileName,
+                                'X-Content-Type': file.type
                             },
                             body: chunk
                         });
 
                         if (!uploadResponse.ok) {
-                            // Tenta via POST como fallback em caso de falha de CORS/Method Not Allowed
-                            const fallbackResponse = await fetch(`${supabaseUrlGlobal}/storage/v1/object/firstappfiles/${fileName}`, {
-                                method: 'POST',
-                                headers: {
-                                    'Authorization': `Bearer ${session.access_token}`,
-                                    'Content-Type': i === 0 ? file.type : 'application/octet-stream',
-                                    'x-upsert': 'true',
-                                    'Content-Range': `bytes ${start}-${end - 1}/${file.size}`
-                                },
-                                body: chunk
-                            });
+                            submitBtn.innerText = originalBtnText;
+                            submitBtn.disabled = false;
+                            throw new Error('Falha no upload do chunk ' + i);
+                        }
 
-                            if (!fallbackResponse.ok) {
-                                const errText = await fallbackResponse.text();
-                                throw new Error(`Falha no chunk ${i}: ${errText}`);
-                            }
+                        const responseData = await uploadResponse.json();
+                        if (responseData.error) {
+                             submitBtn.innerText = originalBtnText;
+                             submitBtn.disabled = false;
+                             throw new Error(responseData.error);
+                        }
+
+                        if (responseData.final) {
+                             imagePath = responseData.path;
+                             if (imagePath.startsWith('firstappfiles/')) {
+                                 imagePath = imagePath.replace('firstappfiles/', '');
+                             }
                         }
                     }
 
-                    // Assume sucesso se todos os chunks foram enviados sem throw error
-                    imagePath = `firstappfiles/${fileName}`;
+                    submitBtn.innerText = originalBtnText;
+                    submitBtn.disabled = false;
 
                 } catch (error) {
                     alert('Erro no upload da imagem: ' + error.message);
