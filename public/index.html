@@ -150,9 +150,570 @@
         .btn-edit:hover {
             background-color: #2b6cb0;
         }
+
+        :root {
+            --primary: #a8c7fa;
+            --on-primary: #062e6f;
+            --background: #000000;
+            --surface: #000000;
+            --surface-variant: #43474e;
+            --on-surface: #e2e2e6;
+            --on-surface-variant: #c3c7cf;
+            --border: #8d9199;
+            --danger: #ffb4ab;
+            --shadow: 0 4px 8px 3px rgba(0,0,0,0.3), 0 1px 3px rgba(0,0,0,0.5);
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.5);
+        }
+
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        @keyframes syncPulse { 0% { transform: scale(1); filter: brightness(1); } 50% { transform: scale(1.2); filter: brightness(1.5); color: #fff; } 100% { transform: scale(1); filter: brightness(1); } }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Roboto', sans-serif; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            background-color: var(--background);
+            color: var(--on-surface);
+        }
+
+        input, textarea, .selectable-text { -webkit-user-select: auto !important; user-select: auto !important; }
+        img, video { -webkit-user-drag: none; pointer-events: auto; }
+
+        .material-icons { pointer-events: none; -webkit-user-select: none !important; user-select: none !important; -webkit-touch-callout: none !important; }
+        .action-icon, .tool-btn, .carousel-btn, .carousel-nav-btn { pointer-events: auto; -webkit-user-select: none !important; user-select: none !important; -webkit-touch-callout: none !important; }
+
+        .container { width: 100%; max-width: 100%; background: var(--surface); border-radius: 0; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; overflow: hidden; position: relative; height: 100%; }
+
+        header { padding: 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--surface-variant); background: var(--surface); z-index: 20; flex-shrink: 0; }
+        header h1 { font-size: 20px; font-weight: 500; display: flex; align-items: center; gap: 8px; flex-grow: 1; overflow: hidden; }
+        header h1 span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .header-actions { display: flex; gap: 16px; align-items: center; flex-shrink: 0;}
+
+        .home-search-container { padding: 16px; background: var(--surface); border-bottom: 1px solid var(--surface-variant); flex-shrink: 0; z-index: 15; position: relative;}
+        .home-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; padding: 24px; flex-shrink: 0;}
+
+        .module-card {
+            background: var(--surface-variant); border-radius: 16px; padding: 24px 16px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            gap: 12px; box-shadow: var(--shadow-sm); cursor: pointer; transition: transform 0.2s, background 0.2s; border: 1px solid transparent;
+        }
+        .module-card:active { transform: scale(0.96); }
+        .module-card:hover { border-color: var(--primary); }
+        .module-card i { font-size: 40px; color: var(--primary); pointer-events: none;}
+        .module-card span { font-size: 14px; font-weight: 500; color: var(--on-surface); text-align: center; }
+
+        .dropdown-menu {
+            position: absolute; right: 16px; top: 56px; background: var(--surface); border: 1px solid var(--surface-variant); border-radius: 8px; box-shadow: var(--shadow);
+            display: none; flex-direction: column; min-width: 200px; z-index: 1000; overflow: hidden;
+        }
+        .dropdown-menu.show { display: flex; }
+        .menu-item { padding: 14px 16px; display: flex; align-items: center; gap: 12px; cursor: pointer; font-size: 15px; color: var(--on-surface); transition: background 0.2s; }
+        .menu-item:hover { background: var(--surface-variant); }
+        .menu-item .material-icons { font-size: 20px; color: var(--on-surface-variant); pointer-events: none;}
+
+        .search-container { padding: 16px; background: var(--surface); position: sticky; top: 0; z-index: 15; border-bottom: 1px solid var(--surface-variant); flex-shrink: 0;}
+        .search-box { position: relative; display: flex; align-items: center; }
+        .search-box input {
+            flex-grow: 1; background: var(--background); border: 1px solid var(--border); color: var(--on-surface); padding: 12px 16px 12px 44px; border-radius: 24px;
+            font-size: 15px; outline: none; width: 100%; transition: border-color 0.2s;
+        }
+        .search-box i.search-icon { position: absolute; left: 14px; color: var(--on-surface-variant); font-size: 20px; pointer-events: none; }
+        .search-box input:focus { border-color: var(--primary); }
+
+        .view-section { display: none; flex-direction: column; flex-grow: 1; overflow-y: auto; position: relative; z-index: 1; }
+        .view-section.active { display: flex; }
+
+        .task-list { list-style: none; padding: 16px; display: flex; flex-direction: column; gap: 16px; }
+        .task-item { background: var(--surface-variant); border-radius: 12px; padding: 16px; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; transition: background-color 0.5s; border: 1px solid transparent; }
+
+        /* Formatação fluída do Cartão */
+        .task-header { display: block; margin-bottom: 12px; }
+        .task-header::after { content: ""; display: table; clear: both; }
+        .task-actions { float: right; display: flex; gap: 12px; align-items: center; margin-left: 12px; margin-bottom: 4px; padding-top: 6px; }
+        .task-title { display: block; padding-top: 6px; font-size: 18px; font-weight: 500; word-break: break-word; line-height: 1.3; color: #fff; text-align: justify; }
+
+        .create-btn-dynamic { background: rgba(168, 199, 250, 0.1); border: 1px dashed var(--primary); border-radius: 12px; padding: 16px; display: flex; align-items: center; gap: 12px; cursor: pointer; color: var(--primary); font-weight: 500; margin-bottom: 16px; }
+
+        .search-snippets { display: flex; flex-direction: column; gap: 4px; margin-top: 4px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px; }
+        .snippet-item { font-size: 12px; color: var(--on-surface-variant); font-style: italic; background: rgba(0,0,0,0.2); padding: 6px 10px; border-radius: 6px; line-height: 1.3; }
+        mark.highlight { background-color: rgba(255, 213, 79, 0.8); color: #000; padding: 0 4px; border-radius: 4px; box-shadow: 0 0 4px rgba(255, 213, 79, 0.5); font-weight: bold; }
+
+        .log-list { margin-top: 8px; padding-left: 12px; border-left: 2px solid var(--border); display: flex; flex-direction: column; gap: 8px; clear:both; }
+
+        .log-item-group { background: rgba(0,0,0,0.15); border-radius: 8px; display: flex; flex-direction: column; overflow: hidden; transition: background-color 0.5s; }
+        .log-entry { padding: 12px; display: flex; flex-direction: column; gap: 6px; transition: background-color 0.5s; }
+        .log-entry + .log-entry { border-top: 1px solid rgba(255,255,255,0.05); }
+
+        /* Regras para o modo colapsado */
+        .log-item-group.collapsed .log-entry:not(:first-child) { display: none !important; }
+        .log-item-group.collapsed .log-entry:first-child .log-text {
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            display: block !important;
+        }
+        .log-item-group.collapsed .log-entry:first-child .stacked-deck,
+        .log-item-group.collapsed .log-entry:first-child .log-links-bar {
+            display: none !important;
+        }
+
+        .log-header { display: flex; justify-content: space-between; align-items: center; font-size: 11px; opacity: 0.8; margin-bottom: 2px; }
+        .log-text { font-size: 14px; line-height: 1.4; word-break: break-word; white-space: pre-wrap; color: #e2e2e6; }
+
+        .subtask-list { list-style: none; display: flex; flex-direction: column; gap: 12px; padding-top: 8px; clear:both; }
+        .subtask-item { display: flex; flex-direction: column; gap: 8px; font-size: 14px; background: rgba(0,0,0,0.2); padding: 12px; border-radius: 8px; }
+        .subtask-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+        .subtask-text-wrapper { display: flex; align-items: flex-start; gap: 8px; flex-grow: 1; cursor: pointer; padding: 4px 0;}
+        .subtask-text { font-weight: 500; color: var(--primary); font-size: 15px; text-align: justify; word-break: break-word; line-height: 1.3; margin-top: 2px; display: block; width: 100%; }
+
+        .log-links-bar { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.05); }
+        .link-label { font-size: 11px; color: var(--on-surface-variant); display: flex; align-items: center; gap: 6px; font-weight: 500; text-transform: uppercase;}
+        .pills-container { display: flex; flex-wrap: wrap; gap: 6px; }
+        .pill-dark { background: #333; color: #e2e2e6; padding: 4px 10px; border-radius: 16px; font-size: 12px; display: inline-flex; align-items: center; gap: 4px; border: 1px solid #444; cursor: pointer; transition: 0.2s;}
+        .pill-dark:active { transform: scale(0.95); }
+        .pill-dark i { font-size: 12px; color: #aaa; transition: 0.2s; }
+        .pill-dark i:hover { color: var(--danger); }
+        .pill-dark.origin { border-color: var(--primary); color: var(--primary); background: rgba(168, 199, 250, 0.1); }
+
+        .action-icon { cursor: pointer; color: var(--on-surface-variant); transition: color 0.2s; font-size: 20px; display:inline-block;}
+        .action-icon:hover { color: var(--primary); }
+        .action-icon.danger:hover { color: var(--danger); }
+        .sync-highlight { animation: syncPulse 2s infinite; color: #ffeb3b !important; }
+
+        .stacked-deck { width: 100%; height: 160px; position: relative; margin-top: 8px; margin-bottom: 4px; cursor: pointer; display: block; transition: transform 0.2s; background: transparent; }
+        .stacked-deck:active { transform: scale(0.98); }
+        .deck-photo, .pdf-preview.deck-photo { width: calc(100% - 20px); height: 100%; position: absolute; top: 0; left: 10px; object-fit: cover; border-radius: 8px; border: 1px solid #555; box-shadow: var(--shadow-sm); transition: transform 0.2s; }
+        .stacked-deck.single .deck-photo { width: 100%; left: 0; filter: none !important; transform: none !important; }
+        .stacked-deck:not(.single) .deck-photo:nth-child(n+4) { display: none; }
+        .stacked-deck:not(.single) .deck-photo:nth-child(1) { transform: rotate(-3deg); z-index: 3; }
+        .stacked-deck:not(.single) .deck-photo:nth-child(2) { transform: rotate(1deg) translate(5px, 3px); z-index: 2; filter: grayscale(40%) brightness(0.8); }
+        .stacked-deck:not(.single) .deck-photo:nth-child(3) { transform: rotate(4deg) translate(10px, 6px); z-index: 1; filter: grayscale(70%) brightness(0.6); }
+        .image-preview { width: 100%; max-height: 200px; object-fit: cover; border-radius: 12px; border: 1px solid var(--border); cursor: pointer; margin-top: 8px; margin-bottom: 8px; display: block; }
+        .pdf-preview { display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(0,0,0,0.2); border: 1px solid var(--border); border-radius: 12px; color: var(--danger); cursor: pointer; }
+
+        .fab { position: fixed; bottom: 54px; left: 50%; transform: translateX(-50%); background-color: var(--primary); color: var(--on-primary); border: none; width: 56px; height: 56px; border-radius: 16px; box-shadow: var(--shadow); cursor: pointer; display: grid; place-content: center; z-index: 99; transition: transform 0.2s; }
+        .fab:active { transform: translateX(-50%) scale(0.9); }
+        @media (min-width: 500px) { .fab { left: calc(50% + 180px); } }
+
+        /* Modals */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: flex-end; z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+        .modal-overlay.active { opacity: 1; pointer-events: auto; }
+        .modal-content { background: var(--surface); width: 100%; max-width: 480px; border-radius: 24px 24px 0 0; padding: 24px; max-height: 90vh; overflow-y: auto; box-shadow: var(--shadow); transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .modal-overlay.active .modal-content { transform: translateY(0); }
+
+        .dialog-overlay, .progress-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: flex; justify-content: center; align-items: center; z-index: 3000; opacity: 0; pointer-events: none; transition: opacity 0.2s; padding: 24px; }
+        .dialog-overlay.active, .progress-modal.active { opacity: 1; pointer-events: auto; }
+        .dialog-content, .progress-content { background: var(--surface); width: 100%; max-width: 340px; border-radius: 16px; padding: 24px; box-shadow: var(--shadow); transform: scale(0.9); opacity: 0; transition: transform 0.2s, opacity 0.2s; text-align: center; }
+        .dialog-overlay.active .dialog-content, .progress-modal.active .progress-content { transform: scale(1); opacity: 1; }
+        .dialog-content h3 { margin-bottom: 16px; text-align: left;}
+
+        .input-group { margin-bottom: 16px; position: relative;}
+        .input-field { width: 100%; padding: 14px 16px; border: 1px solid var(--border); border-radius: 8px; font-size: 16px; outline: none; background: var(--background); color: var(--on-surface); }
+        .input-field:focus { border-color: var(--primary); }
+        textarea.input-field { resize: vertical; min-height: 120px; }
+
+        .autocomplete-dropdown { position: absolute; top: 100%; left: 0; right: 0; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; box-shadow: var(--shadow); max-height: 180px; overflow-y: auto; z-index: 2000; display: none; flex-direction: column; margin-top: 4px; }
+        .autocomplete-item { padding: 12px 16px; border-bottom: 1px solid rgba(255,255,255,0.05); cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 14px; }
+        .autocomplete-item:hover { background: rgba(255,255,255,0.05); }
+
+        .modal-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin-top: 24px; }
+        .btn { border: none; padding: 10px 18px; border-radius: 24px; font-weight: 500; cursor: pointer; font-size: 14px; white-space: nowrap; }
+        .btn-text { background: transparent; color: var(--primary); }
+        .btn-filled { background-color: var(--primary); color: var(--on-primary); transition: opacity 0.2s; }
+
+        .upload-btn { border: 1px solid var(--border); background: transparent; padding: 12px 10px; border-radius: 8px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; color: var(--primary); cursor: pointer; width: 100%; justify-content: center; }
+        .hidden-file { display: none; }
+        .form-preview-container { position: relative; margin-bottom: 16px; display: none; width: 100%; margin-top: 8px; }
+
+        /* Carousel */
+        .carousel-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 1500; flex-direction: column; }
+        .carousel-overlay.active { display: flex; }
+        .carousel-header { position: absolute; top:0; left:0; width:100%; padding: 16px; display: flex; justify-content: space-between; align-items: flex-start; z-index: 1600; pointer-events: none; }
+        .carousel-header > * { pointer-events: auto; }
+        .carousel-actions-global { display: flex; gap: 16px; background: rgba(0,0,0,0.5); padding: 8px 16px; border-radius: 30px; backdrop-filter: blur(5px); border: 1px solid rgba(255,255,255,0.1); align-items: center; }
+        .carousel-btn { width: 36px; height: 36px; border-radius: 50%; display: grid; place-content: center; cursor: pointer; transition: 0.2s; }
+        .carousel-btn:active { transform: scale(0.9); }
+        .carousel-btn.edit { color: var(--primary); }
+        .carousel-container { flex-grow: 1; display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 16px; padding: 0 calc(7.5vw); scrollbar-width: none; align-items: center; scroll-behavior: smooth; -webkit-overflow-scrolling: touch; }
+        .carousel-container::-webkit-scrollbar { display: none; }
+        .carousel-item { flex: 0 0 85vw; width: 85vw; height: 80vh; scroll-snap-align: center; display: flex; align-items: center; justify-content: center; position: relative; }
+        .carousel-img-wrapper { position: relative; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+        .carousel-touch-layer { position: absolute; inset: 0; z-index: 10; touch-action: pan-x pan-y; }
+        .carousel-img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 12px; transition: transform 0.2s ease-out; transform-origin: center center; pointer-events: none; box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
+        .carousel-pdf { min-width: 120px; max-width: 80vw; min-height: 120px; height: auto; background: var(--surface-variant); border-radius: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; padding: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.5); pointer-events: auto; }
+        .carousel-nav-btn { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.1); color: white; width: 44px; height: 44px; border-radius: 50%; display: grid; place-content: center; cursor: pointer; z-index: 1520; backdrop-filter: blur(4px); border: 1px solid rgba(255,255,255,0.2); transition: 0.2s; pointer-events: auto; }
+        .carousel-nav-btn.left { left: 8px; }
+        .carousel-nav-btn.right { right: 8px; }
+
+        /* Editor Overlay */
+        .editor-overlay { position: fixed; inset: 0; background: #000; z-index: 2000; display: none; flex-direction: column; height: 100dvh; }
+        .editor-overlay.active { display: flex; }
+        .canvas-container { flex-grow: 1; display: flex; justify-content: center; align-items: center; background: #1a1a1a; overflow: hidden; touch-action: none; position: relative; padding: 16px; }
+        .canvas-wrapper { position: relative; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
+        canvas { max-width: 100%; max-height: 100%; object-fit: contain; display: block; }
+        canvas.cursor-text { cursor: text; }
+        canvas.cursor-crosshair { cursor: crosshair; }
+        #textOverlay { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+        .editor-hint { position: absolute; top: 24px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: #fff; padding: 8px 16px; border-radius: 20px; font-size: 14px; pointer-events: none; z-index: 10; white-space: nowrap; }
+
+        /* Popup de Cores Seguro */
+        .color-popup { position: absolute; bottom: 80px; left: 50%; transform: translateX(-50%); background: #222; padding: 12px; border-radius: 12px; border: 1px solid #555; display: none; gap: 12px; flex-direction: row; box-shadow: 0 4px 16px rgba(0,0,0,0.9); z-index: 999999; pointer-events: auto; }
+        .color-popup.show { display: flex; }
+        .color-dot { width: 32px; height: 32px; border-radius: 50%; cursor: pointer; border: 2px solid #777; flex-shrink: 0; }
+
+        .editor-toolbar { background: #111; padding: 8px; display: flex; align-items: center; gap: 8px; border-top: 1px solid #333; overflow-x: auto; flex-shrink: 0; height: 60px; z-index: 10; }
+        .tool-btn { background: #222; border: 2px solid transparent; border-radius: 8px; color: #fff; width: 36px; height: 36px; display: grid; place-content: center; cursor: pointer; flex-shrink: 0; }
+        .tool-btn .material-icons { font-size: 20px; }
+        .tool-btn.active { border-color: var(--primary); color: var(--primary); background: #001a40; }
+        .editor-sep { width: 1px; height: 24px; background: #444; flex-shrink: 0; margin: 0 4px; }
+        .size-slider { flex-grow: 1; min-width: 60px; max-width: 100px; accent-color: var(--primary); }
+        .active-color-dot { width: 28px; height: 28px; border-radius: 50%; cursor: pointer; border: 2px solid #fff; flex-shrink: 0; box-shadow: 0 0 4px rgba(255,255,255,0.3); }
+
+        .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 48px 24px; color: var(--on-surface-variant); gap: 16px; text-align: center; height: 100%; }
+        .empty-state i { font-size: 56px; opacity: 0.3; }
+
+        .module-link-badge { font-size: 10px; background: var(--background); padding: 2px 6px; border-radius: 8px; color: var(--on-surface-variant); display: inline-block; text-transform: uppercase; margin-left: 8px;}
+
+        .storage-footer { height: 36px; line-height: 36px; text-align: center; font-size: 11px; color: var(--on-surface-variant); background: var(--surface); border-top: 1px solid var(--surface-variant); z-index: 5; flex-shrink: 0; display: flex; justify-content: center; align-items: center; gap: 6px; width: 100%; }
+
+        /* Área Dedicada e Protegida para a Impressão */
+        #printArea { display: none; }
+        @media print {
+            body { background: #fff !important; color: #000 !important; height: auto !important; overflow: auto !important; padding: 0 !important; display: block !important; -webkit-user-select: auto !important; user-select: auto !important; }
+            .container, .fab, .modal-overlay, .dialog-overlay, .progress-modal, .carousel-overlay, .editor-overlay { display: none !important; }
+            #printArea { display: block !important; padding: 20px; }
+
+            .print-log-item { padding-bottom: 12px; margin-bottom: 12px; page-break-inside: avoid; }
+            .print-header { font-size: 12px; color: #555; margin-bottom: 6px; font-weight: bold; }
+            .print-entity { font-size: 16px; font-weight: bold; margin-bottom: 6px; color: #000; }
+            .print-text { font-size: 14px; margin-bottom: 12px; white-space: pre-wrap; word-break: break-word; }
+
+            .print-media-box { position: relative; border: 1px solid #aaa; padding: 4px; border-radius: 6px; display: inline-flex; flex-direction: column; align-items: center; width: 140px; vertical-align: top; margin-right: 10px; margin-bottom: 10px; box-sizing: border-box; }
+            .print-media-img { width: 100%; height: 90px; object-fit: cover; border-radius: 4px; }
+
+            .play-overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.6); border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        }
+
+
     </style>
     <!-- Supabase CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
+var AppUtils = {
+    getPdfName: function(base64Str, defaultName = "Documento PDF") { if(!base64Str) return defaultName; const match = base64Str.match(/name=([^;]+);/); return match ? decodeURIComponent(match[1]) : defaultName; },
+    formatDate: function(ts) { if (!ts) return ""; const d = new Date(ts); return `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear().toString().slice(-2)} ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`; },
+    highlight: function(text, term) { if (!term) return text; const regex = new RegExp(`(${term})`, 'gi'); return text.replace(regex, '<mark class="highlight">$1</mark>'); },
+
+    compressVideo: async function(file, onProgress) {
+        return new Promise((resolve, reject) => {
+            const video = document.createElement('video');
+            video.muted = false;
+            video.setAttribute('playsinline', '');
+            video.style.display = 'none';
+            document.body.appendChild(video);
+
+            video.onloadedmetadata = () => {
+                const stream = video.captureStream();
+                const audioTracks = stream.getAudioTracks();
+
+                const canvas = document.createElement('canvas');
+                const MAX = 480;
+                let w = video.videoWidth, h = video.videoHeight;
+                if (w > MAX) { h = Math.floor(h * (MAX / w)); w = MAX; }
+                canvas.width = w; canvas.height = h;
+                const ctx = canvas.getContext('2d');
+
+                const canvasStream = canvas.captureStream(10);
+                const combinedStream = new MediaStream([
+                    canvasStream.getVideoTracks()[0],
+                    ...audioTracks
+                ]);
+
+                const recorder = new MediaRecorder(combinedStream, { mimeType: 'video/webm;codecs=vp8,opus', videoBitsPerSecond: 600000 });
+                const chunks = [];
+                recorder.ondataavailable = e => chunks.push(e.data);
+                recorder.onstop = async () => {
+                    document.body.removeChild(video);
+                    const blob = new Blob(chunks, { type: 'video/webm' });
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                        const thumbCanvas = document.createElement('canvas');
+                        thumbCanvas.width = 100; thumbCanvas.height = 100;
+                        thumbCanvas.getContext('2d').drawImage(video, 0, 0, 100, 100);
+                        resolve({ video: reader.result, thumb: thumbCanvas.toDataURL('image/jpeg'), size: blob.size });
+                    };
+                    reader.readAsDataURL(blob);
+                };
+
+                recorder.start();
+                video.play();
+
+                const draw = () => {
+                    if (video.paused || video.ended) { recorder.stop(); return; }
+                    ctx.drawImage(video, 0, 0, w, h);
+                    if(onProgress) onProgress(Math.round((video.currentTime / video.duration) * 100));
+                    requestAnimationFrame(draw);
+                };
+                draw();
+            };
+            video.onerror = () => { document.body.removeChild(video); reject("Erro ao carregar vídeo"); };
+            video.src = URL.createObjectURL(file);
+        });
+    }
+};
+
+
+async function processMultipleMedia(files, onProgress, callback) {
+    if (!files || files.length === 0) return callback([]);
+    let processedArray = [];
+    for(let file of files) {
+        let captureTime = Date.now();
+        if (file.type === 'application/pdf') {
+            let customName = window.prompt("Nome curto para este PDF:", file.name);
+            if (!customName) customName = file.name;
+            const encodedName = encodeURIComponent(customName);
+            const reader = new FileReader();
+            await new Promise((resolve) => {
+                reader.onload = (e) => {
+                    let base64 = e.target.result.replace('data:application/pdf;base64,', `data:application/pdf;name=${encodedName};base64,`);
+                    processedArray.push({ data: base64, size: base64.length * 0.75, createdAt: captureTime, updatedAt: captureTime });
+                    resolve();
+                };
+                reader.readAsDataURL(file);
+            });
+        } else if (file.type.startsWith('video/')) {
+            const result = await AppUtils.compressVideo(file, onProgress);
+            if (result.video) {
+                processedArray.push({ data: result.video, thumbnail: result.thumb, size: result.size, isVideo: true, createdAt: captureTime, updatedAt: captureTime });
+            }
+        } else if (file.type.startsWith('image/')) {
+            if (file.size <= 250 * 1024) {
+                const reader = new FileReader();
+                await new Promise((resolve) => {
+                    reader.onload = (e) => {
+                        processedArray.push({ data: e.target.result, size: file.size, createdAt: captureTime, updatedAt: captureTime });
+                        resolve();
+                    };
+                    reader.readAsDataURL(file);
+                });
+            } else {
+                const reader = new FileReader();
+                await new Promise((resolve) => {
+                    reader.onload = (e) => {
+                        const img = new Image();
+                        img.onload = () => {
+                            const canvas = document.createElement('canvas'); const MAX_SIZE = 800;
+                            let width = img.width, height = img.height;
+                            if (width > height) { if (width > MAX_SIZE) { height *= MAX_SIZE / width; width = MAX_SIZE; } } else { if (height > MAX_SIZE) { width *= MAX_SIZE / height; height = MAX_SIZE; } }
+                            canvas.width = width; canvas.height = height; canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+                            let b64 = canvas.toDataURL('image/jpeg', 0.6);
+                            processedArray.push({ data: b64, size: b64.length * 0.75, createdAt: captureTime, updatedAt: captureTime }); resolve();
+                        }; img.src = e.target.result;
+                    }; reader.readAsDataURL(file);
+                });
+            }
+        }
+    }
+    callback(processedArray);
+}
+
+
+function renderStackedDeckHTML(images, logId) {
+    if (!images || images.length === 0) return '';
+    let clickHandler = `CarouselModal.open('${logId}')`;
+    let pdfCount = images.filter(img => img.data && img.data.startsWith('data:application/pdf')).length;
+    let countLabel = `+${images.length - 1}`; if (pdfCount > 0) countLabel += ` (${pdfCount} PDF)`;
+
+    if (images.length === 1) {
+        let img = images[0];
+        if (img.isPlaceholder) return `<div class="pdf-preview deck-photo" style="position:relative; left:0; width:100%; height:auto; min-height:140px; background:#111;"><i class="material-icons" style="font-size:48px; color:var(--primary); animation: spin 1s linear infinite;">sync</i><span id="video-progress-text" style="font-size: 13px; margin-top: 8px; color:var(--primary); font-weight:bold;">A processar: 0%</span></div>`;
+        if (img.data.startsWith('data:application/pdf')) return `<div class="pdf-preview deck-photo" style="position:relative; left:0; width:100%; height:auto; min-height:140px; padding:12px;" onclick="${clickHandler}"><i class="material-icons" style="font-size:32px;">picture_as_pdf</i><span style="font-size: 13px; margin-top: 8px; text-align:center;">${AppUtils.getPdfName(img.data)}</span></div>`;
+        else if (img.isVideo || img.data.startsWith('data:video/')) return `<div class="pdf-preview deck-photo" style="position:relative; left:0; width:100%; height:auto; min-height:140px; background: url('${img.thumbnail || ''}') center/cover;" onclick="${clickHandler}"><div style="background:rgba(0,0,0,0.5); width:100%; height:100%; min-height:140px; display:flex; flex-direction:column; align-items:center; justify-content:center;"><i class="material-icons" style="font-size:48px; color:#fff;">play_circle_outline</i></div></div>`;
+        else return `<img src="${img.data}" class="image-preview" onclick="${clickHandler}" style="margin:0;">`;
+    } else {
+        const photosHtml = images.slice(0, 3).map(img => {
+            if (img.isPlaceholder) return `<div class="pdf-preview deck-photo" style="background:#111;"><i class="material-icons" style="font-size:24px; color:var(--primary); animation: spin 1s linear infinite;">sync</i></div>`;
+            if (img.data.startsWith('data:application/pdf')) return `<div class="pdf-preview deck-photo"><i class="material-icons" style="font-size:24px;">picture_as_pdf</i><span style="font-size:9px; margin-top:4px;">PDF</span></div>`;
+            else if (img.isVideo || img.data.startsWith('data:video/')) return `<div class="pdf-preview deck-photo" style="background: url('${img.thumbnail || ''}') center/cover;"><div style="background:rgba(0,0,0,0.5); width:100%; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center;"><i class="material-icons" style="font-size:24px; color:#fff;">play_circle_outline</i></div></div>`;
+            return `<img src="${img.data}" class="deck-photo">`;
+        }).join('');
+        let countHtml = `<div style="position: absolute; bottom: 8px; right: 18px; background: rgba(0,0,0,0.7); color:white; padding: 4px 8px; border-radius: 12px; font-size:12px; z-index: 4; font-weight:bold;">${countLabel}</div>`;
+        return `<div class="stacked-deck" onclick="${clickHandler}">${photosHtml}${countHtml}</div>`;
+    }
+}
+
+
+var CarouselModal = {
+    el: document.getElementById('carouselModal'), container: document.getElementById('carouselContainer'), currentLogId: null, imagesArray: [], currentIndex: 0, originalTitle: '',
+    open: async function(logId, startIndex = 0) {
+        this.currentLogId = logId;
+        if (logId === 'temp') this.imagesArray = LogModal.tempMedia; else { const log = await AppDB.logs.get(logId); this.imagesArray = log ? log.images : []; }
+        if (!this.imagesArray || this.imagesArray.length === 0) return;
+        this.currentIndex = startIndex || 0; this.render();
+
+        this.originalTitle = document.title; document.title = "Mídia";
+
+        AppState.openModal(this); this.bindZoom();
+        const navLeft = document.getElementById('carouselNavLeft'); const navRight = document.getElementById('carouselNavRight');
+        if(this.imagesArray.length > 1) { navLeft.style.display = 'grid'; navRight.style.display = 'grid'; } else { navLeft.style.display = 'none'; navRight.style.display = 'none'; }
+        this.updateGlobalActions();
+        this.container.addEventListener('scroll', () => { const itemW = window.innerWidth * 0.85 + 16; this.currentIndex = Math.round(this.container.scrollLeft / itemW); this.updateGlobalActions(); }, {passive: true});
+        setTimeout(() => { const itemW = window.innerWidth * 0.85 + 16; this.container.scrollLeft = this.currentIndex * itemW; }, 50);
+    },
+    closeUI: function() { document.title = this.originalTitle || "Oráculo P-31"; AppState.closeModalUI(); },
+    next: function() { const itemW = window.innerWidth * 0.85 + 16; this.container.scrollBy({ left: itemW, behavior: 'smooth' }); },
+    prev: function() { const itemW = window.innerWidth * 0.85 + 16; this.container.scrollBy({ left: -itemW, behavior: 'smooth' }); },
+    updateGlobalActions: function() {
+        const img = this.imagesArray[this.currentIndex];
+        const editBtn = document.getElementById('carouselEditBtn');
+        if (img && (img.data.startsWith('data:application/pdf') || img.data.startsWith('data:video/') || img.isVideo || img.isPlaceholder)) editBtn.style.display = 'none'; else editBtn.style.display = 'grid';
+
+        let sizeIndicator = document.getElementById('carouselSizeIndicator');
+        if(img && img.size) sizeIndicator.innerText = (img.size / 1024 / 1024).toFixed(2) + ' MB';
+        else sizeIndicator.innerText = '';
+    },
+    render: function() {
+        this.container.innerHTML = this.imagesArray.map((img, idx) => {
+            let media = '';
+            if (img.isPlaceholder) { media = `<div class="carousel-pdf" style="background:#111;"><i class="material-icons" style="font-size:48px; color:var(--primary); animation: spin 1s linear infinite;">sync</i><span style="color:var(--primary); font-size:14px; margin-top:12px; text-align:center;">A processar...</span></div>`; }
+            else if (img.data.startsWith('data:application/pdf')) { media = `<div class="carousel-pdf" onclick="App.openPDF('${img.data}')"><i class="material-icons" style="font-size:48px; color:var(--danger)">picture_as_pdf</i><span style="color:#fff; font-size:14px; margin-top:12px; text-align:center;">${AppUtils.getPdfName(img.data)}</span></div>`; }
+            else if (img.isVideo || img.data.startsWith('data:video/')) { media = `<div class="carousel-img-wrapper" style="pointer-events: auto;"><video src="${img.data}" class="carousel-img" controls playsinline style="pointer-events: auto; z-index: 20; position: relative; max-width: 100%; max-height: 80vh"></video></div>`; }
+            else { media = `<div class="carousel-img-wrapper"><img src="${img.data}" class="carousel-img"><div class="carousel-touch-layer"></div></div>`; }
+            return `<div class="carousel-item">${media}</div>`;
+        }).join('');
+    },
+    editCurrent: function() { let img = this.imagesArray[this.currentIndex]; if (this.currentLogId === 'temp') { Editor.openForTemp(img.data, this.currentIndex); } else { Editor.openForDBLog(this.currentLogId, img.data, this.currentIndex); } },
+    deleteCurrent: async function() {
+        if(await CustomDialog.confirm("Excluir imagem/ficheiro permanentemente?", "Excluir")) {
+            this.imagesArray.splice(this.currentIndex, 1);
+            if (this.currentLogId === 'temp') { LogModal.updateUI(); }
+            else {
+                const log = await AppDB.logs.get(this.currentLogId); log.images = this.imagesArray; log.updatedAt = Date.now(); await AppDB.logs.put(log); App.renderList(); App.calculateStorage();
+            }
+            if(this.imagesArray.length === 0) { this.closeUI(); } else {
+                this.render(); this.bindZoom();
+                this.currentIndex = Math.min(this.currentIndex, this.imagesArray.length - 1);
+                this.container.scrollLeft = this.currentIndex * (window.innerWidth * 0.85 + 16);
+                if(this.imagesArray.length <= 1) { document.getElementById('carouselNavLeft').style.display = 'none'; document.getElementById('carouselNavRight').style.display = 'none'; }
+                this.updateGlobalActions();
+            }
+        }
+    },
+    bindZoom: function() {
+        const wrappers = this.container.querySelectorAll('.carousel-img-wrapper');
+        wrappers.forEach(wrapper => {
+            const touchLayer = wrapper.querySelector('.carousel-touch-layer'); const img = wrapper.querySelector('.carousel-img'); if(!img || img.tagName === 'VIDEO' || !touchLayer) return;
+            let scale = 1, currentX = 0, currentY = 0, startX = 0, startY = 0, initialDist = 0, initialScale = 1; let lastTap = 0, isPinching = false, isMoving = false;
+            touchLayer.addEventListener('touchstart', (e) => {
+                img.style.transition = 'none';
+                if (e.touches.length === 2) { e.preventDefault(); e.stopPropagation(); isPinching = true; isMoving = true; initialDist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY); initialScale = scale; }
+                else if (e.touches.length === 1) { isMoving = false; if (scale > 1) { e.stopPropagation(); startX = e.touches[0].clientX - currentX; startY = e.touches[0].clientY - currentY; } }
+            }, {passive: false});
+            touchLayer.addEventListener('touchmove', (e) => {
+                isMoving = true;
+                if (e.touches.length === 2) { e.preventDefault(); e.stopPropagation(); const currentDist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY); scale = Math.max(1, Math.min(initialScale * (currentDist / initialDist), 5)); const maxTx = (scale - 1) * img.offsetWidth / 2; const maxTy = (scale - 1) * img.offsetHeight / 2; currentX = Math.max(-maxTx, Math.min(currentX, maxTx)); currentY = Math.max(-maxTy, Math.min(currentY, maxTy)); img.style.transform = `translate(${currentX}px, ${currentY}px) scale(${scale})`; }
+                else if (e.touches.length === 1 && scale > 1) { e.preventDefault(); e.stopPropagation(); currentX = e.touches[0].clientX - startX; currentY = e.touches[0].clientY - startY; const maxTx = (scale - 1) * img.offsetWidth / 2; const maxTy = (scale - 1) * img.offsetHeight / 2; currentX = Math.max(-maxTx, Math.min(currentX, maxTx)); currentY = Math.max(-maxTy, Math.min(currentY, maxTy)); img.style.transform = `translate(${currentX}px, ${currentY}px) scale(${scale})`; }
+            }, {passive: false});
+            touchLayer.addEventListener('touchend', (e) => {
+                img.style.transition = 'transform 0.2s ease-out';
+                if (e.touches.length === 1 && scale > 1) { startX = e.touches[0].clientX - currentX; startY = e.touches[0].clientY - currentY; }
+                if (e.touches.length === 0) {
+                    if (!isPinching && !isMoving) { const tapLength = new Date().getTime() - lastTap; if (tapLength < 300 && tapLength > 0) { scale = 1; currentX = 0; currentY = 0; img.style.transform = `translate(0, 0) scale(1)`; e.preventDefault(); e.stopPropagation(); } lastTap = new Date().getTime(); }
+                    if (scale <= 1) { scale = 1; currentX = 0; currentY = 0; img.style.transform = `translate(0, 0) scale(1)`; } isPinching = false; isMoving = false;
+                }
+            });
+        });
+    }
+};
+
+
+var Editor = {
+    overlay: document.getElementById('editorOverlay'), canvas: document.getElementById('mainCanvas'), ctx: document.getElementById('mainCanvas').getContext('2d'), sizeInput: document.getElementById('editorSize'), activeColor: '#ff3333', activeTool: 'pen', activeText: null, isDrawing: false, lastPos: {x: 0, y: 0}, undoStack: [], isDraggingText: false, dragStartX: 0, dragStartY: 0, dragStartLeft: 0, dragStartTop: 0, targetMode: null, logId: null, dbIdx: null, el: document.getElementById('editorOverlay'),
+
+    openForDBLog: function(logId, imgSrc, photoIdx = 0) { this.targetMode = 'db'; this.logId = logId; this.dbIdx = photoIdx; this._initCanvas(imgSrc); },
+    openForTemp: function(imgSrc, photoIdx = 0) { this.targetMode = 'temp'; this.dbIdx = photoIdx; this._initCanvas(imgSrc); },
+
+    _initCanvas: async function(imgSrc) {
+        this.undoStack = []; document.getElementById('textOverlay').innerHTML = ''; this.activeText = null; this.setTool('pen');
+        const img = new Image();
+        img.onload = async () => {
+            const MAX_W = window.innerWidth - 32; const MAX_H = window.innerHeight - 100; let w = img.width, h = img.height;
+            if (w > MAX_W || h > MAX_H) { const ratio = Math.min(MAX_W / w, MAX_H / h); w = w * ratio; h = h * ratio; }
+            this.canvas.style.width = w + 'px'; this.canvas.style.height = h + 'px';
+
+            this.canvas.width = img.width; this.canvas.height = img.height; this.ctx.drawImage(img, 0, 0);
+
+            let currentPhotoObj;
+            if(this.targetMode === 'db') { const log = await AppDB.logs.get(this.logId); currentPhotoObj = log.images[this.dbIdx]; }
+            else { currentPhotoObj = LogModal.tempMedia[this.dbIdx]; }
+
+            const dateStr = currentPhotoObj ? AppUtils.formatDate(currentPhotoObj.createdAt) : '';
+            if (dateStr) { const fs = Math.max(12, this.canvas.width / 40); this.ctx.font = `bold ${fs}px Roboto`; this.ctx.textBaseline = 'bottom'; this.ctx.fillStyle = 'rgba(0,0,0,0.6)'; this.ctx.fillText(`Registrada: ${dateStr}`, 10 + 2, this.canvas.height - 10 + 2); this.ctx.fillStyle = '#fff'; this.ctx.fillText(`Registrada: ${dateStr}`, 10, this.canvas.height - 10); }
+            this.saveState(); AppState.openModal(this);
+        };
+        img.src = imgSrc;
+    },
+    closeUI: function() { AppState.closeModalUI(); },
+    onHardwareBack: function() { document.getElementById('textOverlay').innerHTML = ''; document.getElementById('colorPopup').classList.remove('show'); this.isDraggingText = false; },
+
+    toggleColorPopup: function(e) { e.preventDefault(); e.stopPropagation(); document.getElementById('colorPopup').classList.toggle('show'); },
+
+    save: async function() {
+        try {
+            const texts = document.getElementById('textOverlay').children;
+            if (texts.length > 0) {
+                const rect = this.canvas.getBoundingClientRect(); const scaleX = this.canvas.width / rect.width; const scaleY = this.canvas.height / rect.height;
+                for (let i = 0; i < texts.length; i++) {
+                    const el = texts[i]; const left = parseFloat(el.style.left); const top = parseFloat(el.style.top); const fontSizeCSS = parseFloat(el.style.fontSize);
+                    const canvasX = left * scaleX; const canvasY = top * scaleY; const canvasFontSize = fontSizeCSS * scaleY;
+                    this.ctx.font = `bold ${canvasFontSize}px Roboto, sans-serif`; this.ctx.fillStyle = el.style.color; this.ctx.textBaseline = 'top'; this.ctx.strokeStyle = 'rgba(0,0,0,0.8)'; this.ctx.lineWidth = Math.max(2, canvasFontSize / 10);
+                    const lines = el.innerText.split('\n'); let currentY = canvasY;
+                    for(let line of lines) { this.ctx.strokeText(line, canvasX, currentY); this.ctx.fillText(line, canvasX, currentY); currentY += canvasFontSize * 1.2; }
+                }
+            }
+            const dataUrl = this.canvas.toDataURL('image/jpeg', 0.8);
+            if (this.targetMode === 'db') { const log = await AppDB.logs.get(this.logId); if(log && log.images[this.dbIdx]) { log.images[this.dbIdx].data = dataUrl; log.images[this.dbIdx].size = dataUrl.length * 0.75; log.updatedAt = Date.now(); } await AppDB.logs.put(log); App.renderList(); App.calculateStorage(); }
+            else if (this.targetMode === 'temp') { if(LogModal.tempMedia[this.dbIdx]) { LogModal.tempMedia[this.dbIdx].data = dataUrl; LogModal.tempMedia[this.dbIdx].size = dataUrl.length * 0.75; } LogModal.updateUI(); }
+            if (CarouselModal.el.classList.contains('active') && CarouselModal.imagesArray[this.dbIdx]) { CarouselModal.imagesArray[this.dbIdx].data = dataUrl; CarouselModal.imagesArray[this.dbIdx].size = CarouselModal.imagesArray[this.dbIdx].data.length * 0.75; CarouselModal.render(); CarouselModal.bindZoom(); CarouselModal.updateGlobalActions(); }
+            this.closeUI();
+        } catch(e) { CustomDialog.alert("Erro ao guardar edição.", "Erro"); }
+    },
+    setTool: function(tool) {
+        this.activeTool = tool; document.getElementById('btnPen').classList.toggle('active', tool === 'pen'); document.getElementById('btnText').classList.toggle('active', tool === 'text');
+        this.canvas.className = tool === 'text' ? 'cursor-text' : 'cursor-crosshair';
+        const hints = { 'pen': 'Desenhe livremente', 'text': 'Toque para digitar. Toque e arraste para mover.' }; document.getElementById('editorHint').textContent = hints[tool];
+        if (tool !== 'text' && this.activeText) { this.activeText.blur(); }
+    },
+    setColor: function(color) { this.activeColor = color; document.getElementById('activeColorBtn').style.backgroundColor = color; document.getElementById('colorPopup').classList.remove('show'); if (this.activeTool === 'text' && this.activeText) { this.activeText.style.color = color; } },
+    saveState: function() { if(this.undoStack.length >= 15) this.undoStack.shift(); this.undoStack.push(this.canvas.toDataURL()); },
+    undo: function() { if(this.undoStack.length > 1) { this.undoStack.pop(); const img = new Image(); img.onload = () => { this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height); this.ctx.drawImage(img, 0, 0); }; img.src = this.undoStack[this.undoStack.length - 1]; } },
+    getCoords: function(e) { const rect = this.canvas.getBoundingClientRect(); const clientX = e.touches ? e.touches[0].clientX : e.clientX; const clientY = e.touches ? e.touches[0].clientY : e.clientY; const scaleX = this.canvas.width / rect.width; const scaleY = this.canvas.height / rect.height; return { x: (clientX - rect.left) * scaleX, y: (clientY - rect.top) * scaleY }; },
+    startDraw: function(e) {
+        if (this.activeTool === 'text') {
+            e.preventDefault(); if (this.activeText) { this.activeText.blur(); this.activeText = null; return; }
+            const rect = this.canvas.getBoundingClientRect(); const clientX = e.touches ? e.touches[0].clientX : e.clientX; const clientY = e.touches ? e.touches[0].clientY : e.clientY; const x = clientX - rect.left; const y = clientY - rect.top;
+            const el = document.createElement('div'); el.contentEditable = true; el.style.position = 'absolute'; el.style.left = x + 'px'; el.style.top = y + 'px'; el.style.color = this.activeColor; el.style.fontSize = Math.max(14, this.sizeInput.value * 6) + 'px'; el.style.pointerEvents = 'auto'; el.style.whiteSpace = 'nowrap'; el.style.outline = 'none'; el.style.minWidth = '20px'; el.style.lineHeight = '1'; el.style.fontFamily = 'Roboto, sans-serif'; el.style.fontWeight = 'bold'; el.style.textShadow = '1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000';
+            el.addEventListener('focus', () => { this.activeText = el; el.style.border = '1px dashed #fff'; }); el.addEventListener('blur', () => { el.style.border = 'none'; if(el.textContent.trim() === '') el.remove(); if(this.activeText === el) this.activeText = null; });
+            const setupDrag = (ev, cX, cY) => { ev.stopPropagation(); if (this.activeTool !== 'text') this.setTool('text'); this.activeText = el; this.isDraggingText = true; this.dragStartX = cX; this.dragStartY = cY; this.dragStartLeft = parseFloat(el.style.left) || 0; this.dragStartTop = parseFloat(el.style.top) || 0; };
+            el.addEventListener('touchstart', (ev) => setupDrag(ev, ev.touches[0].clientX, ev.touches[0].clientY), {passive: false}); el.addEventListener('mousedown', (ev) => setupDrag(ev, ev.clientX, ev.clientY));
+            document.getElementById('textOverlay').appendChild(el); setTimeout(() => { el.focus(); }, 50); return;
+        }
+        e.preventDefault(); const pos = this.getCoords(e); this.isDrawing = true; this.lastPos = pos;
+        this.ctx.beginPath(); this.ctx.arc(pos.x, pos.y, this.sizeInput.value / 2, 0, Math.PI * 2); this.ctx.globalCompositeOperation = 'source-over'; this.ctx.fillStyle = this.activeColor; this.ctx.fill();
+    },
+    draw: function(e) { if (!this.isDrawing || this.activeTool === 'text') return; e.preventDefault(); const pos = this.getCoords(e); this.ctx.beginPath(); this.ctx.lineCap = 'round'; this.ctx.lineJoin = 'round'; this.ctx.lineWidth = this.sizeInput.value; this.ctx.globalCompositeOperation = 'source-over'; this.ctx.strokeStyle = this.activeColor; this.ctx.moveTo(this.lastPos.x, this.lastPos.y); this.ctx.lineTo(pos.x, pos.y); this.ctx.stroke(); this.lastPos = pos; },
+    stopDraw: function(e) { if (!this.isDrawing) return; e.preventDefault(); this.isDrawing = false; this.saveState(); }
+};
+
+Editor.overlay.addEventListener('touchmove', (e) => { if (Editor.isDraggingText && Editor.activeText) { e.preventDefault(); Editor.activeText.style.left = (Editor.dragStartLeft + e.touches[0].clientX - Editor.dragStartX) + 'px'; Editor.activeText.style.top = (Editor.dragStartTop + e.touches[0].clientY - Editor.dragStartY) + 'px'; } }, {passive: false});
+Editor.overlay.addEventListener('mousemove', (e) => { if (Editor.isDraggingText && Editor.activeText) { e.preventDefault(); Editor.activeText.style.left = (Editor.dragStartLeft + e.clientX - Editor.dragStartX) + 'px'; Editor.activeText.style.top = (Editor.dragStartTop + e.clientY - Editor.dragStartY) + 'px'; } });
+const stopTextDrag = () => { Editor.isDraggingText = false; };
+Editor.overlay.addEventListener('touchend', stopTextDrag); Editor.overlay.addEventListener('mouseup', stopTextDrag); Editor.overlay.addEventListener('mouseleave', stopTextDrag);
+Editor.sizeInput.addEventListener('input', (e) => { if(Editor.activeTool === 'text' && Editor.activeText) { Editor.activeText.style.fontSize = Math.max(14, e.target.value * 6) + 'px'; } });
+Editor.canvas.addEventListener('mousedown', (e) => Editor.startDraw(e)); Editor.canvas.addEventListener('mousemove', (e) => Editor.draw(e)); Editor.canvas.addEventListener('mouseup', (e) => Editor.stopDraw(e)); Editor.canvas.addEventListener('mouseleave', (e) => Editor.stopDraw(e));
+Editor.canvas.addEventListener('touchstart', (e) => Editor.startDraw(e), {passive: false}); Editor.canvas.addEventListener('touchmove', (e) => Editor.draw(e), {passive: false}); Editor.canvas.addEventListener('touchend', (e) => Editor.stopDraw(e), {passive: false});
+
+
+
+</script>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 </head>
 <body>
     <!-- Navbar -->
@@ -169,6 +730,7 @@
         <div id="auth-container" class="form-container">
             <h2 style="margin-top: 0;">Login (Para Gerenciar Cards)</h2>
             <form id="auth-form">
+                <input type="text" id="auth-name" placeholder="Nome (Autor)" required>
                 <input type="email" id="auth-email" placeholder="E-mail" required>
                 <input type="password" id="auth-password" placeholder="Senha" required>
                 <button type="submit" class="btn">Entrar / Registrar</button>
@@ -184,7 +746,7 @@
                 <input type="hidden" id="card-image-path">
                 <input type="text" id="card-title-input" placeholder="Título do Card" required>
                 <textarea id="card-content-input" placeholder="Conteúdo do Card" rows="3" required></textarea>
-                <input type="file" id="card-image-input" accept="image/*" style="margin-bottom: 1rem; color: #e2e8f0;">
+                <input type="file" id="card-image-input" accept="image/*,application/pdf,video/*" multiple style="margin-bottom: 1rem; color: #e2e8f0;">
                 <button type="submit" class="btn">Salvar</button>
                 <button type="button" class="btn" id="btn-cancel" style="display: none; background-color: #718096;">Cancelar</button>
                 <button type="button" class="btn" id="btn-logout" style="background-color: #e53e3e; float: right;">Sair</button>
@@ -192,7 +754,7 @@
         </div>
 
         <!-- Dynamic Cards -->
-        <div class="cards-grid" id="cards-container">
+        <div class="cards-grid" id="cards-container" style="display: none;">
             <!-- Cards will be injected here by JS -->
             <p>Carregando...</p>
         </div>
@@ -259,106 +821,126 @@
                 container.innerHTML = `<p style="color:red;">Erro na inicialização: ${err.message}</p>`;
             }
         }
-
-        document.getElementById('auth-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const email = document.getElementById('auth-email').value.trim();
-            const password = document.getElementById('auth-password').value;
-            const msg = document.getElementById('auth-message');
-            msg.innerText = 'Autenticando...';
-            msg.style.color = '#a0aec0';
-
-            let { error } = await supabaseClient.auth.signInWithPassword({ email, password });
-            if (error) {
-                // Try sign up if user doesn't exist
-                const { error: signUpError } = await supabaseClient.auth.signUp({ email, password });
-                if (signUpError) {
-                    msg.innerText = 'Erro: ' + signUpError.message;
-                    msg.style.color = '#e53e3e';
-                } else {
-                    msg.innerText = 'Verifique seu e-mail ou tente logar novamente se auto-confirmado.';
-                    msg.style.color = '#fbd38d';
-                }
-            } else {
-                msg.innerText = '';
-                document.getElementById('auth-password').value = '';
-            }
-        });
-
         document.getElementById('btn-logout').addEventListener('click', async () => {
             await supabaseClient.auth.signOut();
         });
 
-        async function loadCards() {
-            container.innerHTML = '<p>Carregando...</p>';
-            const { data: cards, error } = await supabaseClient
-                .from('cards')
-                .select('*')
-                .order('created_at', { ascending: false });
-
-            if (error) {
-                container.innerHTML = `<p style="color:red;">Erro ao buscar cards: ${error.message}</p>`;
-                return;
-            }
-
+        function renderCardsList(cards) {
             if (!cards || cards.length === 0) {
                 container.innerHTML = '<p>Nenhum card encontrado.</p>';
                 return;
             }
 
             container.innerHTML = '';
+            let totalBytes = 0;
 
-            // Iterando sobre os cards
             for (const card of cards) {
-                const div = document.createElement('div');
-                div.className = 'card';
+                totalBytes += parseInt(card.size_bytes || 0, 10);
+
+                const li = document.createElement('li');
+                li.className = 'task-item card';
+                li.id = 'entity-' + card.id;
+                li.style.color = 'var(--on-surface)';
 
                 let actionsHTML = '';
                 if (session) {
                     actionsHTML = `
-                        <div class="card-actions">
-                            <button class="btn btn-edit">Editar</button>
-                            <button class="btn btn-delete">Excluir</button>
+                        <div class="task-actions card-actions" style="float: right;">
+                            <i class="material-icons action-icon btn-edit" title="Editar" style="font-size: 20px;">edit</i>
+                            <i class="material-icons action-icon danger btn-delete" title="Deletar" style="font-size: 20px;">delete</i>
                         </div>
                     `;
                 }
 
-                let imageHTML = '';
-                if (card.image_path) {
-                    const { data } = supabaseClient
-                        .storage
-                        .from('firstappfiles')
-                        .getPublicUrl(card.image_path);
-
+                let mediaHtml = '';
+                if (card.media && card.media.length > 0 && typeof renderStackedDeckHTML === 'function') {
+                    const publicMedia = card.media.map(m => {
+                        if (m.data && m.data.startsWith('data:')) return m;
+                        const pubData = supabaseClient.storage.from('firstappfiles').getPublicUrl(m.path).data;
+                        return { ...m, data: pubData.publicUrl };
+                    });
+                    mediaHtml = renderStackedDeckHTML(publicMedia, card.id);
+                } else if (card.image_path) {
+                    const { data } = supabaseClient.storage.from('firstappfiles').getPublicUrl(card.image_path);
                     if (data && data.publicUrl) {
-                        imageHTML = `<img src="${data.publicUrl}" alt="Imagem do card" style="max-width: 100%; border-radius: 4px; margin-bottom: 1rem;">`;
+                        mediaHtml = `<img src="${data.publicUrl}" alt="Imagem do card" class="image-preview" style="max-width: 100%; border-radius: 4px; margin-bottom: 1rem;">`;
                     }
                 }
 
-                div.innerHTML = `
-                    <div>
-                        ${imageHTML}
-                        <h2 class="card-title">${escapeHTML(card.title)}</h2>
-                        <p class="card-content">${escapeHTML(card.content)}</p>
+                let authorDisp = card.author_name || 'Desconhecido';
+                let dateDisp = typeof AppUtils !== 'undefined' ? AppUtils.formatDate(card.created_at) : new Date(card.created_at).toLocaleString('pt-BR');
+
+                li.innerHTML = `
+                    <div class="task-header" style="display: block; margin-bottom: 12px; clear: both;">
+                        ${actionsHTML}
+                        <span class="task-title" style="font-size: 18px; font-weight: 500; color: #fff;">${escapeHTML(card.title)}</span>
                     </div>
-                    ${actionsHTML}
+                    <div class="log-entry" style="margin-top: 8px;">
+                        <div class="log-header" style="font-size: 11px; opacity: 0.8; margin-bottom: 4px;">
+                            <span style="display:flex; align-items:center;">
+                                <i class="material-icons" style="font-size:12px; margin-right:4px;">schedule</i> ${dateDisp} por ${escapeHTML(authorDisp)}
+                            </span>
+                        </div>
+                        <div class="log-text selectable-text" style="font-size: 14px; line-height: 1.4;">${escapeHTML(card.content)}</div>
+                        ${mediaHtml}
+                    </div>
                 `;
 
                 if (session) {
-                    div.querySelector('.btn-edit').addEventListener('click', () => {
+                    li.querySelector('.btn-edit').addEventListener('click', () => {
                         editCard(card.id, card.title, card.content, card.image_path);
                     });
-
-                    div.querySelector('.btn-delete').addEventListener('click', () => {
+                    li.querySelector('.btn-delete').addEventListener('click', () => {
                         deleteCard(card.id);
                     });
                 }
+                container.appendChild(li);
+            }
 
-                container.appendChild(div);
+            const storageFooter = document.querySelector('.storage-footer');
+            const storageText = document.getElementById('storageFooterText');
+            if(storageFooter && storageText) {
+                storageFooter.style.display = 'flex';
+                storageFooter.style.position = 'fixed';
+                storageFooter.style.bottom = '0';
+                const mb = (totalBytes / 1024 / 1024).toFixed(2);
+                storageText.innerText = `${mb} MB utilizados no banco de dados`;
             }
         }
 
-        form.addEventListener('submit', async (e) => {
+        async function loadCards() {
+            if (!session) {
+                container.style.display = 'none';
+                return;
+            } else {
+                container.style.display = 'flex';
+                container.style.flexDirection = 'column';
+                container.style.gap = '16px';
+            }
+
+            const cachedCardsRaw = localStorage.getItem('firstapp_cards');
+            if (cachedCardsRaw) {
+                try {
+                    const cachedCards = JSON.parse(cachedCardsRaw);
+                    renderCardsList(cachedCards);
+                } catch(e) {}
+            } else {
+                container.innerHTML = '<p>Carregando...</p>';
+            }
+
+            const { data: cards, error } = await supabaseClient.from('cards').select('*').order('created_at', { ascending: false });
+
+            if (error) {
+                if(!cachedCardsRaw) container.innerHTML = `<p style="color:red;">Erro ao buscar cards: ${error.message}</p>`;
+                return;
+            }
+
+            localStorage.setItem('firstapp_cards', JSON.stringify(cards));
+            renderCardsList(cards);
+        }
+
+        form.addEventListener
+('submit', async (e) => {
             e.preventDefault();
             const title = titleInput.value.trim();
             const content = contentInput.value.trim();
@@ -458,7 +1040,20 @@
             else loadCards();
         };
 
-        window.editCard = function(id, title, content, imagePath) {
+
+        window.editCard = async function(id, title, content, imagePath) {
+            const { data, error } = await supabaseClient
+                .from('cards')
+                .update({ locked_by: session.user.id, locked_at: new Date() })
+                .eq('id', id)
+                .is('locked_by', null)
+                .select();
+
+            if (error || !data || data.length === 0) {
+                alert('Este card está bloqueado por outro usuário (ou ocorreu um erro).');
+                return;
+            }
+
             idInput.value = id;
             titleInput.value = title;
             contentInput.value = content;
@@ -470,7 +1065,14 @@
             window.scrollTo({ top: 0, behavior: 'smooth' });
         };
 
-        btnCancel.addEventListener('click', resetForm);
+
+
+        btnCancel.addEventListener('click', async () => {
+            const id = idInput.value;
+            if(id) await supabaseClient.from('cards').update({ locked_by: null, locked_at: null }).eq('id', id);
+            resetForm();
+        });
+
 
         function resetForm() {
             idInput.value = '';
@@ -492,5 +1094,62 @@
         // Initialize App
         init();
     </script>
+
+<div class="carousel-overlay" id="carouselModal">
+    <div class="carousel-header">
+        <div style="color: white; font-size: 13px; font-weight:bold; margin-top: 8px; text-shadow: 1px 1px 2px black;" id="carouselSizeIndicator"></div>
+        <div class="carousel-actions-global">
+            <div class="carousel-btn edit" id="carouselEditBtn" onclick="CarouselModal.editCurrent()"><i class="material-icons">edit</i></div>
+            <div class="carousel-btn delete" id="carouselDeleteBtn" onclick="CarouselModal.deleteCurrent()"><i class="material-icons" style="color:var(--danger)">delete</i></div>
+        </div>
+        <i class="material-icons action-icon" style="color:white; font-size:32px;" onclick="CarouselModal.closeUI()">close</i>
+    </div>
+    <div class="carousel-nav-btn left" id="carouselNavLeft" onclick="CarouselModal.prev()"><i class="material-icons">chevron_left</i></div>
+    <div class="carousel-nav-btn right" id="carouselNavRight" onclick="CarouselModal.next()"><i class="material-icons">chevron_right</i></div>
+    <div class="carousel-container" id="carouselContainer"></div>
+</div>
+
+
+<div class="editor-overlay" id="editorOverlay" onclick="document.getElementById('colorPopup').classList.remove('show')">
+    <div class="canvas-container" id="canvasContainer">
+        <div class="editor-hint" id="editorHint">Desenhe livremente na imagem</div>
+        <div class="canvas-wrapper">
+            <canvas id="mainCanvas"></canvas>
+            <div id="textOverlay"></div>
+        </div>
+    </div>
+
+    <div id="colorPopup" class="color-popup">
+        <div class="color-dot" style="background-color: #ff3333" onclick="event.stopPropagation(); Editor.setColor('#ff3333')"></div>
+        <div class="color-dot" style="background-color: #33cc33" onclick="event.stopPropagation(); Editor.setColor('#33cc33')"></div>
+        <div class="color-dot" style="background-color: #3366ff" onclick="event.stopPropagation(); Editor.setColor('#3366ff')"></div>
+        <div class="color-dot" style="background-color: #ffff33" onclick="event.stopPropagation(); Editor.setColor('#ffff33')"></div>
+        <div class="color-dot" style="background-color: #ffffff" onclick="event.stopPropagation(); Editor.setColor('#ffffff')"></div>
+        <div class="color-dot" style="background-color: #000000" onclick="event.stopPropagation(); Editor.setColor('#000000')"></div>
+    </div>
+
+    <div class="editor-toolbar" onclick="event.stopPropagation()">
+        <button class="tool-btn" onclick="Editor.closeUI()"><i class="material-icons">close</i></button>
+        <div class="editor-sep"></div>
+        <button class="tool-btn active" id="btnPen" onclick="Editor.setTool('pen')"><i class="material-icons">edit</i></button>
+        <button class="tool-btn" id="btnText" onclick="Editor.setTool('text')"><i class="material-icons">text_fields</i></button>
+        <div class="editor-sep"></div>
+
+        <div class="color-palette-container">
+            <div id="activeColorBtn" class="active-color-dot" style="background-color: #ff3333;" onclick="event.preventDefault(); event.stopPropagation(); document.getElementById('colorPopup').classList.toggle('show');"></div>
+        </div>
+
+        <div class="editor-sep"></div>
+        <input type="range" id="editorSize" class="size-slider" min="2" max="9" step="0.5" value="3">
+        <div class="editor-sep"></div>
+        <button class="tool-btn" onclick="Editor.undo()"><i class="material-icons">undo</i></button>
+        <button class="tool-btn" onclick="Editor.save()" style="background: var(--primary); color: var(--on-primary); margin-left: auto;"><i class="material-icons">check</i></button>
+    </div>
+</div>
+
+    <div class="storage-footer" onclick="App.showStorageDetails()" style="cursor: pointer;">
+        <i class="material-icons" style="font-size: 14px;">storage</i> <span id="storageFooterText">A calcular memória...</span>
+    </div>
+
 </body>
 </html>

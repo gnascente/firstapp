@@ -5,8 +5,20 @@ CREATE TABLE IF NOT EXISTS public.cards (
     title text not null,
     content text,
     image_path text,
-    created_at timestamp with time zone default timezone('utc'::text, now()) not null
+    created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+    author_name text,
+    size_bytes bigint DEFAULT 0,
+    media jsonb DEFAULT '[]'::jsonb,
+    locked_by text,
+    locked_at timestamp with time zone
 );
+
+-- Adds columns for existing databases
+ALTER TABLE public.cards ADD COLUMN IF NOT EXISTS author_name text;
+ALTER TABLE public.cards ADD COLUMN IF NOT EXISTS size_bytes bigint DEFAULT 0;
+ALTER TABLE public.cards ADD COLUMN IF NOT EXISTS media jsonb DEFAULT '[]'::jsonb;
+ALTER TABLE public.cards ADD COLUMN IF NOT EXISTS locked_by text;
+ALTER TABLE public.cards ADD COLUMN IF NOT EXISTS locked_at timestamp with time zone;
 
 -- Configuração do RLS (Row Level Security) para permitir que acessos anônimos façam CRUD (apenas para exemplo, não recomendado para produção)
 -- Configuração do RLS (Row Level Security)
