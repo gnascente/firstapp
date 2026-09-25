@@ -392,7 +392,6 @@
             .play-overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.6); border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         }
 
-
     </style>
     <!-- Supabase CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
@@ -1095,7 +1094,7 @@ Editor.canvas.addEventListener('touchstart', (e) => Editor.startDraw(e), {passiv
         init();
     </script>
 
-<div class="carousel-overlay" id="carouselModal">
+<div class="carousel-overlay" id="carouselModal" style="display: none;">
     <div class="carousel-header">
         <div style="color: white; font-size: 13px; font-weight:bold; margin-top: 8px; text-shadow: 1px 1px 2px black;" id="carouselSizeIndicator"></div>
         <div class="carousel-actions-global">
@@ -1110,7 +1109,7 @@ Editor.canvas.addEventListener('touchstart', (e) => Editor.startDraw(e), {passiv
 </div>
 
 
-<div class="editor-overlay" id="editorOverlay" onclick="document.getElementById('colorPopup').classList.remove('show')">
+<div class="editor-overlay" id="editorOverlay" onclick="document.getElementById('colorPopup').classList.remove('show')" style="display: none;">
     <div class="canvas-container" id="canvasContainer">
         <div class="editor-hint" id="editorHint">Desenhe livremente na imagem</div>
         <div class="canvas-wrapper">
@@ -1147,7 +1146,7 @@ Editor.canvas.addEventListener('touchstart', (e) => Editor.startDraw(e), {passiv
     </div>
 </div>
 
-    <div class="storage-footer" onclick="App.showStorageDetails()" style="cursor: pointer;">
+    <div class="storage-footer" style="display: none; cursor: pointer; position: fixed; bottom: 0;">
         <i class="material-icons" style="font-size: 14px;">storage</i> <span id="storageFooterText">A calcular memória...</span>
     </div>
 
