@@ -1,0 +1,2385 @@
+<!DOCTYPE html>
+<html lang="pt-PT" translate="no">
+<head>
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon.png">
+
+    <script>
+        if ('serviceWorker' in navigator) {
+            caches.keys().then(function(names) { for (let name of names) caches.delete(name); });
+            navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                for(let registration of registrations) registration.unregister();
+            });
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js?v=' + new Date().getTime())
+                    .then(() => console.log('Service Worker Atualizado.'))
+                    .catch((err) => console.log('Falha ao registar:', err));
+            });
+        }
+    </script>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
+    <meta name="google" content="notranslate">
+    <title>Oráculo P-31</title>
+    
+    <meta name="theme-color" content="#000000">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Oráculo P-31">
+    
+    <!-- Version updated to reflect sync fixes -->
+
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
+
+    <style>
+        :root {
+            --primary: #a8c7fa;
+            --on-primary: #062e6f;
+            --background: #000000;
+            --surface: #000000;
+            --surface-variant: #43474e;
+            --on-surface: #e2e2e6;
+            --on-surface-variant: #c3c7cf;
+            --border: #8d9199;
+            --danger: #ffb4ab;
+            --shadow: 0 4px 8px 3px rgba(0,0,0,0.3), 0 1px 3px rgba(0,0,0,0.5);
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.5);
+        }
+        
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        @keyframes syncPulse { 0% { transform: scale(1); filter: brightness(1); } 50% { transform: scale(1.2); filter: brightness(1.5); color: #fff; } 100% { transform: scale(1); filter: brightness(1); } }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Roboto', sans-serif; -webkit-tap-highlight-color: transparent; }
+        
+        body { 
+            background-color: var(--background); 
+            color: var(--on-surface); 
+            display: flex; justify-content: center; padding: 0; height: 100dvh; overflow: hidden; box-sizing: border-box; outline: none; margin: 0;
+            -webkit-touch-callout: none !important; -webkit-user-select: none !important; user-select: none !important;           
+        }
+
+        input, textarea, .selectable-text { -webkit-user-select: auto !important; user-select: auto !important; }
+        img, video { -webkit-user-drag: none; pointer-events: auto; }
+        
+        .material-icons { pointer-events: none; -webkit-user-select: none !important; user-select: none !important; -webkit-touch-callout: none !important; }
+        .action-icon, .tool-btn, .carousel-btn, .carousel-nav-btn { pointer-events: auto; -webkit-user-select: none !important; user-select: none !important; -webkit-touch-callout: none !important; } 
+
+        .container { width: 100%; max-width: 480px; background: var(--surface); border-radius: 0; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; overflow: hidden; position: relative; height: 100%; }
+        
+        header { padding: 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--surface-variant); background: var(--surface); z-index: 20; flex-shrink: 0; }
+        header h1 { font-size: 20px; font-weight: 500; display: flex; align-items: center; gap: 8px; flex-grow: 1; overflow: hidden; }
+        header h1 span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .header-actions { display: flex; gap: 16px; align-items: center; flex-shrink: 0;}
+
+        .home-search-container { padding: 16px; background: var(--surface); border-bottom: 1px solid var(--surface-variant); flex-shrink: 0; z-index: 15; position: relative;}
+        .home-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; padding: 24px; flex-shrink: 0;}
+        
+        .module-card {
+            background: var(--surface-variant); border-radius: 16px; padding: 24px 16px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            gap: 12px; box-shadow: var(--shadow-sm); cursor: pointer; transition: transform 0.2s, background 0.2s; border: 1px solid transparent;
+        }
+        .module-card:active { transform: scale(0.96); }
+        .module-card:hover { border-color: var(--primary); }
+        .module-card i { font-size: 40px; color: var(--primary); pointer-events: none;}
+        .module-card span { font-size: 14px; font-weight: 500; color: var(--on-surface); text-align: center; }
+
+        .dropdown-menu {
+            position: absolute; right: 16px; top: 56px; background: var(--surface); border: 1px solid var(--surface-variant); border-radius: 8px; box-shadow: var(--shadow);
+            display: none; flex-direction: column; min-width: 200px; z-index: 1000; overflow: hidden;
+        }
+        .dropdown-menu.show { display: flex; }
+        .menu-item { padding: 14px 16px; display: flex; align-items: center; gap: 12px; cursor: pointer; font-size: 15px; color: var(--on-surface); transition: background 0.2s; }
+        .menu-item:hover { background: var(--surface-variant); }
+        .menu-item .material-icons { font-size: 20px; color: var(--on-surface-variant); pointer-events: none;}
+
+        .search-container { padding: 16px; background: var(--surface); position: sticky; top: 0; z-index: 15; border-bottom: 1px solid var(--surface-variant); flex-shrink: 0;}
+        .search-box { position: relative; display: flex; align-items: center; }
+        .search-box input {
+            flex-grow: 1; background: var(--background); border: 1px solid var(--border); color: var(--on-surface); padding: 12px 16px 12px 44px; border-radius: 24px;
+            font-size: 15px; outline: none; width: 100%; transition: border-color 0.2s;
+        }
+        .search-box i.search-icon { position: absolute; left: 14px; color: var(--on-surface-variant); font-size: 20px; pointer-events: none; }
+        .search-box input:focus { border-color: var(--primary); }
+
+        .view-section { display: none; flex-direction: column; flex-grow: 1; overflow-y: auto; position: relative; z-index: 1; }
+        .view-section.active { display: flex; }
+        
+        .task-list { list-style: none; padding: 16px; display: flex; flex-direction: column; gap: 16px; }
+        .task-item { background: var(--surface-variant); border-radius: 12px; padding: 16px; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; transition: background-color 0.5s; border: 1px solid transparent; }
+        
+        /* Formatação fluída do Cartão */
+        .task-header { display: block; margin-bottom: 12px; }
+        .task-header::after { content: ""; display: table; clear: both; }
+        .task-actions { float: right; display: flex; gap: 12px; align-items: center; margin-left: 12px; margin-bottom: 4px; padding-top: 6px; }
+        .task-title { display: block; padding-top: 6px; font-size: 18px; font-weight: 500; word-break: break-word; line-height: 1.3; color: #fff; text-align: justify; }
+
+        .create-btn-dynamic { background: rgba(168, 199, 250, 0.1); border: 1px dashed var(--primary); border-radius: 12px; padding: 16px; display: flex; align-items: center; gap: 12px; cursor: pointer; color: var(--primary); font-weight: 500; margin-bottom: 16px; }
+
+        .search-snippets { display: flex; flex-direction: column; gap: 4px; margin-top: 4px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px; }
+        .snippet-item { font-size: 12px; color: var(--on-surface-variant); font-style: italic; background: rgba(0,0,0,0.2); padding: 6px 10px; border-radius: 6px; line-height: 1.3; }
+        mark.highlight { background-color: rgba(255, 213, 79, 0.8); color: #000; padding: 0 4px; border-radius: 4px; box-shadow: 0 0 4px rgba(255, 213, 79, 0.5); font-weight: bold; }
+
+        .log-list { margin-top: 8px; padding-left: 12px; border-left: 2px solid var(--border); display: flex; flex-direction: column; gap: 8px; clear:both; }
+        
+        .log-item-group { background: rgba(0,0,0,0.15); border-radius: 8px; display: flex; flex-direction: column; overflow: hidden; transition: background-color 0.5s; }
+        .log-entry { padding: 12px; display: flex; flex-direction: column; gap: 6px; transition: background-color 0.5s; }
+        .log-entry + .log-entry { border-top: 1px solid rgba(255,255,255,0.05); }
+        
+        /* Regras para o modo colapsado */
+        .log-item-group.collapsed .log-entry:not(:first-child) { display: none !important; }
+        .log-item-group.collapsed .log-entry:first-child .log-text {
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            display: block !important;
+        }
+        .log-item-group.collapsed .log-entry:first-child .stacked-deck,
+        .log-item-group.collapsed .log-entry:first-child .log-links-bar {
+            display: none !important;
+        }
+
+        .log-header { display: flex; justify-content: space-between; align-items: center; font-size: 11px; opacity: 0.8; margin-bottom: 2px; }
+        .log-text { font-size: 14px; line-height: 1.4; word-break: break-word; white-space: pre-wrap; color: #e2e2e6; }
+        
+        .subtask-list { list-style: none; display: flex; flex-direction: column; gap: 12px; padding-top: 8px; clear:both; }
+        .subtask-item { display: flex; flex-direction: column; gap: 8px; font-size: 14px; background: rgba(0,0,0,0.2); padding: 12px; border-radius: 8px; }
+        .subtask-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+        .subtask-text-wrapper { display: flex; align-items: flex-start; gap: 8px; flex-grow: 1; cursor: pointer; padding: 4px 0;}
+        .subtask-text { font-weight: 500; color: var(--primary); font-size: 15px; text-align: justify; word-break: break-word; line-height: 1.3; margin-top: 2px; display: block; width: 100%; }
+        
+        .log-links-bar { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.05); }
+        .link-label { font-size: 11px; color: var(--on-surface-variant); display: flex; align-items: center; gap: 6px; font-weight: 500; text-transform: uppercase;}
+        .pills-container { display: flex; flex-wrap: wrap; gap: 6px; }
+        .pill-dark { background: #333; color: #e2e2e6; padding: 4px 10px; border-radius: 16px; font-size: 12px; display: inline-flex; align-items: center; gap: 4px; border: 1px solid #444; cursor: pointer; transition: 0.2s;}
+        .pill-dark:active { transform: scale(0.95); }
+        .pill-dark i { font-size: 12px; color: #aaa; transition: 0.2s; }
+        .pill-dark i:hover { color: var(--danger); }
+        .pill-dark.origin { border-color: var(--primary); color: var(--primary); background: rgba(168, 199, 250, 0.1); }
+
+        .action-icon { cursor: pointer; color: var(--on-surface-variant); transition: color 0.2s; font-size: 20px; display:inline-block;}
+        .action-icon:hover { color: var(--primary); }
+        .action-icon.danger:hover { color: var(--danger); }
+        .sync-highlight { animation: syncPulse 2s infinite; color: #ffeb3b !important; }
+
+        .stacked-deck { width: 100%; height: 160px; position: relative; margin-top: 8px; margin-bottom: 4px; cursor: pointer; display: block; transition: transform 0.2s; background: transparent; }
+        .stacked-deck:active { transform: scale(0.98); }
+        .deck-photo, .pdf-preview.deck-photo { width: calc(100% - 20px); height: 100%; position: absolute; top: 0; left: 10px; object-fit: cover; border-radius: 8px; border: 1px solid #555; box-shadow: var(--shadow-sm); transition: transform 0.2s; }
+        .stacked-deck.single .deck-photo { width: 100%; left: 0; filter: none !important; transform: none !important; }
+        .stacked-deck:not(.single) .deck-photo:nth-child(n+4) { display: none; }
+        .stacked-deck:not(.single) .deck-photo:nth-child(1) { transform: rotate(-3deg); z-index: 3; }
+        .stacked-deck:not(.single) .deck-photo:nth-child(2) { transform: rotate(1deg) translate(5px, 3px); z-index: 2; filter: grayscale(40%) brightness(0.8); }
+        .stacked-deck:not(.single) .deck-photo:nth-child(3) { transform: rotate(4deg) translate(10px, 6px); z-index: 1; filter: grayscale(70%) brightness(0.6); }
+        .image-preview { width: 100%; max-height: 200px; object-fit: cover; border-radius: 12px; border: 1px solid var(--border); cursor: pointer; margin-top: 8px; margin-bottom: 8px; display: block; }
+        .pdf-preview { display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(0,0,0,0.2); border: 1px solid var(--border); border-radius: 12px; color: var(--danger); cursor: pointer; }
+
+        .fab { position: fixed; bottom: 54px; left: 50%; transform: translateX(-50%); background-color: var(--primary); color: var(--on-primary); border: none; width: 56px; height: 56px; border-radius: 16px; box-shadow: var(--shadow); cursor: pointer; display: grid; place-content: center; z-index: 99; transition: transform 0.2s; }
+        .fab:active { transform: translateX(-50%) scale(0.9); }
+        @media (min-width: 500px) { .fab { left: calc(50% + 180px); } }
+
+        /* Modals */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: flex-end; z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+        .modal-overlay.active { opacity: 1; pointer-events: auto; }
+        .modal-content { background: var(--surface); width: 100%; max-width: 480px; border-radius: 24px 24px 0 0; padding: 24px; max-height: 90vh; overflow-y: auto; box-shadow: var(--shadow); transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .modal-overlay.active .modal-content { transform: translateY(0); }
+
+        .dialog-overlay, .progress-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: flex; justify-content: center; align-items: center; z-index: 3000; opacity: 0; pointer-events: none; transition: opacity 0.2s; padding: 24px; }
+        .dialog-overlay.active, .progress-modal.active { opacity: 1; pointer-events: auto; }
+        .dialog-content, .progress-content { background: var(--surface); width: 100%; max-width: 340px; border-radius: 16px; padding: 24px; box-shadow: var(--shadow); transform: scale(0.9); opacity: 0; transition: transform 0.2s, opacity 0.2s; text-align: center; }
+        .dialog-overlay.active .dialog-content, .progress-modal.active .progress-content { transform: scale(1); opacity: 1; }
+        .dialog-content h3 { margin-bottom: 16px; text-align: left;}
+
+        .input-group { margin-bottom: 16px; position: relative;}
+        .input-field { width: 100%; padding: 14px 16px; border: 1px solid var(--border); border-radius: 8px; font-size: 16px; outline: none; background: var(--background); color: var(--on-surface); }
+        .input-field:focus { border-color: var(--primary); }
+        textarea.input-field { resize: vertical; min-height: 120px; }
+
+        .autocomplete-dropdown { position: absolute; top: 100%; left: 0; right: 0; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; box-shadow: var(--shadow); max-height: 180px; overflow-y: auto; z-index: 2000; display: none; flex-direction: column; margin-top: 4px; }
+        .autocomplete-item { padding: 12px 16px; border-bottom: 1px solid rgba(255,255,255,0.05); cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 14px; }
+        .autocomplete-item:hover { background: rgba(255,255,255,0.05); }
+
+        .modal-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin-top: 24px; }
+        .btn { border: none; padding: 10px 18px; border-radius: 24px; font-weight: 500; cursor: pointer; font-size: 14px; white-space: nowrap; }
+        .btn-text { background: transparent; color: var(--primary); }
+        .btn-filled { background-color: var(--primary); color: var(--on-primary); transition: opacity 0.2s; }
+
+        .upload-btn { border: 1px solid var(--border); background: transparent; padding: 12px 10px; border-radius: 8px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; color: var(--primary); cursor: pointer; width: 100%; justify-content: center; }
+        .hidden-file { display: none; }
+        .form-preview-container { position: relative; margin-bottom: 16px; display: none; width: 100%; margin-top: 8px; }
+
+        /* Carousel */
+        .carousel-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 1500; flex-direction: column; }
+        .carousel-overlay.active { display: flex; }
+        .carousel-header { position: absolute; top:0; left:0; width:100%; padding: 16px; display: flex; justify-content: space-between; align-items: flex-start; z-index: 1600; pointer-events: none; }
+        .carousel-header > * { pointer-events: auto; }
+        .carousel-actions-global { display: flex; gap: 16px; background: rgba(0,0,0,0.5); padding: 8px 16px; border-radius: 30px; backdrop-filter: blur(5px); border: 1px solid rgba(255,255,255,0.1); align-items: center; }
+        .carousel-btn { width: 36px; height: 36px; border-radius: 50%; display: grid; place-content: center; cursor: pointer; transition: 0.2s; }
+        .carousel-btn:active { transform: scale(0.9); }
+        .carousel-btn.edit { color: var(--primary); }
+        .carousel-container { flex-grow: 1; display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 16px; padding: 0 calc(7.5vw); scrollbar-width: none; align-items: center; scroll-behavior: smooth; -webkit-overflow-scrolling: touch; }
+        .carousel-container::-webkit-scrollbar { display: none; }
+        .carousel-item { flex: 0 0 85vw; width: 85vw; height: 80vh; scroll-snap-align: center; display: flex; align-items: center; justify-content: center; position: relative; }
+        .carousel-img-wrapper { position: relative; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+        .carousel-touch-layer { position: absolute; inset: 0; z-index: 10; touch-action: pan-x pan-y; }
+        .carousel-img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 12px; transition: transform 0.2s ease-out; transform-origin: center center; pointer-events: none; box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
+        .carousel-pdf { min-width: 120px; max-width: 80vw; min-height: 120px; height: auto; background: var(--surface-variant); border-radius: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; padding: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.5); pointer-events: auto; }
+        .carousel-nav-btn { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.1); color: white; width: 44px; height: 44px; border-radius: 50%; display: grid; place-content: center; cursor: pointer; z-index: 1520; backdrop-filter: blur(4px); border: 1px solid rgba(255,255,255,0.2); transition: 0.2s; pointer-events: auto; }
+        .carousel-nav-btn.left { left: 8px; }
+        .carousel-nav-btn.right { right: 8px; }
+
+        /* Editor Overlay */
+        .editor-overlay { position: fixed; inset: 0; background: #000; z-index: 2000; display: none; flex-direction: column; height: 100dvh; }
+        .editor-overlay.active { display: flex; }
+        .canvas-container { flex-grow: 1; display: flex; justify-content: center; align-items: center; background: #1a1a1a; overflow: hidden; touch-action: none; position: relative; padding: 16px; }
+        .canvas-wrapper { position: relative; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
+        canvas { max-width: 100%; max-height: 100%; object-fit: contain; display: block; }
+        canvas.cursor-text { cursor: text; }
+        canvas.cursor-crosshair { cursor: crosshair; }
+        #textOverlay { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+        .editor-hint { position: absolute; top: 24px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: #fff; padding: 8px 16px; border-radius: 20px; font-size: 14px; pointer-events: none; z-index: 10; white-space: nowrap; }
+        
+        /* Popup de Cores Seguro */
+        .color-popup { position: absolute; bottom: 80px; left: 50%; transform: translateX(-50%); background: #222; padding: 12px; border-radius: 12px; border: 1px solid #555; display: none; gap: 12px; flex-direction: row; box-shadow: 0 4px 16px rgba(0,0,0,0.9); z-index: 999999; pointer-events: auto; }
+        .color-popup.show { display: flex; }
+        .color-dot { width: 32px; height: 32px; border-radius: 50%; cursor: pointer; border: 2px solid #777; flex-shrink: 0; }
+        
+        .editor-toolbar { background: #111; padding: 8px; display: flex; align-items: center; gap: 8px; border-top: 1px solid #333; overflow-x: auto; flex-shrink: 0; height: 60px; z-index: 10; }
+        .tool-btn { background: #222; border: 2px solid transparent; border-radius: 8px; color: #fff; width: 36px; height: 36px; display: grid; place-content: center; cursor: pointer; flex-shrink: 0; }
+        .tool-btn .material-icons { font-size: 20px; }
+        .tool-btn.active { border-color: var(--primary); color: var(--primary); background: #001a40; }
+        .editor-sep { width: 1px; height: 24px; background: #444; flex-shrink: 0; margin: 0 4px; }
+        .size-slider { flex-grow: 1; min-width: 60px; max-width: 100px; accent-color: var(--primary); }
+        .active-color-dot { width: 28px; height: 28px; border-radius: 50%; cursor: pointer; border: 2px solid #fff; flex-shrink: 0; box-shadow: 0 0 4px rgba(255,255,255,0.3); }
+
+        .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 48px 24px; color: var(--on-surface-variant); gap: 16px; text-align: center; height: 100%; }
+        .empty-state i { font-size: 56px; opacity: 0.3; }
+        
+        .module-link-badge { font-size: 10px; background: var(--background); padding: 2px 6px; border-radius: 8px; color: var(--on-surface-variant); display: inline-block; text-transform: uppercase; margin-left: 8px;}
+
+        .storage-footer { height: 36px; line-height: 36px; text-align: center; font-size: 11px; color: var(--on-surface-variant); background: var(--surface); border-top: 1px solid var(--surface-variant); z-index: 5; flex-shrink: 0; display: flex; justify-content: center; align-items: center; gap: 6px; width: 100%; }
+
+        /* Área Dedicada e Protegida para a Impressão */
+        #printArea { display: none; }
+        @media print {
+            body { background: #fff !important; color: #000 !important; height: auto !important; overflow: auto !important; padding: 0 !important; display: block !important; -webkit-user-select: auto !important; user-select: auto !important; }
+            .container, .fab, .modal-overlay, .dialog-overlay, .progress-modal, .carousel-overlay, .editor-overlay { display: none !important; }
+            #printArea { display: block !important; padding: 20px; }
+            
+            .print-log-item { padding-bottom: 12px; margin-bottom: 12px; page-break-inside: avoid; }
+            .print-header { font-size: 12px; color: #555; margin-bottom: 6px; font-weight: bold; }
+            .print-entity { font-size: 16px; font-weight: bold; margin-bottom: 6px; color: #000; }
+            .print-text { font-size: 14px; margin-bottom: 12px; white-space: pre-wrap; word-break: break-word; }
+            
+            .print-media-box { position: relative; border: 1px solid #aaa; padding: 4px; border-radius: 6px; display: inline-flex; flex-direction: column; align-items: center; width: 140px; vertical-align: top; margin-right: 10px; margin-bottom: 10px; box-sizing: border-box; }
+            .print-media-img { width: 100%; height: 90px; object-fit: cover; border-radius: 4px; }
+            
+            .play-overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.6); border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        }
+    </style>
+</head>
+<body>
+
+<div id="printArea"></div>
+
+<div class="container">
+    <header id="mainHeader">
+        <i class="material-icons action-icon" id="btnBack" style="display:none; margin-right: 12px;" onclick="App.goBack()">arrow_back</i>
+        <h1 id="headerTitle">
+            <i class="material-icons" style="color:var(--primary);" id="headerIcon">oil_barrel</i> 
+            <div style="display:flex; flex-direction:column; line-height:1; min-width: 0;">
+                <span id="headerText">Oráculo P-31</span>
+                <span id="headerVersion" style="font-size: 10px; color: var(--on-surface-variant); font-weight: normal; margin-top:2px;">v 4.8.5</span>
+            </div>
+        </h1>
+        <div class="header-actions">
+            <i class="material-icons action-icon" id="syncIconBtn" onclick="App.syncCloud()" title="Sincronizar Nuvem">sync</i>
+            <i class="material-icons action-icon" onclick="App.openPrintModal()" title="Imprimir Relatório">print</i>
+            <div style="position: relative;" id="menuWrapper">
+                <i class="material-icons action-icon" onclick="App.toggleMenu(event)">more_vert</i>
+                <div id="mainMenu" class="dropdown-menu">
+                    <input type="file" id="restoreLocalFile" accept=".zip,.json" style="display:none" onchange="App.restoreFromLocal(event)">
+                    <div class="menu-item" onclick="document.getElementById('restoreLocalFile').click()"><i class="material-icons">folder_zip</i> Restaurar (Local)</div>
+                    <div class="menu-item" onclick="App.exportToLocal()"><i class="material-icons">download</i> Exportar (Local)</div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div id="viewHome" class="view-section active">
+        <div class="home-search-container">
+            <div class="search-box">
+                <i class="material-icons search-icon">search</i>
+                <input type="text" id="homeSearchInput" name="q_search_home" placeholder="Busca global em tudo..." autocomplete="new-password" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" oninput="clearTimeout(App.searchTimeout); App.searchTimeout = setTimeout(() => App.renderHomeSearch(), 200);">
+            </div>
+        </div>
+        <div class="home-grid" id="homeGrid">
+            <div class="module-card" onclick="App.openModule('servico', 'Serviços', 'handyman')">
+                <i class="material-icons">handyman</i><span>Serviços</span>
+            </div>
+            <div class="module-card" onclick="App.openModule('equipamento', 'Equipamentos', 'precision_manufacturing')">
+                <i class="material-icons">precision_manufacturing</i><span>Equipamentos</span>
+            </div>
+            <div class="module-card" onclick="App.openModule('pessoa', 'Pessoas', 'people')">
+                <i class="material-icons">people</i><span>Pessoas</span>
+            </div>
+            <div class="module-card" onclick="App.openModule('documento', 'Documentos', 'description')">
+                <i class="material-icons">description</i><span>Documentos</span>
+            </div>
+            <div class="module-card" onclick="App.openModule('auditoria', 'Auditorias', 'verified_user')">
+                <i class="material-icons">verified_user</i><span>Auditorias</span>
+            </div>
+            <div class="module-card" onclick="App.openModule('material', 'Materiais', 'inventory_2')">
+                <i class="material-icons">inventory_2</i><span>Materiais</span>
+            </div>
+        </div>
+        <ul class="task-list" id="homeSearchList" style="display:none;"></ul>
+    </div>
+
+    <div id="viewList" class="view-section">
+        <div class="search-container">
+            <div class="search-box">
+                <i class="material-icons search-icon">search</i>
+                <input type="text" id="searchInput" name="q_search_list" placeholder="Buscar ou criar novo..." autocomplete="new-password" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" oninput="clearTimeout(App.searchTimeout); App.searchTimeout = setTimeout(() => App.renderList(), 200);">
+            </div>
+        </div>
+        <ul class="task-list" id="entityList"></ul>
+    </div>
+
+    <div class="storage-footer" onclick="App.showStorageDetails()" style="cursor: pointer;">
+        <i class="material-icons" style="font-size: 14px;">storage</i> <span id="storageFooterText">A calcular memória...</span>
+    </div>
+</div>
+
+<button class="fab" id="mainFab" style="display:none;" onclick="LogModal.open(null, App.currentEntityId)">
+    <i class="material-icons">add</i>
+</button>
+
+<div class="dialog-overlay" id="customDialogModal">
+    <div class="dialog-content">
+        <h3 id="customDialogTitle" style="text-align:left;">Aviso</h3>
+        <p id="customDialogMessage" style="text-align:left; line-height: 1.4; margin-bottom: 24px;"></p>
+        
+        <div id="customDialogInputContainer" style="display: none; margin-bottom: 20px;">
+            <input type="text" id="customDialogInput" class="input-field" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true">
+        </div>
+        
+        <textarea id="customDialogCopyable" class="input-field" readonly style="display: none; margin-bottom: 20px; font-family: monospace; font-size: 12px; height: 100px; background: #222; border: 1px solid #444; color: #ffb4ab;" onclick="this.select()"></textarea>
+
+        <div class="modal-actions" style="justify-content: flex-end;">
+            <button class="btn btn-text" id="customDialogCancel" style="display: none;">Cancelar</button>
+            <button class="btn btn-filled" id="customDialogConfirm">OK</button>
+        </div>
+    </div>
+</div>
+
+<div class="progress-modal" id="progressModal">
+    <div class="progress-content">
+        <h3 id="progressTitle" style="margin-bottom: 16px; color: var(--on-surface); text-align:center;">Aguarde...</h3>
+        <p id="progressText" style="margin-bottom: 24px; font-weight: bold; color: var(--primary); font-size: 16px; text-align:center;">0%</p>
+        <button class="btn btn-filled" id="progressCancelBtn" style="width: 100%; background-color: var(--surface-variant); color: var(--danger);">Cancelar</button>
+    </div>
+</div>
+
+<div class="dialog-overlay" id="printReportModal">
+    <div class="dialog-content">
+        <h3 style="text-align:left; margin-bottom: 16px;">Imprimir Relatório</h3>
+        <div class="input-group">
+            <label style="font-size: 13px; font-weight: 500; color: var(--on-surface-variant); margin-bottom: 8px; display: block; text-align: left;">Data Início:</label>
+            <input type="date" id="printStartDate" class="input-field">
+        </div>
+        <div class="input-group">
+            <label style="font-size: 13px; font-weight: 500; color: var(--on-surface-variant); margin-bottom: 8px; display: block; text-align: left;">Data Fim:</label>
+            <input type="date" id="printEndDate" class="input-field">
+        </div>
+        <div class="modal-actions" style="justify-content: flex-end;">
+            <button class="btn btn-text" onclick="document.getElementById('printReportModal').classList.remove('active')">Cancelar</button>
+            <button class="btn btn-filled" onclick="App.executePrint()">Gerar</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="entityModal">
+    <div class="modal-content">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <h2 id="entityModalTitle">Editar Entidade</h2>
+            <i class="material-icons action-icon danger" onclick="EntityModal.delete()">delete</i>
+        </div>
+        <div class="input-group">
+            <input type="text" id="entityNameEditInput" name="q_entity_edit" class="input-field" placeholder="Nome" autocomplete="new-password" role="presentation" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true">
+        </div>
+        <div class="modal-actions">
+            <button class="btn btn-text" onclick="EntityModal.closeUI()">Cancelar</button>
+            <button class="btn btn-filled" onclick="EntityModal.save()">Guardar</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="logModal">
+    <div class="modal-content">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <h2 id="logModalTitle">Registar Evento</h2>
+            <i class="material-icons action-icon danger" id="logModalDeleteBtn" onclick="LogModal.delete()" style="display:none;">delete</i>
+        </div>
+        
+        <div class="input-group" id="logLinkContainer">
+            <label style="font-size: 13px; font-weight: 500; color: var(--on-surface-variant); margin-bottom: 8px; display: block;">Vincular a:</label>
+            <input type="text" id="logLinkInput" name="q_log_link" class="input-field" placeholder="Buscar entidade primária..." autocomplete="new-password" role="presentation" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" onfocus="LogModal.searchLinks()" oninput="LogModal.searchLinks()">
+            <div id="logLinkAutocomplete" class="autocomplete-dropdown"></div>
+            <div id="logLinkPills" class="pills-container" style="margin-top: 12px;"></div>
+        </div>
+
+        <div class="input-group">
+            <textarea id="logText" name="q_log_text" class="input-field" placeholder="Descreva o andamento, evento ou observação..." autocomplete="new-password" role="presentation" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true"></textarea>
+        </div>
+        
+        <div class="input-group" style="display: flex; gap: 8px;">
+            <label class="upload-btn" style="flex: 1;">
+                <i class="material-icons">photo_camera</i> Mídia
+                <input type="file" id="logCam" class="hidden-file" accept="image/*,video/*" capture="environment" multiple>
+            </label>
+            <label class="upload-btn" style="flex: 1;">
+                <i class="material-icons">folder</i> Ficheiro
+                <input type="file" id="logGal" class="hidden-file" accept="image/*,application/pdf,video/*" multiple>
+            </label>
+        </div>
+        <div class="form-preview-container" id="logPreviewContainer">
+            <div id="logMediaWrapper" style="width: 100%;"></div>
+        </div>
+        <div class="modal-actions">
+            <button class="btn btn-text" onclick="LogModal.closeUI()">Cancelar</button>
+            <button class="btn btn-filled" id="logSaveBtn" onclick="LogModal.save()">Guardar Registo</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="taskCreateModal">
+    <div class="modal-content">
+        <h2>Nova Tarefa de Serviço</h2>
+        <div class="input-group" style="margin-top: 16px;">
+            <input type="text" id="taskNameInput" name="q_task_name" class="input-field" placeholder="Nome da Tarefa (Ex: Desmontagem)" autocomplete="new-password" role="presentation" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true">
+        </div>
+        <div class="modal-actions">
+            <button class="btn btn-text" onclick="TaskModal.closeUI()">Cancelar</button>
+            <button class="btn btn-filled" onclick="TaskModal.save()">Criar Tarefa</button>
+        </div>
+    </div>
+</div>
+
+<div class="carousel-overlay" id="carouselModal">
+    <div class="carousel-header">
+        <div style="color: white; font-size: 13px; font-weight:bold; margin-top: 8px; text-shadow: 1px 1px 2px black;" id="carouselSizeIndicator"></div>
+        <div class="carousel-actions-global">
+            <div class="carousel-btn edit" id="carouselEditBtn" onclick="CarouselModal.editCurrent()"><i class="material-icons">edit</i></div>
+            <div class="carousel-btn delete" id="carouselDeleteBtn" onclick="CarouselModal.deleteCurrent()"><i class="material-icons" style="color:var(--danger)">delete</i></div>
+        </div>
+        <i class="material-icons action-icon" style="color:white; font-size:32px;" onclick="CarouselModal.closeUI()">close</i>
+    </div>
+    <div class="carousel-nav-btn left" id="carouselNavLeft" onclick="CarouselModal.prev()"><i class="material-icons">chevron_left</i></div>
+    <div class="carousel-nav-btn right" id="carouselNavRight" onclick="CarouselModal.next()"><i class="material-icons">chevron_right</i></div>
+    <div class="carousel-container" id="carouselContainer"></div>
+</div>
+
+<div class="editor-overlay" id="editorOverlay" onclick="document.getElementById('colorPopup').classList.remove('show')">
+    <div class="canvas-container" id="canvasContainer">
+        <div class="editor-hint" id="editorHint">Desenhe livremente na imagem</div>
+        <div class="canvas-wrapper">
+            <canvas id="mainCanvas"></canvas>
+            <div id="textOverlay"></div>
+        </div>
+    </div>
+    
+    <div id="colorPopup" class="color-popup">
+        <div class="color-dot" style="background-color: #ff3333" onclick="event.stopPropagation(); Editor.setColor('#ff3333')"></div>
+        <div class="color-dot" style="background-color: #33cc33" onclick="event.stopPropagation(); Editor.setColor('#33cc33')"></div>
+        <div class="color-dot" style="background-color: #3366ff" onclick="event.stopPropagation(); Editor.setColor('#3366ff')"></div>
+        <div class="color-dot" style="background-color: #ffff33" onclick="event.stopPropagation(); Editor.setColor('#ffff33')"></div>
+        <div class="color-dot" style="background-color: #ffffff" onclick="event.stopPropagation(); Editor.setColor('#ffffff')"></div>
+        <div class="color-dot" style="background-color: #000000" onclick="event.stopPropagation(); Editor.setColor('#000000')"></div>
+    </div>
+
+    <div class="editor-toolbar" onclick="event.stopPropagation()">
+        <button class="tool-btn" onclick="Editor.closeUI()"><i class="material-icons">close</i></button>
+        <div class="editor-sep"></div>
+        <button class="tool-btn active" id="btnPen" onclick="Editor.setTool('pen')"><i class="material-icons">edit</i></button>
+        <button class="tool-btn" id="btnText" onclick="Editor.setTool('text')"><i class="material-icons">text_fields</i></button>
+        <div class="editor-sep"></div>
+        
+        <div class="color-palette-container">
+            <div id="activeColorBtn" class="active-color-dot" style="background-color: #ff3333;" onclick="event.preventDefault(); event.stopPropagation(); document.getElementById('colorPopup').classList.toggle('show');"></div>
+        </div>
+        
+        <div class="editor-sep"></div>
+        <input type="range" id="editorSize" class="size-slider" min="2" max="9" step="0.5" value="3">
+        <div class="editor-sep"></div>
+        <button class="tool-btn" onclick="Editor.undo()"><i class="material-icons">undo</i></button>
+        <button class="tool-btn" onclick="Editor.save()" style="background: var(--primary); color: var(--on-primary); margin-left: auto;"><i class="material-icons">check</i></button>
+    </div>
+</div>
+
+<script>
+// --- INICIALIZAÇÃO DO DEXIE ---
+const AppDB = new Dexie('OraculoP31');
+AppDB.version(1).stores({ entities: 'id, type, name, parentId, createdAt', logs: 'id, originEntityId' });
+
+// --- CORE UTILS & STATE MANAGEMENT ---
+var AppState = {
+    modals: [],
+    openModal: function(modalObj) { modalObj.el.classList.add('active'); this.modals.push(modalObj); history.pushState({ modalId: modalObj.el.id }, ''); },
+    closeModalUI: function() { if(this.modals.length > 0) history.back(); },
+    handlePopState: function(e) {
+        if (this.modals.length > 0) { let m = this.modals.pop(); m.el.classList.remove('active'); if(m.onHardwareBack) m.onHardwareBack(); } 
+        else if (App.currentView !== 'home') { App.goBack(true); }
+    }
+};
+window.addEventListener('popstate', (e) => AppState.handlePopState(e));
+
+var CustomDialog = {
+    el: document.getElementById('customDialogModal'), titleEl: document.getElementById('customDialogTitle'),
+    msgEl: document.getElementById('customDialogMessage'), inputContainer: document.getElementById('customDialogInputContainer'),
+    inputEl: document.getElementById('customDialogInput'), btnCancel: document.getElementById('customDialogCancel'),
+    btnConfirm: document.getElementById('customDialogConfirm'), copyableEl: document.getElementById('customDialogCopyable'),
+    resolvePromise: null,
+    show: function(title, message, type, defaultValue = '', copyText = '') {
+        return new Promise((resolve) => {
+            this.titleEl.innerText = title || 'Aviso'; this.msgEl.innerHTML = message;
+            this.inputContainer.style.display = type === 'prompt' ? 'block' : 'none';
+            if (type === 'prompt') this.inputEl.value = defaultValue;
+            
+            if (copyText) {
+                this.copyableEl.style.display = 'block';
+                this.copyableEl.value = copyText;
+            } else {
+                this.copyableEl.style.display = 'none';
+            }
+
+            this.btnCancel.style.display = (type === 'confirm' || type === 'prompt') ? 'block' : 'none';
+            this.btnConfirm.style.display = 'block'; 
+            this.resolvePromise = resolve;
+            this.btnConfirm.onclick = () => { AppState.closeModalUI(); this.resolvePromise(type === 'prompt' ? this.inputEl.value : true); this.resolvePromise = null; };
+            this.btnCancel.onclick = () => { AppState.closeModalUI(); this.resolvePromise(type === 'prompt' ? null : false); this.resolvePromise = null; };
+            AppState.openModal(this);
+            if (type === 'prompt') setTimeout(() => this.inputEl.focus(), 100);
+        });
+    },
+    onHardwareBack: function() { if(this.resolvePromise) { this.resolvePromise(this.inputContainer.style.display === 'block' ? null : false); this.resolvePromise = null; } },
+    alert: function(message, title, copyText = '') { return this.show(title, message, 'alert', '', copyText); },
+    confirm: function(message, title) { return this.show(title, message, 'confirm'); },
+    prompt: function(message, defaultValue, title) { return this.show(title, message, 'prompt', defaultValue); }
+};
+
+var MenuModal = {
+    el: document.getElementById('mainMenu'),
+    open: function() { this.el.classList.add('show'); AppState.modals.push(this); history.pushState({ modalId: 'mainMenu' }, ''); },
+    closeUI: function() { AppState.closeModalUI(); },
+    onHardwareBack: function() { this.el.classList.remove('show'); }
+};
+window.addEventListener('click', (e) => { const menu = document.getElementById('mainMenu'); if (menu && menu.classList.contains('show') && !e.target.closest('#menuWrapper')) { MenuModal.closeUI(); } });
+
+const MODULE_MAPPING = { 'servico':['Serviços','handyman'], 'equipamento':['Equipamentos','precision_manufacturing'], 'pessoa':['Pessoas','people'], 'documento':['Documentos','description'], 'auditoria':['Auditorias','verified_user'], 'material':['Materiais','inventory_2'], 'tarefa':['Tarefa','assignment'] };
+
+var AppUtils = {
+    getPdfName: function(base64Str, defaultName = "Documento PDF") { if(!base64Str) return defaultName; const match = base64Str.match(/name=([^;]+);/); return match ? decodeURIComponent(match[1]) : defaultName; },
+    formatDate: function(ts) { if (!ts) return ""; const d = new Date(ts); return `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear().toString().slice(-2)} ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`; },
+    highlight: function(text, term) { if (!term) return text; const regex = new RegExp(`(${term})`, 'gi'); return text.replace(regex, '<mark class="highlight">$1</mark>'); },
+    
+    compressVideo: async function(file, onProgress) {
+        return new Promise((resolve, reject) => {
+            const video = document.createElement('video');
+            video.muted = false; 
+            video.setAttribute('playsinline', ''); 
+            video.style.display = 'none';
+            document.body.appendChild(video);
+            
+            video.onloadedmetadata = () => {
+                const stream = video.captureStream();
+                const audioTracks = stream.getAudioTracks();
+                
+                const canvas = document.createElement('canvas');
+                const MAX = 480; 
+                let w = video.videoWidth, h = video.videoHeight;
+                if (w > MAX) { h = Math.floor(h * (MAX / w)); w = MAX; }
+                canvas.width = w; canvas.height = h;
+                const ctx = canvas.getContext('2d');
+                
+                const canvasStream = canvas.captureStream(10);
+                const combinedStream = new MediaStream([
+                    canvasStream.getVideoTracks()[0],
+                    ...audioTracks
+                ]);
+
+                const recorder = new MediaRecorder(combinedStream, { mimeType: 'video/webm;codecs=vp8,opus', videoBitsPerSecond: 600000 });
+                const chunks = [];
+                recorder.ondataavailable = e => chunks.push(e.data);
+                recorder.onstop = async () => {
+                    document.body.removeChild(video);
+                    const blob = new Blob(chunks, { type: 'video/webm' });
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                        const thumbCanvas = document.createElement('canvas');
+                        thumbCanvas.width = 100; thumbCanvas.height = 100;
+                        thumbCanvas.getContext('2d').drawImage(video, 0, 0, 100, 100);
+                        resolve({ video: reader.result, thumb: thumbCanvas.toDataURL('image/jpeg'), size: blob.size });
+                    };
+                    reader.readAsDataURL(blob);
+                };
+
+                recorder.start();
+                video.play();
+                
+                const draw = () => {
+                    if (video.paused || video.ended) { recorder.stop(); return; }
+                    ctx.drawImage(video, 0, 0, w, h);
+                    if(onProgress) onProgress(Math.round((video.currentTime / video.duration) * 100));
+                    requestAnimationFrame(draw);
+                };
+                draw();
+            };
+            video.onerror = () => { document.body.removeChild(video); reject("Erro ao carregar vídeo"); };
+            video.src = URL.createObjectURL(file);
+        });
+    }
+};
+
+async function processMultipleMedia(files, onProgress, callback) {
+    if (!files || files.length === 0) return callback([]);
+    let processedArray = [];
+    for(let file of files) {
+        let captureTime = Date.now(); 
+        if (file.type === 'application/pdf') {
+            let customName = await CustomDialog.prompt("Nome curto para este PDF:", file.name, "Nome do Arquivo");
+            if (!customName) customName = file.name;
+            const encodedName = encodeURIComponent(customName);
+            const reader = new FileReader();
+            await new Promise((resolve) => { 
+                reader.onload = (e) => { 
+                    let base64 = e.target.result.replace('data:application/pdf;base64,', `data:application/pdf;name=${encodedName};base64,`); 
+                    processedArray.push({ data: base64, size: base64.length * 0.75, createdAt: captureTime, updatedAt: captureTime }); 
+                    resolve(); 
+                }; 
+                reader.readAsDataURL(file); 
+            });
+        } else if (file.type.startsWith('video/')) {
+            const result = await AppUtils.compressVideo(file, onProgress);
+            if (result.video) {
+                processedArray.push({ data: result.video, thumbnail: result.thumb, size: result.size, isVideo: true, createdAt: captureTime, updatedAt: captureTime });
+            }
+        } else if (file.type.startsWith('image/')) {
+            if (file.size <= 250 * 1024) { 
+                const reader = new FileReader();
+                await new Promise((resolve) => {
+                    reader.onload = (e) => {
+                        processedArray.push({ data: e.target.result, size: file.size, createdAt: captureTime, updatedAt: captureTime }); 
+                        resolve();
+                    };
+                    reader.readAsDataURL(file);
+                });
+            } else {
+                const reader = new FileReader();
+                await new Promise((resolve) => {
+                    reader.onload = (e) => {
+                        const img = new Image();
+                        img.onload = () => {
+                            const canvas = document.createElement('canvas'); const MAX_SIZE = 800; 
+                            let width = img.width, height = img.height;
+                            if (width > height) { if (width > MAX_SIZE) { height *= MAX_SIZE / width; width = MAX_SIZE; } } else { if (height > MAX_SIZE) { width *= MAX_SIZE / height; height = MAX_SIZE; } }
+                            canvas.width = width; canvas.height = height; canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+                            let b64 = canvas.toDataURL('image/jpeg', 0.6); 
+                            processedArray.push({ data: b64, size: b64.length * 0.75, createdAt: captureTime, updatedAt: captureTime }); resolve();
+                        }; img.src = e.target.result;
+                    }; reader.readAsDataURL(file);
+                });
+            }
+        }
+    }
+    callback(processedArray);
+}
+
+function renderStackedDeckHTML(images, logId) {
+    if (!images || images.length === 0) return '';
+    let clickHandler = `CarouselModal.open('${logId}')`;
+    let pdfCount = images.filter(img => img.data && img.data.startsWith('data:application/pdf')).length;
+    let countLabel = `+${images.length - 1}`; if (pdfCount > 0) countLabel += ` (${pdfCount} PDF)`;
+
+    if (images.length === 1) {
+        let img = images[0];
+        if (img.isPlaceholder) return `<div class="pdf-preview deck-photo" style="position:relative; left:0; width:100%; height:auto; min-height:140px; background:#111;"><i class="material-icons" style="font-size:48px; color:var(--primary); animation: spin 1s linear infinite;">sync</i><span id="video-progress-text" style="font-size: 13px; margin-top: 8px; color:var(--primary); font-weight:bold;">A processar: 0%</span></div>`;
+        if (img.data.startsWith('data:application/pdf')) return `<div class="pdf-preview deck-photo" style="position:relative; left:0; width:100%; height:auto; min-height:140px; padding:12px;" onclick="${clickHandler}"><i class="material-icons" style="font-size:32px;">picture_as_pdf</i><span style="font-size: 13px; margin-top: 8px; text-align:center;">${AppUtils.getPdfName(img.data)}</span></div>`;
+        else if (img.isVideo || img.data.startsWith('data:video/')) return `<div class="pdf-preview deck-photo" style="position:relative; left:0; width:100%; height:auto; min-height:140px; background: url('${img.thumbnail || ''}') center/cover;" onclick="${clickHandler}"><div style="background:rgba(0,0,0,0.5); width:100%; height:100%; min-height:140px; display:flex; flex-direction:column; align-items:center; justify-content:center;"><i class="material-icons" style="font-size:48px; color:#fff;">play_circle_outline</i></div></div>`;
+        else return `<img src="${img.data}" class="image-preview" onclick="${clickHandler}" style="margin:0;">`;
+    } else {
+        const photosHtml = images.slice(0, 3).map(img => {
+            if (img.isPlaceholder) return `<div class="pdf-preview deck-photo" style="background:#111;"><i class="material-icons" style="font-size:24px; color:var(--primary); animation: spin 1s linear infinite;">sync</i></div>`;
+            if (img.data.startsWith('data:application/pdf')) return `<div class="pdf-preview deck-photo"><i class="material-icons" style="font-size:24px;">picture_as_pdf</i><span style="font-size:9px; margin-top:4px;">PDF</span></div>`;
+            else if (img.isVideo || img.data.startsWith('data:video/')) return `<div class="pdf-preview deck-photo" style="background: url('${img.thumbnail || ''}') center/cover;"><div style="background:rgba(0,0,0,0.5); width:100%; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center;"><i class="material-icons" style="font-size:24px; color:#fff;">play_circle_outline</i></div></div>`;
+            return `<img src="${img.data}" class="deck-photo">`;
+        }).join('');
+        let countHtml = `<div style="position: absolute; bottom: 8px; right: 18px; background: rgba(0,0,0,0.7); color:white; padding: 4px 8px; border-radius: 12px; font-size:12px; z-index: 4; font-weight:bold;">${countLabel}</div>`;
+        return `<div class="stacked-deck" onclick="${clickHandler}">${photosHtml}${countHtml}</div>`;
+    }
+}
+
+// --- MAIN APPLICATION LOGIC ---
+var App = {
+    currentView: 'home', moduleType: null, moduleName: null, moduleIcon: null, currentEntityId: null, searchFocusTerm: '',
+    searchTimeout: null, currentSearchId: 0, 
+    expandedTasks: new Set(JSON.parse(localStorage.getItem('OraculoExpandedTasks') || '[]')),
+    expandedGroups: new Set(JSON.parse(localStorage.getItem('OraculoExpandedGroups') || '[]')),
+    storageDetails: { videos: 0, images: 0, pdfs: 0, messages: 0 },
+    currentAuthor: null, macAddress: null,
+
+    init: async function() {
+        let mac = localStorage.getItem('oraculo_device_mac');
+        if (!mac) {
+            mac = 'mac_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            localStorage.setItem('oraculo_device_mac', mac);
+        }
+        this.macAddress = mac;
+        let authorEntity = await AppDB.entities.get(mac);
+        if (!authorEntity) {
+            setTimeout(async () => {
+                let authorName = await CustomDialog.prompt("Qual o seu nome?", "", "Identificação de Autor");
+                if (authorName && authorName.trim()) {
+                    this.currentAuthor = authorName.trim();
+                    await AppDB.entities.put({ id: mac, type: 'device', name: this.currentAuthor, createdAt: Date.now(), updatedAt: Date.now(), parentId: null });
+                } else {
+                    this.currentAuthor = null;
+                }
+            }, 500);
+        } else {
+            this.currentAuthor = authorEntity.name;
+        }
+        this.goHome(); this.calculateStorage();
+        this.startAutoSyncCheck();
+    },
+
+    startAutoSyncCheck: function() {
+        setInterval(async () => {
+            if (!navigator.onLine) return;
+            try {
+                const prefix = "oraculo_sync_master";
+                const res = await fetch(`/api/backup?action=masterDate&prefix=${prefix}&ts=${Date.now()}`, { cache: 'no-store' });
+                if (res.ok) {
+                    const resText = await res.text();
+                    let data;
+                    try {
+                        data = JSON.parse(resText);
+                    } catch (parseErr) {
+                        return; // Silently handle proxy/firewall intercepts during background check
+                    }
+                    if (data && data.uploadedAt) {
+                        const lastSync = localStorage.getItem('oraculo_last_master_uploaded_at');
+                        const syncBtn = document.getElementById('syncIconBtn');
+                        if (syncBtn) {
+                            if (!lastSync || new Date(data.uploadedAt) > new Date(lastSync)) {
+                                syncBtn.classList.add('sync-highlight');
+                            } else {
+                                syncBtn.classList.remove('sync-highlight');
+                            }
+                        }
+                    }
+                }
+            } catch (e) {
+                // Silently fail, it's a background process
+            }
+        }, 30000); // 30 seconds
+    },
+    
+    saveExpandedState: function() {
+        localStorage.setItem('OraculoExpandedGroups', JSON.stringify(Array.from(this.expandedGroups)));
+    },
+    
+    saveExpandedTasksState: function() {
+        localStorage.setItem('OraculoExpandedTasks', JSON.stringify(Array.from(this.expandedTasks)));
+    },
+    
+    calculateStorage: async function() {
+        try {
+            let details = { videos: 0, images: 0, pdfs: 0, messages: 0 };
+
+            await AppDB.entities.each(e => {
+                if (e.isDeleted) return;
+                details.messages += JSON.stringify(e).length;
+            });
+            await AppDB.logs.each(l => {
+                if (l.isDeleted) return;
+                let logClone = { ...l };
+                delete logClone.images;
+                details.messages += JSON.stringify(logClone).length;
+
+                if (l.images) {
+                    l.images.forEach(img => {
+                        let itemSize = img.size ? img.size : (img.data ? Math.round(img.data.length * 0.75) : 0);
+
+                        if (img.isVideo || (img.data && img.data.startsWith('data:video/'))) {
+                            details.videos += itemSize;
+                        } else if (img.data && img.data.startsWith('data:application/pdf')) {
+                            details.pdfs += itemSize;
+                        } else {
+                            details.images += itemSize;
+                        }
+                    });
+                }
+            });
+
+            this.storageDetails = details;
+            let totalBytes = details.videos + details.images + details.pdfs + details.messages;
+            let mb = (totalBytes / 1024 / 1024).toFixed(2);
+
+            const footer = document.getElementById('storageFooterText');
+            if(footer) footer.innerText = `${mb} MB utilizados`;
+        } catch(e) {}
+    },
+
+    showStorageDetails: function() {
+        const mb = (bytes) => (bytes / 1024 / 1024).toFixed(2);
+        const msg = `Vídeos: ${mb(this.storageDetails.videos)} MB<br>Imagens: ${mb(this.storageDetails.images)} MB<br>PDFs: ${mb(this.storageDetails.pdfs)} MB<br>Mensagens: ${mb(this.storageDetails.messages)} MB`;
+        CustomDialog.alert(msg, "Detalhes de Armazenamento");
+    },
+
+    toggleMenu: (e) => { e.stopPropagation(); const menu = document.getElementById('mainMenu'); if (menu.classList.contains('show')) MenuModal.closeUI(); else MenuModal.open(); },
+    
+    toggleLogGroup: function(groupId, event) {
+        if(event) event.stopPropagation();
+        const el = document.getElementById(groupId);
+        if(el) {
+            el.classList.toggle('collapsed');
+            const isCollapsed = el.classList.contains('collapsed');
+            
+            if (isCollapsed) {
+                App.expandedGroups.delete(groupId);
+            } else {
+                App.expandedGroups.add(groupId);
+            }
+            App.saveExpandedState();
+            
+            const icon = el.querySelector('.group-toggle-icon');
+            if(icon) {
+                icon.innerText = isCollapsed ? 'expand_more' : 'expand_less';
+            }
+        }
+    },
+
+    toggleAllLogGroups: function(entityId) {
+        const entityEl = document.getElementById('entity-' + entityId);
+        if (!entityEl) return;
+        const groups = entityEl.querySelectorAll('.log-item-group');
+        if (groups.length === 0) return;
+        
+        let allAreCollapsed = true;
+        groups.forEach(g => {
+            if (!g.classList.contains('collapsed')) {
+                allAreCollapsed = false;
+            }
+        });
+        
+        groups.forEach(g => {
+            if (allAreCollapsed) {
+                g.classList.remove('collapsed');
+                App.expandedGroups.add(g.id);
+            } else {
+                g.classList.add('collapsed');
+                App.expandedGroups.delete(g.id);
+            }
+            let icon = g.querySelector('.group-toggle-icon');
+            if (icon) {
+                icon.innerText = allAreCollapsed ? 'expand_less' : 'expand_more';
+            }
+        });
+        App.saveExpandedState();
+    },
+    syncCloud: async function() {
+        if(!navigator.onLine) { 
+            await CustomDialog.alert("Verifique a sua ligação à internet. Será gerado um backup local offline.", "Sem ligação"); 
+            this.exportToLocal(true, "Sem ligação à internet");
+            return; 
+        }
+        if(!await CustomDialog.confirm("Iniciar sincronização otimizada com a nuvem? Isso ocorrerá em segundo plano.", "Sincronizar")) return;
+
+        const prefix = "oraculo_sync_master";
+        const macAddress = localStorage.getItem('oraculo_device_mac');
+        const authorSuffix = this.currentAuthor ? " (sistema sendo sincronizado por " + this.currentAuthor + ")" : "";
+        
+        let syncIndicator = document.getElementById('syncIndicator');
+        if (!syncIndicator) {
+            syncIndicator = document.createElement('div');
+            syncIndicator.id = 'syncIndicator';
+            syncIndicator.style.cssText = 'position: relative; width: 100%; background: var(--primary); color: var(--on-primary); text-align: center; font-size: 12px; font-weight: bold; padding: 4px; z-index: 9999; box-shadow: 0 2px 4px rgba(0,0,0,0.5); flex-shrink: 0;';
+            document.querySelector('.container').prepend(syncIndicator);
+        }
+        syncIndicator.style.display = 'block';
+        syncIndicator.innerText = "A iniciar..." + authorSuffix;
+        
+        try {
+            // 1. Lock the sync
+            const startRes = await fetch(`/api/backup`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'startSync', prefix: prefix, macAddress: macAddress, authorName: this.currentAuthor })
+            });
+            if (!startRes.ok) {
+                let errText = await startRes.text();
+                try { errText = JSON.parse(errText).error; } catch(e){}
+                throw new Error(errText || "Não foi possível iniciar a sincronização.");
+            }
+
+            // 2. Fetch Index
+            syncIndicator.innerText = "A obter índice..." + authorSuffix;
+            const indexRes = await fetch(`/api/backup?action=index&prefix=${prefix}&ts=${Date.now()}`);
+            if(!indexRes.ok) throw new Error("Falha ao obter índice da nuvem.");
+            const indexResText = await indexRes.text();
+            let remoteIndex;
+            try {
+                remoteIndex = JSON.parse(indexResText);
+            } catch (e) {
+                throw new Error("A resposta do índice é inválida. A firewall pode estar a bloquear o tráfego.");
+            }
+            
+            syncIndicator.innerText = "A analisar..." + authorSuffix;
+            
+            const toDownloadIds = { entities: [], logs: [] };
+            let changesSent = 0;
+            let changesReceived = 0;
+            let uploadedPartUrls = [];
+
+            const remoteEntitiesMap = new Map();
+            if(remoteIndex.entities) remoteIndex.entities.forEach(r => remoteEntitiesMap.set(r.id, r));
+
+            const remoteLogsMap = new Map();
+            if(remoteIndex.logs) remoteIndex.logs.forEach(r => remoteLogsMap.set(r.id, r));
+
+            const CHUNK_SIZE = 3 * 1024 * 1024; // 3 MB chunks to allow larger single files while staying under 4.5MB Vercel limit
+            let currentChunk = { entities: [], logs: [] };
+            let currentChunkSize = 20; // estimate JSON bracket size overhead
+            let chunkIndex = 0;
+
+            let chunksToUpload = [];
+
+            const pushCurrentChunk = () => {
+                if (currentChunk.entities.length > 0 || currentChunk.logs.length > 0) {
+                    chunksToUpload.push(currentChunk);
+                }
+                currentChunk = { entities: [], logs: [] };
+                currentChunkSize = 20;
+            };
+
+            // Stream items to upload to prevent OOM
+            const entityKeys = await AppDB.entities.toCollection().primaryKeys();
+            for (const key of entityKeys) {
+                const lItem = await AppDB.entities.get(key);
+                if (!lItem) continue;
+                const rItem = remoteEntitiesMap.get(lItem.id);
+                const lTime = lItem.updatedAt || lItem.createdAt || 0;
+                if (!rItem || lTime > (rItem.updatedAt || 0)) {
+                    const strSize = JSON.stringify(lItem).length;
+                    // If a single item is larger than CHUNK_SIZE, send the current chunk first, then put this item in its own chunk
+                    if (currentChunkSize + strSize > CHUNK_SIZE && currentChunkSize > 20) {
+                        pushCurrentChunk();
+                    }
+                    currentChunk.entities.push(lItem);
+                    currentChunkSize += strSize + 1;
+                    changesSent++;
+                    // If the item itself exceeds chunk size, force an upload immediately after adding it
+                    if (currentChunkSize > CHUNK_SIZE) {
+                        pushCurrentChunk();
+                    }
+                }
+            }
+
+            const logKeys = await AppDB.logs.toCollection().primaryKeys();
+            for (const key of logKeys) {
+                const lItem = await AppDB.logs.get(key);
+                if (!lItem) continue;
+                const rItem = remoteLogsMap.get(lItem.id);
+                const lTime = lItem.updatedAt || lItem.createdAt || 0;
+                if (!rItem || lTime > (rItem.updatedAt || 0)) {
+                    const strSize = JSON.stringify(lItem).length;
+                    if (currentChunkSize + strSize > CHUNK_SIZE && currentChunkSize > 20) {
+                        pushCurrentChunk();
+                    }
+                    currentChunk.logs.push(lItem);
+                    currentChunkSize += strSize + 1;
+                    changesSent++;
+                    if (currentChunkSize > CHUNK_SIZE) {
+                        pushCurrentChunk();
+                    }
+                }
+            }
+
+            // Upload the last pending chunk
+            pushCurrentChunk();
+
+            const totalChunks = chunksToUpload.length;
+            for (let i = 0; i < totalChunks; i++) {
+                syncIndicator.innerText = `Parte ${i + 1}/${totalChunks}` + authorSuffix;
+                const chunkData = chunksToUpload[i];
+                const chunkFileName = `${prefix}_part_${macAddress}_${i}.json`;
+                const chunkStr = JSON.stringify(chunkData);
+
+                const uploadRes = await fetch(`/api/backup?action=uploadChunk&filename=${chunkFileName}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/octet-stream' },
+                    body: chunkStr
+                });
+
+                if(!uploadRes.ok) {
+                    throw new Error(`Falha ao enviar pacote ${i+1}`);
+                }
+
+                let uploadData;
+                try {
+                    const uploadResText = await uploadRes.text();
+                    uploadData = JSON.parse(uploadResText);
+                } catch (e) {
+                    throw new Error(`A resposta do envio do pacote ${i+1} é inválida. A firewall pode estar a bloquear o tráfego.`);
+                }
+
+                if (uploadData && uploadData.url) {
+                    uploadedPartUrls.push(uploadData.url);
+                } else {
+                    throw new Error(`Resposta de sucesso falso (sem URL) detectada no pacote ${i+1}. A firewall pode estar a bloquear o tráfego.`);
+                }
+
+                await new Promise(r => setTimeout(r, 50));
+            }
+
+            // Verify chunks are fully propagated on CDN before finalizing
+            if (uploadedPartUrls.length > 0) {
+                syncIndicator.innerText = "A propagar..." + authorSuffix;
+                for (let url of uploadedPartUrls) {
+                    let attempts = 0;
+                    let verified = false;
+                    while (attempts < 15 && !verified) {
+                        try {
+                            const vRes = await fetch(url + '?ts=' + Date.now(), { cache: 'no-store' });
+                            if (vRes.ok) {
+                                const text = await vRes.text();
+                                try {
+                                    JSON.parse(text);
+                                    verified = true;
+                                } catch(e) { }
+                            }
+                        } catch(e) { }
+
+                        if (!verified) {
+                            attempts++;
+                            await new Promise(r => setTimeout(r, 2000));
+                        }
+                    }
+                    if (!verified) {
+                        throw new Error("Falha na propagação do fragmento na rede. Tente novamente em alguns instantes.");
+                    }
+                }
+            }
+
+            // Find missing local items
+            const localEntitiesMap = new Map();
+            await AppDB.entities.each(e => localEntitiesMap.set(e.id, e.updatedAt || e.createdAt || 0));
+            if(remoteIndex.entities) {
+                remoteIndex.entities.forEach(rItem => {
+                    const lTime = localEntitiesMap.get(rItem.id);
+                    const rTime = rItem.updatedAt || 0;
+                    if(lTime === undefined || rTime > lTime) {
+                        toDownloadIds.entities.push(rItem.id);
+                        changesReceived++;
+                    }
+                });
+            }
+
+            const localLogsMap = new Map();
+            await AppDB.logs.each(l => localLogsMap.set(l.id, l.updatedAt || l.createdAt || 0));
+            if(remoteIndex.logs) {
+                remoteIndex.logs.forEach(rItem => {
+                    const lTime = localLogsMap.get(rItem.id);
+                    const rTime = rItem.updatedAt || 0;
+                    if(lTime === undefined || rTime > lTime) {
+                        toDownloadIds.logs.push(rItem.id);
+                        changesReceived++;
+                    }
+                });
+            }
+            
+            if (changesSent === 0 && changesReceived === 0) {
+                syncIndicator.innerText = "A limpar..." + authorSuffix;
+                await fetch('/api/backup', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'cleanup', prefix: prefix, macAddress: macAddress })
+                });
+                syncIndicator.style.display = 'none';
+                await CustomDialog.alert("A aplicação já se encontrava totalmente atualizada. Nenhum fragmento trafegado.", "Sincronizado");
+                return;
+            }
+            
+            // 4. Finalize and Download
+            syncIndicator.innerText = "A finalizar..." + authorSuffix;
+            const syncRes = await fetch('/api/backup', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'finalizeSync',
+                    prefix: prefix,
+                    macAddress: macAddress,
+                    toDownloadIds: toDownloadIds,
+                    uploadedPartUrls: uploadedPartUrls
+                })
+            });
+
+            if(!syncRes.ok) {
+                let errText = await syncRes.text();
+                try { errText = JSON.parse(errText).error; } catch(e){}
+                throw new Error(errText || "Falha ao finalizar sincronização com o servidor.");
+            }
+            const syncResText = await syncRes.text();
+            let downloadedData;
+            try {
+                downloadedData = JSON.parse(syncResText);
+            } catch (e) {
+                throw new Error("A resposta de finalização é inválida. A firewall pode estar a bloquear o tráfego.");
+            }
+
+            syncIndicator.innerText = "A guardar..." + authorSuffix;
+            
+            await AppDB.transaction('rw', AppDB.entities, AppDB.logs, async () => {
+                if(downloadedData.entities && downloadedData.entities.length > 0) {
+                    await AppDB.entities.bulkPut(downloadedData.entities);
+                }
+                if(downloadedData.logs && downloadedData.logs.length > 0) {
+                    await AppDB.logs.bulkPut(downloadedData.logs);
+                }
+            });
+
+            syncIndicator.style.display = 'none';
+            if (downloadedData.uploadedAt) {
+                localStorage.setItem('oraculo_last_master_uploaded_at', downloadedData.uploadedAt);
+                const syncBtn = document.getElementById('syncIconBtn');
+                if (syncBtn) syncBtn.classList.remove('sync-highlight');
+            }
+
+            this.goHome();
+            
+            let msg = `Sincronização otimizada concluída com sucesso!
+
+📋 Resumo de tráfego:
+`;
+            if (changesReceived > 0) msg += `⬇️ ${changesReceived} fragmentos baixados
+`;
+            if (changesSent > 0) msg += `⬆️ ${changesSent} fragmentos enviados`;
+            
+            await CustomDialog.alert(msg.trim(), "Sincronizado");
+
+        } catch(e) {
+            if(syncIndicator) syncIndicator.style.display = 'none';
+
+            // Clean up lock file explicitly on failure
+            try {
+                await fetch('/api/backup', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'cleanup', prefix: prefix, macAddress: macAddress })
+                });
+            } catch (cleanupErr) {
+                console.error("Erro ao limpar trava após falha na sincronização", cleanupErr);
+            }
+
+            const rawErrorLog = `Name: ${e.name}
+Message: ${e.message}
+Stack: ${e.stack}`;
+            this.exportToLocal(true, e.message, rawErrorLog);
+        }
+    },
+
+
+
+    exportToLocal: async (isAutoBackup = false, errorMsg = "", rawErrorLog = "") => { 
+        if (typeof JSZip === 'undefined') { await CustomDialog.alert("Aguarde a biblioteca carregar.", "Aviso"); return; } 
+        
+        let isCancelled = false;
+        document.getElementById('progressModal').classList.add('active');
+        document.getElementById('progressTitle').innerText = isAutoBackup ? "Falha na Nuvem" : "A Gerar Ficheiro Local...";
+        document.getElementById('progressText').innerText = isAutoBackup ? "A gerar backup de segurança..." : "0%";
+        document.getElementById('progressCancelBtn').style.display = isAutoBackup ? 'none' : 'block';
+        document.getElementById('progressCancelBtn').onclick = () => { isCancelled = true; document.getElementById('progressModal').classList.remove('active'); };
+
+        try {
+            const zip = new JSZip(); 
+            const dump = { entities: await AppDB.entities.toArray(), logs: await AppDB.logs.toArray() }; 
+            zip.file("dados_oraculo.json", JSON.stringify(dump)); 
+            
+            const zipBlob = await zip.generateAsync({
+                type:"blob", 
+                compression: "DEFLATE", 
+                compressionOptions: { level: 9 }
+            }, function updateCallback(metadata) {
+                if(!isCancelled) document.getElementById('progressText').innerText = `A compactar: ${Math.round(metadata.percent)}%`;
+            });
+            
+            document.getElementById('progressModal').classList.remove('active');
+            if(isCancelled) return;
+
+            const filename = `backup_oraculo_${Date.now()}.zip`; 
+            const url = URL.createObjectURL(zipBlob); const a = document.createElement('a'); a.href = url; a.download = filename; 
+            document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); 
+            
+            if (isAutoBackup) {
+                let failReason = errorMsg === "Failed to fetch" || errorMsg.includes("NetworkError") ? "Sem ligação ou bloqueio de firewall" : errorMsg;
+                await CustomDialog.alert(`Não foi possível sincronizar com a nuvem (${failReason}). Um ficheiro de backup local (${filename}) foi gerado e baixado automaticamente.\n\nCopie o log técnico abaixo caso precise de suporte:`, "Sincronização Falhou", rawErrorLog);
+            } else {
+                await CustomDialog.alert(`Backup gerado: ${filename}`, "Sucesso");
+            }
+        } catch(e) {
+            document.getElementById('progressModal').classList.remove('active');
+            if(!isCancelled) CustomDialog.alert("Erro ao exportar: " + e.message, "Erro");
+        }
+    },
+
+    openPrintModal: function() {
+        const modal = document.getElementById('printReportModal');
+        const startInput = document.getElementById('printStartDate');
+        const endInput = document.getElementById('printEndDate');
+
+        const today = new Date().toISOString().split('T')[0];
+        endInput.value = today;
+
+        const savedStartDate = localStorage.getItem('OraculoPrintStartDate');
+        if (savedStartDate) {
+            startInput.value = savedStartDate;
+        } else {
+            const fourteenDaysAgo = new Date(Date.now() - (14 * 24 * 60 * 60 * 1000));
+            startInput.value = fourteenDaysAgo.toISOString().split('T')[0];
+        }
+
+        modal.classList.add('active');
+    },
+
+    executePrint: async function() {
+        const startInput = document.getElementById('printStartDate').value;
+        const endInput = document.getElementById('printEndDate').value;
+
+        if (!startInput || !endInput) {
+            CustomDialog.alert("Preencha ambas as datas.", "Aviso");
+            return;
+        }
+
+        localStorage.setItem('OraculoPrintStartDate', startInput);
+        document.getElementById('printReportModal').classList.remove('active');
+
+        document.getElementById('progressModal').classList.add('active');
+        document.getElementById('progressTitle').innerText = "A Gerar Relatório...";
+        document.getElementById('progressText').innerText = "A compilar os dados...";
+        document.getElementById('progressCancelBtn').style.display = 'block';
+
+        setTimeout(async () => {
+            try {
+                const startTime = new Date(startInput + "T00:00:00").getTime();
+                const endTime = new Date(endInput + "T23:59:59").getTime();
+                
+                const allEntities = (await AppDB.entities.toArray()).filter(e => !e.isDeleted);
+                const allLogsData = (await AppDB.logs.toArray()).filter(l => !l.isDeleted);
+                const allLogs = allLogsData.filter(l => l.createdAt >= startTime && l.createdAt <= endTime);
+                
+                if (allLogs.length === 0) {
+                    document.getElementById('progressModal').classList.remove('active');
+                    CustomDialog.alert("Nenhum registo no período selecionado.", "Aviso");
+                    return;
+                }
+                
+                const dataInicioStr = new Date(startTime).toLocaleDateString('pt-BR');
+                const dataFimStr = new Date(endTime).toLocaleDateString('pt-BR');
+                
+                let printArea = document.getElementById('printArea');
+                printArea.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; align-items:flex-end; border-bottom:2px solid #000; padding-bottom:10px; margin-bottom:20px;">
+                        <h1 style="font-size:24px; margin:0; text-transform:uppercase;">Relatório P-31</h1>
+                        <div style="font-size:12px; font-weight:bold;">Período: de ${dataInicioStr} até ${dataFimStr}</div>
+                    </div>
+                `;
+
+                const categories = Object.keys(MODULE_MAPPING);
+                
+                for (let catKey of categories) {
+                    let catName = MODULE_MAPPING[catKey][0];
+                    let entitiesInCat = allEntities.filter(e => e.type === catKey);
+                    
+                    let catHtml = '';
+                    let hasLogsInCat = false;
+
+                    for (let entity of entitiesInCat) {
+                        let logsOfEntity = allLogs.filter(l => l.relatedEntities.some(rel => rel.id === entity.id));
+                        
+                        if (logsOfEntity.length > 0) {
+                            hasLogsInCat = true;
+
+                            let logGroups = {};
+                            logsOfEntity.forEach(l => {
+                                let gId = l.groupId || l.id;
+                                if (!logGroups[gId]) logGroups[gId] = [];
+                                logGroups[gId].push(l);
+                            });
+
+                            let sortedGroups = Object.values(logGroups).sort((a, b) => {
+                                let maxA = Math.max(...a.map(l => l.createdAt));
+                                let maxB = Math.max(...b.map(l => l.createdAt));
+                                return maxB - maxA;
+                            });
+
+                            let logsHtml = '';
+                            for (let group of sortedGroups) {
+                                group.sort((a, b) => b.createdAt - a.createdAt);
+                                
+                                logsHtml += `<div class="print-log-group" style="border: 1px solid #dcdcdc; background: #ffffff; border-radius: 6px; margin-bottom: 16px; page-break-inside: avoid; box-shadow: 0 1px 3px rgba(0,0,0,0.1); overflow: hidden;">`;
+                                
+                                for (let i = 0; i < group.length; i++) {
+                                    let log = group[i];
+                                    let mediaHtml = '';
+                                    if (log.images && log.images.length > 0) {
+                                        mediaHtml = log.images.map(img => {
+                                            if(img.data.startsWith('data:application/pdf')) {
+                                                return `<div class="print-media-box"><div style="font-weight:bold; font-size:14px; color:#d32f2f;">PDF</div><div style="font-size:10px;word-break:break-all; text-align:center; margin-top:4px;">${AppUtils.getPdfName(img.data)}</div></div>`;
+                                            }
+                                            if(img.isVideo || img.data.startsWith('data:video/')) {
+                                                let thumbSrc = img.thumbnail || 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=';
+                                                return `
+                                                <div class="print-media-box" style="position:relative; display:inline-block;">
+                                                    <img src="${thumbSrc}" class="print-media-img" style="display:block;">
+                                                    <div class="play-overlay"><span style="color:#fff; font-size:18px;">&#9654;</span></div>
+                                                </div>`;
+                                            }
+                                            return `<div class="print-media-box"><img src="${img.data}" class="print-media-img"></div>`;
+                                        }).join('');
+                                    }
+
+                                    let borderBottom = i < group.length - 1 ? 'border-bottom: 1px solid #eee;' : '';
+
+                                    let authorDispPrint = log.authorName || 'N/A';
+                                    if (authorDispPrint.length > 15) authorDispPrint = authorDispPrint.substring(0, 15) + '...';
+                                    authorDispPrint = authorDispPrint.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+
+                                    logsHtml += `
+                                        <div class="print-log-item" style="padding: 12px; ${borderBottom} page-break-inside: avoid; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
+                                            <div class="print-header" style="font-size: 12px; color: #555; margin-bottom: 8px; font-weight: bold;">${AppUtils.formatDate(log.createdAt)} por ${authorDispPrint}</div>
+                                            <div class="print-text" style="font-size: 14px; margin-bottom: 12px; white-space: pre-wrap; word-break: break-word; color: #222;">${log.text || ''}</div>
+                                            ${mediaHtml ? `<div style="margin-top:8px;">${mediaHtml}</div>` : ''}
+                                        </div>
+                                    `;
+                                }
+                                logsHtml += `</div>`;
+                            }
+
+                            catHtml += `
+                                <div class="print-card" style="border: 2px solid #062e6f; border-radius: 8px; margin-bottom: 24px; page-break-inside: avoid; overflow: hidden; font-family: sans-serif;">
+                                    <div class="print-entity" style="background-color: #062e6f; color: #ffffff; padding: 12px 16px; margin: 0; font-size: 16px; font-weight: bold; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
+                                        ${entity.name}
+                                    </div>
+                                    <div style="padding: 16px; background-color: #f8f9fa; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
+                                        ${logsHtml}
+                                    </div>
+                                </div>
+                            `;
+                        }
+                    }
+
+                    if (hasLogsInCat) {
+                        printArea.innerHTML += `
+                            <div style="margin-top: 24px;">
+                                <h2 style="font-size:18px; color:#333; border-bottom:1px solid #ccc; padding-bottom:4px; margin-bottom:8px; text-transform:uppercase; page-break-after: avoid;">${catName}</h2>
+                                ${catHtml}
+                            </div>
+                        `;
+                    }
+                }
+                
+                let orphanLogs = allLogs.filter(l => !l.relatedEntities.some(rel => allEntities.some(e => e.id === rel.id)));
+                if (orphanLogs.length > 0) {
+                    
+                    let orphanLogGroups = {};
+                    orphanLogs.forEach(l => {
+                        let gId = l.groupId || l.id;
+                        if (!orphanLogGroups[gId]) orphanLogGroups[gId] = [];
+                        orphanLogGroups[gId].push(l);
+                    });
+
+                    let sortedOrphanGroups = Object.values(orphanLogGroups).sort((a, b) => {
+                        let maxA = Math.max(...a.map(l => l.createdAt));
+                        let maxB = Math.max(...b.map(l => l.createdAt));
+                        return maxB - maxA;
+                    });
+
+                    let orphanHtml = '';
+                    for (let group of sortedOrphanGroups) {
+                        group.sort((a, b) => b.createdAt - a.createdAt);
+                        
+                        orphanHtml += `<div class="print-log-group" style="border: 1px solid #dcdcdc; background: #ffffff; border-radius: 6px; margin-bottom: 16px; page-break-inside: avoid; box-shadow: 0 1px 3px rgba(0,0,0,0.1); overflow: hidden;">`;
+                        
+                        for (let i = 0; i < group.length; i++) {
+                            let log = group[i];
+                            let mediaHtml = '';
+                            if (log.images && log.images.length > 0) {
+                                mediaHtml = log.images.map(img => {
+                                    if(img.data.startsWith('data:application/pdf')) {
+                                        return `<div class="print-media-box"><div style="font-weight:bold; font-size:14px; color:#d32f2f;">PDF</div><div style="font-size:10px;word-break:break-all; text-align:center; margin-top:4px;">${AppUtils.getPdfName(img.data)}</div></div>`;
+                                    }
+                                    if(img.isVideo || img.data.startsWith('data:video/')) {
+                                        let thumbSrc = img.thumbnail || 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=';
+                                        return `
+                                        <div class="print-media-box" style="position:relative; display:inline-block;">
+                                            <img src="${thumbSrc}" class="print-media-img" style="display:block;">
+                                            <div class="play-overlay"><span style="color:#fff; font-size:18px;">&#9654;</span></div>
+                                        </div>`;
+                                    }
+                                    return `<div class="print-media-box"><img src="${img.data}" class="print-media-img"></div>`;
+                                }).join('');
+                            }
+                            
+                            let borderBottom = i < group.length - 1 ? 'border-bottom: 1px solid #eee;' : '';
+
+                            let authorDispOrphanPrint = log.authorName || 'N/A';
+                            if (authorDispOrphanPrint.length > 15) authorDispOrphanPrint = authorDispOrphanPrint.substring(0, 15) + '...';
+                            authorDispOrphanPrint = authorDispOrphanPrint.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+
+                            orphanHtml += `
+                                <div class="print-log-item" style="padding: 12px; ${borderBottom} page-break-inside: avoid; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
+                                    <div class="print-header" style="font-size: 12px; color: #555; margin-bottom: 8px; font-weight: bold;">${AppUtils.formatDate(log.createdAt)} por ${authorDispOrphanPrint}</div>
+                                    <div class="print-text" style="font-size: 14px; margin-bottom: 12px; white-space: pre-wrap; word-break: break-word; color: #222;">${log.text || ''}</div>
+                                    ${mediaHtml ? `<div style="margin-top:8px;">${mediaHtml}</div>` : ''}
+                                </div>
+                            `;
+                        }
+                        orphanHtml += `</div>`;
+                    }
+                    
+                    printArea.innerHTML += `
+                        <div style="margin-top: 24px;">
+                            <h2 style="font-size:18px; color:#333; border-bottom:1px solid #ccc; padding-bottom:4px; margin-bottom:8px; text-transform:uppercase; page-break-after: avoid;">Entidades Excluídas</h2>
+                            <div class="print-card" style="border: 2px solid #062e6f; border-radius: 8px; margin-bottom: 24px; page-break-inside: avoid; overflow: hidden; font-family: sans-serif;">
+                                <div class="print-entity" style="background-color: #062e6f; color: #ffffff; padding: 12px 16px; margin: 0; font-size: 16px; font-weight: bold; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
+                                    Geral
+                                </div>
+                                <div style="padding: 16px; background-color: #f8f9fa; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
+                                    ${orphanHtml}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                document.getElementById('progressModal').classList.remove('active');
+                setTimeout(() => window.print(), 500);
+            } catch(e) { 
+                document.getElementById('progressModal').classList.remove('active'); 
+                CustomDialog.alert("Erro: " + e.message, "Erro"); 
+            }
+        }, 100);
+    },
+
+    goHome: function() {
+        this.currentView = 'home';
+        document.getElementById('viewHome').classList.add('active'); document.getElementById('viewList').classList.remove('active');
+        document.getElementById('headerIcon').innerText = 'oil_barrel'; document.getElementById('headerText').innerText = 'Oráculo P-31';
+        document.getElementById('btnBack').style.display = 'none'; document.getElementById('headerVersion').style.display = 'inline';
+        
+        document.getElementById('homeSearchInput').value = '';
+        this.renderHomeSearch();
+        history.replaceState({ view: 'home' }, '');
+        this.calculateStorage();
+    },
+
+    renderHomeSearch: async function() {
+        this.currentSearchId++;
+        const searchId = this.currentSearchId;
+        const term = document.getElementById('homeSearchInput').value.toLowerCase().trim();
+        const grid = document.getElementById('homeGrid');
+        const list = document.getElementById('homeSearchList');
+        
+        if(!term) { grid.style.display = 'grid'; list.style.display = 'none'; return; }
+        
+        grid.style.display = 'none';
+        list.style.display = 'flex';
+        list.innerHTML = '<div class="empty-state"><i class="material-icons" style="animation: spin 1s linear infinite;">sync</i><p>Aguarde...</p></div>';
+
+        let resultList = [];
+        let allEntities = (await AppDB.entities.toArray()).filter(e => !e.isDeleted);
+        for(let e of allEntities) {
+            let matchesName = e.name.toLowerCase().includes(term);
+            let relatedLogs = await AppDB.logs.filter(l => !l.isDeleted && l.relatedEntities.some(rel => rel.id === e.id) && l.text && l.text.toLowerCase().includes(term)).toArray();
+            if(matchesName || relatedLogs.length > 0) resultList.push({ entity: e, logsMatched: relatedLogs });
+        }
+
+        if (this.currentSearchId !== searchId) return;
+
+        grid.style.display = 'none'; 
+        list.style.display = 'flex'; 
+        list.innerHTML = '';
+
+        if (resultList.length === 0) { list.innerHTML = `<div class="empty-state"><i class="material-icons">search_off</i><p>Nenhum resultado encontrado.</p></div>`; return; }
+
+        resultList.sort((a, b) => b.entity.createdAt - a.entity.createdAt).forEach(item => {
+            let e = item.entity; let modInfo = MODULE_MAPPING[e.type] || ['Desconhecido', 'help'];
+            let snippetsHtml = '';
+            if(item.logsMatched.length > 0) {
+                snippetsHtml = `<div class="search-snippets">`;
+                item.logsMatched.forEach(l => {
+                    let text = l.text; let idx = text.toLowerCase().indexOf(term);
+                    let start = Math.max(0, idx - 25); let end = Math.min(text.length, idx + term.length + 25);
+                    let snippet = text.substring(start, end).replace(/\n/g, ' ');
+                    snippetsHtml += `<div class="snippet-item">...${AppUtils.highlight(snippet, term)}...</div>`;
+                });
+                snippetsHtml += `</div>`;
+            }
+
+            list.innerHTML += `
+                <li class="task-item" style="cursor:pointer;" onclick="App.focusEntity('${e.id}', '${term}')">
+                    <div class="task-header" style="margin-bottom:4px;">
+                        <span class="task-title" style="font-size:15px;">${AppUtils.highlight(e.name, term)}</span>
+                    </div>
+                    <span class="module-link-badge" style="align-self:flex-start; margin-left:0; display:block; clear:both; margin-top:4px;">${modInfo[0]}</span>
+                    ${snippetsHtml}
+                </li>
+            `;
+        });
+    },
+
+    openModule: function(type, name, icon) {
+        this.currentView = 'list'; this.moduleType = type; this.moduleName = name; this.moduleIcon = icon;
+        document.getElementById('viewHome').classList.remove('active'); document.getElementById('viewList').classList.add('active');
+        document.getElementById('headerIcon').innerText = icon; document.getElementById('headerText').innerText = name;
+        document.getElementById('btnBack').style.display = 'inline-block'; document.getElementById('headerVersion').style.display = 'none';
+        document.getElementById('searchInput').value = ''; this.renderList(); history.pushState({ view: 'list' }, '');
+    },
+
+    focusEntity: async function(id, focusTerm = '', focusLogId = null) {
+        const entity = await AppDB.entities.get(id); if(!entity || entity.isDeleted) return;
+        this.searchFocusTerm = focusTerm;
+        
+        let targetModuleType = entity.type; let targetModuleName = MODULE_MAPPING[entity.type][0]; let targetModuleIcon = MODULE_MAPPING[entity.type][1];
+        if(entity.type === 'tarefa') {
+            const parent = await AppDB.entities.get(entity.parentId);
+            if(parent) { targetModuleType = 'servico'; targetModuleName = 'Serviços'; targetModuleIcon = 'handyman'; }
+        } else {
+            if(MODULE_MAPPING[entity.type]) { targetModuleType = entity.type; targetModuleName = MODULE_MAPPING[entity.type][0]; targetModuleIcon = MODULE_MAPPING[entity.type][1]; }
+        }
+
+        this.currentView = 'list'; this.moduleType = targetModuleType; this.moduleName = targetModuleName; this.moduleIcon = targetModuleIcon;
+        document.getElementById('viewHome').classList.remove('active'); document.getElementById('viewList').classList.add('active');
+        document.getElementById('headerIcon').innerText = targetModuleIcon; document.getElementById('headerText').innerText = targetModuleName;
+        document.getElementById('btnBack').style.display = 'inline-block'; document.getElementById('headerVersion').style.display = 'none';
+        
+        document.getElementById('searchInput').value = focusTerm;
+        await this.renderList(); 
+        history.pushState({ view: 'list' }, '');
+
+        setTimeout(() => {
+            const elId = focusLogId ? 'log-' + focusLogId : 'entity-' + id;
+            const el = document.getElementById(elId);
+            if (el) {
+                let groupEl = el.closest('.log-item-group');
+                if (groupEl && groupEl.classList.contains('collapsed')) {
+                    groupEl.classList.remove('collapsed');
+                    App.expandedGroups.add(groupEl.id);
+                    App.saveExpandedState();
+                    let icon = groupEl.querySelector('.group-toggle-icon');
+                    if (icon) icon.innerText = 'expand_less';
+                }
+
+                let parentList = el.closest('.log-list');
+                if(parentList && parentList.style.display === 'none') {
+                    parentList.style.display = 'flex';
+                    let taskId = parentList.id.replace('task-logs-', '');
+                    let iconEl = document.getElementById('task-icon-' + taskId);
+                    if(iconEl) iconEl.innerText = 'expand_less';
+                    App.expandedTasks.add(taskId);
+                    App.saveExpandedTasksState();
+                }
+
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                el.style.backgroundColor = 'rgba(255, 235, 59, 0.3)';
+                setTimeout(() => el.style.backgroundColor = '', 1500);
+            }
+        }, 300);
+    },
+
+    goBack: function(fromPopState = false) {
+        if (this.currentView === 'list') { this.goHome(); if(!fromPopState) history.back(); }
+    },
+
+    createEntityOnTheFly: async function(name, parentId = null) {
+        if(!name.trim()) return; const newType = parentId ? 'tarefa' : this.moduleType;
+        const now = Date.now();
+        const newEntity = { id: now.toString(), type: newType, name: name.trim(), createdAt: now, updatedAt: now, parentId: parentId };
+        await AppDB.entities.put(newEntity);
+        if(!parentId) { document.getElementById('searchInput').value = ''; }
+        if(parentId) { 
+            App.expandedTasks.add(parentId); 
+            App.saveExpandedTasksState();
+        }
+        await this.renderList(); this.focusEntity(newEntity.id);
+        this.calculateStorage();
+    },
+
+    toggleTaskLogs: function(taskId) {
+        const logsEl = document.getElementById('task-logs-' + taskId);
+        const iconEl = document.getElementById('task-icon-' + taskId);
+        if(logsEl) {
+            if(logsEl.style.display === 'none') {
+                logsEl.style.display = 'flex';
+                if(iconEl) iconEl.innerText = 'expand_less';
+                App.expandedTasks.add(taskId);
+            } else {
+                logsEl.style.display = 'none';
+                if(iconEl) iconEl.innerText = 'expand_more';
+                App.expandedTasks.delete(taskId);
+            }
+            App.saveExpandedTasksState();
+        }
+    },
+
+    buildLogsHTML: async function(logsArray, contextEntityId, searchTerm) {
+        if (!logsArray || logsArray.length === 0) return '';
+        
+        let logGroups = {};
+        logsArray.forEach(l => {
+            let gId = l.groupId || l.id;
+            if (!logGroups[gId]) logGroups[gId] = [];
+            logGroups[gId].push(l);
+        });
+
+        let sortedGroups = Object.values(logGroups).sort((a, b) => {
+            let maxA = Math.max(...a.map(l => l.createdAt));
+            let maxB = Math.max(...b.map(l => l.createdAt));
+            return maxB - maxA;
+        });
+        
+        let htmlParts = [];
+        for (let group of sortedGroups) {
+            group.sort((a, b) => b.createdAt - a.createdAt);
+            let gId = group[0].groupId || group[0].id;
+            htmlParts.push(await App.renderLogGroupHTML(group, contextEntityId, searchTerm, gId));
+        }
+        return htmlParts.join('');
+    },
+
+    renderLogGroupHTML: async function(group, contextEntityId, searchTerm = '', groupId) {
+        const domGroupId = 'log-group-' + groupId;
+        let isExpanded = searchTerm ? true : App.expandedGroups.has(domGroupId);
+        const isCollapsedClass = isExpanded ? '' : 'collapsed';
+        
+        let groupHtml = `<div class="log-item-group ${isCollapsedClass}" id="${domGroupId}">`;
+        
+        for (let i = 0; i < group.length; i++) {
+            let log = group[i];
+            let mediaHtml = log.images && log.images.length > 0 ? renderStackedDeckHTML(log.images, log.id) : '';
+            let isOrigin = log.originEntityId === contextEntityId;
+            let otherLinks = log.relatedEntities.filter(rel => rel.id !== log.originEntityId);
+            
+            let linksBarHtml = '';
+            if(isOrigin) {
+                if (otherLinks.length > 0) {
+                    let pills = [];
+                    for(let rel of otherLinks) {
+                        let linkedE = await AppDB.entities.get(rel.id); if(!linkedE) continue;
+                        pills.push(`<div class="pill-dark" onclick="App.focusEntity('${linkedE.id}', '', '${log.id}')">${linkedE.name} <i class="material-icons" style="font-size:12px; margin-left:4px;" title="Ir para Destino">arrow_forward</i></div>`);
+                    }
+                    linksBarHtml = `<div class="log-links-bar"><div class="link-label">Vinculado a:</div><div class="pills-container">${pills.join('')}</div></div>`;
+                }
+            } else {
+                let originE = await AppDB.entities.get(log.originEntityId);
+                if (originE) {
+                    let originPill = `<div class="pill-dark origin" onclick="App.focusEntity('${originE.id}', '', '${log.id}')">${originE.name} <i class="material-icons" style="font-size:12px; margin-left:4px;" title="Ir para Origem">arrow_forward</i></div>`;
+                    linksBarHtml = `<div class="log-links-bar"><div class="link-label">Vinculado de:</div><div class="pills-container">${originPill}</div></div>`;
+                }
+            }
+
+            let displayedText = log.text; if(searchTerm) displayedText = AppUtils.highlight(displayedText, searchTerm);
+            
+            let toggleHtml = '';
+            let addIconHtml = '';
+            
+            if (i === 0) {
+                let iconStr = isExpanded ? 'expand_less' : 'expand_more';
+                toggleHtml = `<i class="material-icons action-icon group-toggle-icon" style="font-size:18px; vertical-align:middle; margin-right:4px;" onclick="App.toggleLogGroup('${domGroupId}', event)">${iconStr}</i>`;
+                addIconHtml = `<i class="material-icons action-icon" style="font-size:14px; margin-right:8px;" title="Adicionar novo registo a este cartão" onclick="LogModal.open(null, '${contextEntityId}', '${groupId}')">add</i>`;
+            } else {
+                toggleHtml = `<i class="material-icons" style="font-size:18px; vertical-align:middle; margin-right:4px; opacity:0; pointer-events:none;">expand_more</i>`;
+                addIconHtml = ``; 
+            }
+
+            let authorDisp = log.authorName || 'N/A';
+            if (authorDisp.length > 15) authorDisp = authorDisp.substring(0, 15) + '...';
+            authorDisp = authorDisp.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+
+            groupHtml += `
+                <div class="log-entry" id="log-${log.id}">
+                    <div class="log-header">
+                        <span style="display:flex; align-items:center;">
+                            ${toggleHtml}
+                            <i class="material-icons" style="font-size:12px; margin-right:4px;">schedule</i> ${AppUtils.formatDate(log.createdAt)} por ${authorDisp}
+                        </span>
+                        <div class="log-actions">
+                            ${addIconHtml}
+                            <i class="material-icons action-icon" style="font-size:14px;" title="Editar Registo" onclick="LogModal.open('${log.id}', '${contextEntityId}')">edit</i>
+                        </div>
+                    </div>
+                    ${log.text ? `<div class="log-text selectable-text">${displayedText}</div>` : ''}
+                    ${mediaHtml}
+                    ${linksBarHtml}
+                </div>
+            `;
+        }
+        
+        groupHtml += `</div>`;
+        return groupHtml;
+    },
+
+    renderList: async function() {
+        this.currentSearchId++;
+        const searchId = this.currentSearchId;
+        const rawSearchTerm = document.getElementById('searchInput').value; 
+        const searchTerm = rawSearchTerm.toLowerCase().trim();
+        
+        const viewListEl = document.getElementById('viewList');
+        let currentScroll = viewListEl.scrollTop;
+        
+        const listEl = document.getElementById('entityList');
+        if (searchTerm) {
+            listEl.innerHTML = '<div class="empty-state"><i class="material-icons" style="animation: spin 1s linear infinite;">sync</i><p>Aguarde...</p></div>';
+        }
+
+        let allEntities = await AppDB.entities.where('type').equals(this.moduleType).toArray();
+        let filtered = allEntities.filter(e => e.parentId === null && !e.isDeleted); let hasExactMatch = false;
+
+        if (searchTerm) {
+            let resultList = [];
+            for(let e of filtered) {
+                if(e.name.toLowerCase() === searchTerm) hasExactMatch = true;
+                let matchesName = e.name.toLowerCase().includes(searchTerm);
+                let relatedLogs = await AppDB.logs.filter(l => !l.isDeleted && l.relatedEntities.some(rel => rel.id === e.id) && l.text && l.text.toLowerCase().includes(searchTerm)).toArray();
+                
+                let tasksMatched = [];
+                if(e.type === 'servico') {
+                    const servTasks = await AppDB.entities.filter(t => !t.isDeleted && t.parentId === e.id && t.type === 'tarefa').toArray();
+                    for(let t of servTasks) {
+                        let matchesTaskName = t.name.toLowerCase().includes(searchTerm);
+                        let taskRelatedLogs = await AppDB.logs.filter(l => !l.isDeleted && l.relatedEntities.some(rel => rel.id === t.id) && l.text && l.text.toLowerCase().includes(searchTerm)).toArray();
+                        if(matchesTaskName || taskRelatedLogs.length > 0) tasksMatched.push({ task: t, logsMatched: taskRelatedLogs });
+                    }
+                }
+
+                if(matchesName || relatedLogs.length > 0 || tasksMatched.length > 0) {
+                    resultList.push({ entity: e, logsMatched: relatedLogs, tasksMatched: tasksMatched });
+                }
+            }
+            filtered = resultList;
+        }
+
+        if (this.currentSearchId !== searchId) return;
+
+        listEl.innerHTML = '';
+        
+        if (searchTerm && !hasExactMatch) { 
+            listEl.innerHTML += `<div class="create-btn-dynamic" onclick="App.createEntityOnTheFly('${rawSearchTerm.replace(/'/g, "\\'")}')"><i class="material-icons">add_circle_outline</i><span>Criar: <strong>${rawSearchTerm}</strong></span></div>`; 
+        }
+
+        if (filtered.length === 0 && !searchTerm) { 
+            listEl.innerHTML = `<div class="empty-state"><i class="material-icons">${this.moduleIcon}</i><p>Nenhum registo.<br>Busque para criar.</p></div>`; 
+            viewListEl.scrollTop = 0;
+            return; 
+        }
+
+        let iterator = searchTerm ? filtered.sort((a, b) => b.entity.createdAt - a.entity.createdAt) : filtered.sort((a, b) => b.createdAt - a.createdAt).map(e => ({entity: e, tasksMatched: []}));
+
+        for(let item of iterator) {
+            let e = item.entity;
+            
+            let cardHtml = `
+            <li class="task-item" id="entity-${e.id}">
+                <div class="task-header">
+                    <div class="task-actions">
+                        <i class="material-icons action-icon" title="Expandir/Colapsar Todos" onclick="App.toggleAllLogGroups('${e.id}')">unfold_more</i>
+                        <i class="material-icons action-icon" title="Criar Novo Cartão de Evento" onclick="LogModal.open(null, '${e.id}')">post_add</i>
+                        ${e.type === 'servico' ? `<i class="material-icons action-icon" title="Adicionar Tarefa" onclick="EntityModal.openTaskPrompt('${e.id}')">add_task</i>` : ''}
+                        <i class="material-icons action-icon" title="Editar Nome/Excluir" onclick="EntityModal.open('${e.id}')">edit</i>
+                    </div>
+                    <span class="task-title">${AppUtils.highlight(e.name, searchTerm)}</span>
+                </div>
+            `;
+
+            let entityLogs = await AppDB.logs.filter(log => !log.isDeleted && log.relatedEntities.some(rel => rel.id === e.id)).toArray();
+            if (entityLogs.length > 0) {
+                cardHtml += `<div class="log-list">`;
+                cardHtml += await App.buildLogsHTML(entityLogs, e.id, searchTerm);
+                cardHtml += `</div>`;
+            }
+
+            if (e.type === 'servico') {
+                let tasks = await AppDB.entities.filter(t => !t.isDeleted && t.parentId === e.id && t.type === 'tarefa').toArray();
+                if (tasks.length > 0) {
+                    cardHtml += `<div style="font-size:12px; font-weight:bold; color:var(--on-surface-variant); margin-top:20px; margin-bottom: 8px; text-transform:uppercase; clear:both;">Tarefas do Serviço</div><ul class="subtask-list">`;
+                    
+                    let matchedTaskIds = item.tasksMatched ? item.tasksMatched.map(tm => tm.task.id) : [];
+
+                    for(let t of tasks.sort((a, b) => b.createdAt - a.createdAt)) {
+                        
+                        let isTaskExpanded = (searchTerm && matchedTaskIds.includes(t.id)) || App.expandedTasks.has(t.id) ? true : false;
+                        let taskIcon = isTaskExpanded ? 'expand_less' : 'expand_more';
+                        let taskLogsDisplay = isTaskExpanded ? 'flex' : 'none';
+
+                        cardHtml += `
+                        <li class="subtask-item" id="entity-${t.id}">
+                            <div class="subtask-row">
+                                <div class="subtask-text-wrapper" onclick="App.toggleTaskLogs('${t.id}')">
+                                    <i class="material-icons action-icon" style="font-size:24px;" id="task-icon-${t.id}">${taskIcon}</i>
+                                    <span class="subtask-text selectable-text">${AppUtils.highlight(t.name, searchTerm)}</span>
+                                </div>
+                                <div class="task-actions" style="gap:8px; float:none; margin:0; padding:0;">
+                                    <i class="material-icons action-icon" style="font-size:16px;" title="Expandir/Colapsar Todos na Tarefa" onclick="App.toggleAllLogGroups('${t.id}')">unfold_more</i>
+                                    <i class="material-icons action-icon" style="font-size:16px;" title="Criar Novo Cartão de Evento na Tarefa" onclick="LogModal.open(null, '${t.id}')">post_add</i>
+                                    <i class="material-icons action-icon" style="font-size:16px;" onclick="EntityModal.open('${t.id}')">edit</i>
+                                </div>
+                            </div>
+                        `;
+                        let taskLogs = await AppDB.logs.filter(log => !log.isDeleted && log.relatedEntities.some(rel => rel.id === t.id)).toArray();
+                        if (taskLogs.length > 0) {
+                            cardHtml += `<div class="log-list" id="task-logs-${t.id}" style="margin-left: 26px; display:${taskLogsDisplay};">`;
+                            cardHtml += await App.buildLogsHTML(taskLogs, t.id, searchTerm);
+                            cardHtml += `</div>`;
+                        } else {
+                            cardHtml += `<div class="log-list" id="task-logs-${t.id}" style="display:none;"></div>`;
+                        }
+                        cardHtml += `</li>`;
+                    }
+                    cardHtml += `</ul>`;
+                }
+            }
+            cardHtml += `</li>`;
+            listEl.innerHTML += cardHtml;
+        }
+
+        requestAnimationFrame(() => {
+            viewListEl.scrollTop = currentScroll;
+        });
+    },
+
+    openPDF: function(base64) {
+        try {
+            const arr = base64.split(','); const mimePart = arr[0]; const mime = mimePart.match(/:(.*?);/)[1]; 
+            let fileName = "documento.pdf"; const nameMatch = mimePart.match(/name=([^;]+)/); if (nameMatch) fileName = decodeURIComponent(nameMatch[1]);
+            const bstr = atob(arr[1]); let n = bstr.length; const u8arr = new Uint8Array(n); while(n--) u8arr[n] = bstr.charCodeAt(n);
+            const blob = new Blob([u8arr], {type: mime}); const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url; a.target = "_blank"; a.download = fileName;
+            document.body.appendChild(a); a.click(); setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 100);
+        } catch(e) { CustomDialog.alert("Não foi possível abrir o PDF.", "Erro"); }
+    },
+
+    restoreFromLocal: async function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        MenuModal.closeUI();
+        
+        setTimeout(async () => {
+            if(!await CustomDialog.confirm("Isto unificará os dados do backup com os seus dados atuais (mesclagem inteligente). Dados mais recentes prevalecem. Continuar?", "Sincronização Local via Arquivo")) {
+                e.target.value = '';
+                return; 
+            }
+            
+            document.getElementById('progressModal').classList.add('active');
+            document.getElementById('progressTitle').innerText = "A Restaurar Backup...";
+            document.getElementById('progressText').innerText = "A processar ficheiro...";
+            document.getElementById('progressCancelBtn').style.display = 'none';
+            
+            try {
+                let parsedData;
+                if (file.name.endsWith('.zip')) {
+                    if (typeof JSZip === 'undefined') throw new Error("Biblioteca ZIP não carregada.");
+                    const zip = new JSZip();
+                    const contents = await zip.loadAsync(file);
+                    if (contents.files["dados_oraculo.json"]) {
+                        const dataStr = await contents.files["dados_oraculo.json"].async("string");
+                        parsedData = JSON.parse(dataStr);
+                    } else {
+                        throw new Error("Arquivo dados_oraculo.json não encontrado no ZIP.");
+                    }
+                } else if (file.name.endsWith('.json')) {
+                    const text = await file.text();
+                    parsedData = JSON.parse(text);
+                } else {
+                    throw new Error("Formato não suportado. Use .zip ou .json.");
+                }
+                
+                if (parsedData && parsedData.entities && parsedData.logs) {
+                    const localEntities = await AppDB.entities.toArray();
+                    const localLogs = await AppDB.logs.toArray();
+
+                    let changesReceived = 0;
+                    let changesSent = 0;
+
+                    const mergeArrays = (localArr, remoteArr) => {
+                        const map = new Map();
+                        const remoteMap = new Map();
+                        remoteArr.forEach(r => remoteMap.set(r.id, r));
+
+                        localArr.forEach(lItem => {
+                            map.set(lItem.id, lItem);
+                            const rItem = remoteMap.get(lItem.id);
+                            if (!rItem) {
+                                changesSent++;
+                            } else {
+                                const lTime = lItem.updatedAt || lItem.createdAt || 0;
+                                const rTime = rItem.updatedAt || rItem.createdAt || 0;
+                                if (lTime > rTime) changesSent++;
+                            }
+                        });
+
+                        remoteArr.forEach(rItem => {
+                            const lItem = map.get(rItem.id);
+                            if(lItem) {
+                                const lTime = lItem.updatedAt || lItem.createdAt || 0;
+                                const rTime = rItem.updatedAt || rItem.createdAt || 0;
+                                if(rTime > lTime) {
+                                    map.set(rItem.id, rItem);
+                                    changesReceived++;
+                                }
+                            } else {
+                                map.set(rItem.id, rItem);
+                                changesReceived++;
+                            }
+                        });
+                        return Array.from(map.values());
+                    };
+
+                    const mergedEntities = mergeArrays(localEntities, parsedData.entities || []);
+                    const mergedLogs = mergeArrays(localLogs, parsedData.logs || []);
+                    
+                    document.getElementById('progressText').innerText = "A guardar unificação na base local...";
+
+                    await AppDB.transaction('rw', AppDB.entities, AppDB.logs, async () => {
+                        await AppDB.entities.clear(); await AppDB.logs.clear();
+                        await AppDB.entities.bulkPut(mergedEntities); await AppDB.logs.bulkPut(mergedLogs);
+                    });
+                    
+                    document.getElementById('progressModal').classList.remove('active');
+                    App.goHome();
+                    
+                    let msg = "";
+                    if (changesReceived === 0 && changesSent === 0) {
+                        msg = "Os dados locais já estavam idênticos ao backup selecionado. Nenhuma alteração foi necessária.";
+                    } else {
+                        msg = `Dados mesclados e restaurados com sucesso!\n\n📋 Resumo:\n`;
+                        if (changesReceived > 0) msg += `⬇️ ${changesReceived} registos atualizados usando o backup\n`;
+                        if (changesSent > 0) msg += `⬆️ ${changesSent} registos locais mantidos (mais recentes que o backup)`;
+                    }
+                    await CustomDialog.alert(msg.trim(), "Sucesso");
+                } else {
+                    throw new Error("Estrutura de dados inválida.");
+                }
+            } catch(error) {
+                document.getElementById('progressModal').classList.remove('active');
+                await CustomDialog.alert("Erro ao restaurar: " + error.message, "Erro");
+            } finally {
+                e.target.value = '';
+                document.getElementById('progressCancelBtn').style.display = 'block';
+            }
+        }, 300);
+    }
+};
+
+var EntityModal = {
+    el: document.getElementById('entityModal'), currentTargetId: null,
+    open: async function(id) { 
+        this.currentTargetId = id; const entity = await AppDB.entities.get(id); 
+        if(entity) { 
+            document.getElementById('entityModalTitle').innerText = entity.type === 'tarefa' ? 'Editar Tarefa' : 'Editar Entidade';
+            document.getElementById('entityNameEditInput').value = entity.name; AppState.openModal(this); 
+        } 
+    },
+    openTaskPrompt: async function(parentId) {
+        const name = await CustomDialog.prompt("Nome da Tarefa (Ex: Desmontagem)", "", "Nova Tarefa de Serviço");
+        if(name) { App.createEntityOnTheFly(name, parentId); }
+    },
+    closeUI: function() { AppState.closeModalUI(); },
+    save: async function() {
+        const val = document.getElementById('entityNameEditInput').value.trim(); if(!val) return;
+        const entity = await AppDB.entities.get(this.currentTargetId); 
+        if(entity) { 
+            entity.name = val; entity.updatedAt = Date.now(); 
+            if(entity.parentId) {
+                App.expandedTasks.add(entity.parentId);
+                App.saveExpandedTasksState();
+            }
+            await AppDB.entities.put(entity); App.renderList(); 
+        }
+        this.closeUI();
+    },
+    delete: async function() {
+        if(await CustomDialog.confirm("Excluir esta entidade? TODOS os registos gerados nela e sub-tarefas serão apagados.", "Atenção (Cascata)")) {
+            const id = this.currentTargetId;
+            const now = Date.now();
+            await AppDB.transaction('rw', AppDB.entities, AppDB.logs, async () => {
+                let children = await AppDB.entities.where('parentId').equals(id).toArray();
+                for(let child of children) { child.isDeleted = true; child.updatedAt = now; await AppDB.entities.put(child); }
+                
+                let mainEntity = await AppDB.entities.get(id);
+                if (mainEntity) { mainEntity.isDeleted = true; mainEntity.updatedAt = now; await AppDB.entities.put(mainEntity); }
+
+                let originLogs = await AppDB.logs.where('originEntityId').equals(id).toArray();
+                for(let log of originLogs) { log.isDeleted = true; log.updatedAt = now; await AppDB.logs.put(log); }
+                
+                let affectedLogs = await AppDB.logs.filter(l => l.relatedEntities.some(rel => rel.id === id)).toArray();
+                for(let log of affectedLogs) {
+                    log.relatedEntities = log.relatedEntities.filter(rel => rel.id !== id);
+                    log.updatedAt = now;
+                    await AppDB.logs.put(log);
+                }
+            });
+            this.closeUI(); App.renderList(); App.calculateStorage();
+        }
+    }
+};
+
+var LogModal = {
+    el: document.getElementById('logModal'), editLogId: null, tempMedia: [], tempRelations: [], originId: null, groupId: null,
+    open: async function(logId = null, targetEntityId = null, groupId = null) {
+        this.editLogId = logId; 
+        this.tempMedia = []; 
+        this.groupId = groupId || null;
+        const textInput = document.getElementById('logText');
+
+        if (logId) {
+            const log = await AppDB.logs.get(logId); 
+            this.originId = log.originEntityId;
+            this.groupId = log.groupId || log.id;
+            textInput.value = log.text; 
+            this.tempMedia = [...(log.images || [])]; 
+            this.tempRelations = log.relatedEntities.filter(rel => rel.id !== this.originId).map(rel => ({ id: rel.id, type: rel.type }));
+            document.getElementById('logModalTitle').innerText = 'Editar Registo';
+            document.getElementById('logModalDeleteBtn').style.display = 'block';
+        } else { 
+            this.originId = targetEntityId;
+            textInput.value = ''; 
+            this.tempRelations = [];
+            document.getElementById('logModalTitle').innerText = 'Registar Evento'; 
+            document.getElementById('logModalDeleteBtn').style.display = 'none';
+        }
+        
+        document.getElementById('logLinkInput').value = '';
+        document.getElementById('logLinkAutocomplete').style.display = 'none';
+        await this.renderLinks();
+        this.updateUI(); AppState.openModal(this);
+    },
+    closeUI: function() { AppState.closeModalUI(); },
+    searchLinks: async function() {
+        const term = document.getElementById('logLinkInput').value.toLowerCase().trim();
+        const dropdown = document.getElementById('logLinkAutocomplete');
+        
+        dropdown.innerHTML = '<div class="autocomplete-item" style="justify-content: center; color: var(--primary);"><i class="material-icons" style="font-size:16px; animation: spin 1s linear infinite;">sync</i> Aguarde...</div>';
+        dropdown.style.display = 'flex';
+
+        let allEntities = await AppDB.entities.toArray();
+        let available = allEntities.filter(e => !e.isDeleted && e.type !== 'tarefa' && e.id !== this.originId && !this.tempRelations.some(rel => rel.id === e.id));
+        if (term) available = available.filter(e => e.name.toLowerCase().includes(term));
+        
+        if (available.length === 0) { dropdown.style.display = 'none'; return; }
+        
+        dropdown.innerHTML = available.slice(0, 5).map(e => `<div class="autocomplete-item" onclick="LogModal.addLink('${e.id}')"><i class="material-icons" style="font-size:16px; opacity:0.6;">link</i> ${e.name} <span style="font-size:10px; opacity:0.5; margin-left:auto;">${MODULE_MAPPING[e.type][0]}</span></div>`).join('');
+        dropdown.style.display = 'flex';
+    },
+    addLink: async function(id) {
+        const e = await AppDB.entities.get(id);
+        if(e) this.tempRelations.push({ type: e.type, id: e.id });
+        document.getElementById('logLinkInput').value = '';
+        document.getElementById('logLinkAutocomplete').style.display = 'none';
+        await this.renderLinks();
+    },
+    removeLink: async function(id) {
+        this.tempRelations = this.tempRelations.filter(rel => rel.id !== id);
+        await this.renderLinks();
+    },
+    renderLinks: async function() {
+        const container = document.getElementById('logLinkPills');
+        let html = [];
+        for(let rel of this.tempRelations) {
+            let e = await AppDB.entities.get(rel.id) || rel;
+            html.push(`<div class="pill-dark">${e.name} <i class="material-icons" onclick="LogModal.removeLink('${e.id}')">close</i></div>`);
+        }
+        container.innerHTML = html.join('');
+    },
+    delete: async function() {
+        if(this.editLogId) {
+            if(await CustomDialog.confirm("Excluir permanentemente este registo? Os demais registos deste grupo não serão afetados.", "Excluir Log")) {
+                const log = await AppDB.logs.get(this.editLogId);
+                if (log) {
+                    log.isDeleted = true;
+                    log.updatedAt = Date.now();
+                    await AppDB.logs.put(log);
+                }
+                App.renderList(); this.closeUI(); App.calculateStorage();
+            }
+        }
+    },
+    save: async function() {
+        const text = document.getElementById('logText').value.trim();
+        this.tempMedia = this.tempMedia.filter(m => !m.isPlaceholder);
+        
+        if(!text && this.tempMedia.length === 0) { await CustomDialog.alert('Insira um texto ou anexe uma imagem/documento/vídeo.', 'Aviso'); return; }
+        
+        try {
+            const originEntity = await AppDB.entities.get(this.originId);
+            const coreRelation = { type: originEntity.type, id: originEntity.id };
+            const finalRelations = [coreRelation, ...this.tempRelations.map(rel => ({ type: rel.type, id: rel.id }))];
+            
+            const now = Date.now();
+
+            if (this.editLogId) {
+                const log = await AppDB.logs.get(this.editLogId); 
+                log.text = text; 
+                log.images = [...this.tempMedia];
+                log.relatedEntities = finalRelations;
+                log.updatedAt = now;
+                log.groupId = this.groupId || log.id;
+                log.authorName = App.currentAuthor || 'N/A';
+                await AppDB.logs.put(log);
+            } else {
+                const newId = now.toString();
+                const newLog = { 
+                    id: newId, text: text, images: [...this.tempMedia], createdAt: now, updatedAt: now, 
+                    originEntityId: this.originId, relatedEntities: finalRelations,
+                    groupId: this.groupId || newId,
+                    authorName: App.currentAuthor || 'N/A'
+                };
+                await AppDB.logs.put(newLog);
+            }
+            
+            if(originEntity && originEntity.type === 'tarefa' && originEntity.parentId) {
+                App.expandedTasks.add(originEntity.id);
+                App.saveExpandedTasksState();
+            } else if (originEntity && originEntity.type === 'tarefa' && !originEntity.parentId) {
+                App.expandedTasks.add(originEntity.id);
+                App.saveExpandedTasksState();
+            } else {
+                App.expandedTasks.add(this.originId);
+                App.saveExpandedTasksState();
+            }
+
+            if (this.groupId || !this.editLogId) {
+                App.expandedGroups.add('log-group-' + (this.groupId || now.toString()));
+                App.saveExpandedState();
+            }
+
+            App.renderList(); this.closeUI(); App.calculateStorage();
+        } catch (e) {
+            console.error("Erro no IndexedDB:", e);
+            await CustomDialog.alert("Erro ao guardar o registo. A sua base de dados não foi danificada, mas o anexo pode ser demasiado grande.", "Erro de Memória");
+        }
+    },
+    updateUI: function() {
+        const container = document.getElementById('logPreviewContainer'); const wrapper = document.getElementById('logMediaWrapper');
+        if (this.tempMedia && this.tempMedia.length > 0) { wrapper.innerHTML = renderStackedDeckHTML(this.tempMedia, 'temp'); container.style.display = 'block'; } 
+        else { container.style.display = 'none'; wrapper.innerHTML = ''; }
+        
+        const saveBtn = document.getElementById('logSaveBtn');
+        const hasPlaceholder = this.tempMedia.some(m => m.isPlaceholder);
+        if (saveBtn) {
+            saveBtn.disabled = hasPlaceholder;
+            saveBtn.style.opacity = hasPlaceholder ? '0.5' : '1';
+            saveBtn.innerText = hasPlaceholder ? 'A processar...' : 'Guardar Registo';
+        }
+    }
+};
+
+const handleLogMedia = async (e) => { 
+    const files = Array.from(e.target.files);
+    if(files.length === 0) return;
+    
+    let hasVideo = files.some(f => f.type.startsWith('video/'));
+    if(hasVideo) { LogModal.tempMedia.push({ isPlaceholder: true, progress: 0 }); LogModal.updateUI(); }
+    
+    try {
+        await processMultipleMedia(files, (pct) => {
+            const progressText = document.getElementById('video-progress-text');
+            if(progressText) progressText.innerText = `A processar: ${pct}%`;
+        }, (newMedia) => { 
+            if(hasVideo) LogModal.tempMedia = LogModal.tempMedia.filter(m => !m.isPlaceholder);
+            LogModal.tempMedia.push(...newMedia); LogModal.updateUI(); 
+        }); 
+    } catch(err) {
+        if(hasVideo) LogModal.tempMedia = LogModal.tempMedia.filter(m => !m.isPlaceholder);
+        LogModal.updateUI(); CustomDialog.alert("Erro ao processar ficheiros: " + err.message, "Erro");
+    }
+    e.target.value = ''; 
+};
+document.getElementById('logCam').addEventListener('change', handleLogMedia); document.getElementById('logGal').addEventListener('change', handleLogMedia);
+
+var CarouselModal = {
+    el: document.getElementById('carouselModal'), container: document.getElementById('carouselContainer'), currentLogId: null, imagesArray: [], currentIndex: 0, originalTitle: '',
+    open: async function(logId, startIndex = 0) {
+        this.currentLogId = logId;
+        if (logId === 'temp') this.imagesArray = LogModal.tempMedia; else { const log = await AppDB.logs.get(logId); this.imagesArray = log ? log.images : []; }
+        if (!this.imagesArray || this.imagesArray.length === 0) return;
+        this.currentIndex = startIndex || 0; this.render(); 
+        
+        this.originalTitle = document.title; document.title = "Mídia"; 
+        
+        AppState.openModal(this); this.bindZoom();
+        const navLeft = document.getElementById('carouselNavLeft'); const navRight = document.getElementById('carouselNavRight');
+        if(this.imagesArray.length > 1) { navLeft.style.display = 'grid'; navRight.style.display = 'grid'; } else { navLeft.style.display = 'none'; navRight.style.display = 'none'; }
+        this.updateGlobalActions();
+        this.container.addEventListener('scroll', () => { const itemW = window.innerWidth * 0.85 + 16; this.currentIndex = Math.round(this.container.scrollLeft / itemW); this.updateGlobalActions(); }, {passive: true});
+        setTimeout(() => { const itemW = window.innerWidth * 0.85 + 16; this.container.scrollLeft = this.currentIndex * itemW; }, 50);
+    },
+    closeUI: function() { document.title = this.originalTitle || "Oráculo P-31"; AppState.closeModalUI(); },
+    next: function() { const itemW = window.innerWidth * 0.85 + 16; this.container.scrollBy({ left: itemW, behavior: 'smooth' }); },
+    prev: function() { const itemW = window.innerWidth * 0.85 + 16; this.container.scrollBy({ left: -itemW, behavior: 'smooth' }); },
+    updateGlobalActions: function() { 
+        const img = this.imagesArray[this.currentIndex]; 
+        const editBtn = document.getElementById('carouselEditBtn'); 
+        if (img && (img.data.startsWith('data:application/pdf') || img.data.startsWith('data:video/') || img.isVideo || img.isPlaceholder)) editBtn.style.display = 'none'; else editBtn.style.display = 'grid'; 
+        
+        let sizeIndicator = document.getElementById('carouselSizeIndicator');
+        if(img && img.size) sizeIndicator.innerText = (img.size / 1024 / 1024).toFixed(2) + ' MB';
+        else sizeIndicator.innerText = '';
+    },
+    render: function() {
+        this.container.innerHTML = this.imagesArray.map((img, idx) => {
+            let media = '';
+            if (img.isPlaceholder) { media = `<div class="carousel-pdf" style="background:#111;"><i class="material-icons" style="font-size:48px; color:var(--primary); animation: spin 1s linear infinite;">sync</i><span style="color:var(--primary); font-size:14px; margin-top:12px; text-align:center;">A processar...</span></div>`; }
+            else if (img.data.startsWith('data:application/pdf')) { media = `<div class="carousel-pdf" onclick="App.openPDF('${img.data}')"><i class="material-icons" style="font-size:48px; color:var(--danger)">picture_as_pdf</i><span style="color:#fff; font-size:14px; margin-top:12px; text-align:center;">${AppUtils.getPdfName(img.data)}</span></div>`; } 
+            else if (img.isVideo || img.data.startsWith('data:video/')) { media = `<div class="carousel-img-wrapper" style="pointer-events: auto;"><video src="${img.data}" class="carousel-img" controls playsinline style="pointer-events: auto; z-index: 20; position: relative; max-width: 100%; max-height: 80vh"></video></div>`; }
+            else { media = `<div class="carousel-img-wrapper"><img src="${img.data}" class="carousel-img"><div class="carousel-touch-layer"></div></div>`; }
+            return `<div class="carousel-item">${media}</div>`;
+        }).join('');
+    },
+    editCurrent: function() { let img = this.imagesArray[this.currentIndex]; if (this.currentLogId === 'temp') { Editor.openForTemp(img.data, this.currentIndex); } else { Editor.openForDBLog(this.currentLogId, img.data, this.currentIndex); } },
+    deleteCurrent: async function() {
+        if(await CustomDialog.confirm("Excluir imagem/ficheiro permanentemente?", "Excluir")) {
+            this.imagesArray.splice(this.currentIndex, 1);
+            if (this.currentLogId === 'temp') { LogModal.updateUI(); } 
+            else { 
+                const log = await AppDB.logs.get(this.currentLogId); log.images = this.imagesArray; log.updatedAt = Date.now(); await AppDB.logs.put(log); App.renderList(); App.calculateStorage(); 
+            }
+            if(this.imagesArray.length === 0) { this.closeUI(); } else {
+                this.render(); this.bindZoom();
+                this.currentIndex = Math.min(this.currentIndex, this.imagesArray.length - 1);
+                this.container.scrollLeft = this.currentIndex * (window.innerWidth * 0.85 + 16);
+                if(this.imagesArray.length <= 1) { document.getElementById('carouselNavLeft').style.display = 'none'; document.getElementById('carouselNavRight').style.display = 'none'; }
+                this.updateGlobalActions();
+            }
+        }
+    },
+    bindZoom: function() {
+        const wrappers = this.container.querySelectorAll('.carousel-img-wrapper');
+        wrappers.forEach(wrapper => {
+            const touchLayer = wrapper.querySelector('.carousel-touch-layer'); const img = wrapper.querySelector('.carousel-img'); if(!img || img.tagName === 'VIDEO' || !touchLayer) return;
+            let scale = 1, currentX = 0, currentY = 0, startX = 0, startY = 0, initialDist = 0, initialScale = 1; let lastTap = 0, isPinching = false, isMoving = false;
+            touchLayer.addEventListener('touchstart', (e) => {
+                img.style.transition = 'none';
+                if (e.touches.length === 2) { e.preventDefault(); e.stopPropagation(); isPinching = true; isMoving = true; initialDist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY); initialScale = scale; } 
+                else if (e.touches.length === 1) { isMoving = false; if (scale > 1) { e.stopPropagation(); startX = e.touches[0].clientX - currentX; startY = e.touches[0].clientY - currentY; } }
+            }, {passive: false});
+            touchLayer.addEventListener('touchmove', (e) => {
+                isMoving = true;
+                if (e.touches.length === 2) { e.preventDefault(); e.stopPropagation(); const currentDist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY); scale = Math.max(1, Math.min(initialScale * (currentDist / initialDist), 5)); const maxTx = (scale - 1) * img.offsetWidth / 2; const maxTy = (scale - 1) * img.offsetHeight / 2; currentX = Math.max(-maxTx, Math.min(currentX, maxTx)); currentY = Math.max(-maxTy, Math.min(currentY, maxTy)); img.style.transform = `translate(${currentX}px, ${currentY}px) scale(${scale})`; } 
+                else if (e.touches.length === 1 && scale > 1) { e.preventDefault(); e.stopPropagation(); currentX = e.touches[0].clientX - startX; currentY = e.touches[0].clientY - startY; const maxTx = (scale - 1) * img.offsetWidth / 2; const maxTy = (scale - 1) * img.offsetHeight / 2; currentX = Math.max(-maxTx, Math.min(currentX, maxTx)); currentY = Math.max(-maxTy, Math.min(currentY, maxTy)); img.style.transform = `translate(${currentX}px, ${currentY}px) scale(${scale})`; }
+            }, {passive: false});
+            touchLayer.addEventListener('touchend', (e) => {
+                img.style.transition = 'transform 0.2s ease-out';
+                if (e.touches.length === 1 && scale > 1) { startX = e.touches[0].clientX - currentX; startY = e.touches[0].clientY - currentY; }
+                if (e.touches.length === 0) {
+                    if (!isPinching && !isMoving) { const tapLength = new Date().getTime() - lastTap; if (tapLength < 300 && tapLength > 0) { scale = 1; currentX = 0; currentY = 0; img.style.transform = `translate(0, 0) scale(1)`; e.preventDefault(); e.stopPropagation(); } lastTap = new Date().getTime(); }
+                    if (scale <= 1) { scale = 1; currentX = 0; currentY = 0; img.style.transform = `translate(0, 0) scale(1)`; } isPinching = false; isMoving = false;
+                }
+            });
+        });
+    }
+};
+
+var Editor = {
+    overlay: document.getElementById('editorOverlay'), canvas: document.getElementById('mainCanvas'), ctx: document.getElementById('mainCanvas').getContext('2d'), sizeInput: document.getElementById('editorSize'), activeColor: '#ff3333', activeTool: 'pen', activeText: null, isDrawing: false, lastPos: {x: 0, y: 0}, undoStack: [], isDraggingText: false, dragStartX: 0, dragStartY: 0, dragStartLeft: 0, dragStartTop: 0, targetMode: null, logId: null, dbIdx: null, el: document.getElementById('editorOverlay'),
+    
+    openForDBLog: function(logId, imgSrc, photoIdx = 0) { this.targetMode = 'db'; this.logId = logId; this.dbIdx = photoIdx; this._initCanvas(imgSrc); },
+    openForTemp: function(imgSrc, photoIdx = 0) { this.targetMode = 'temp'; this.dbIdx = photoIdx; this._initCanvas(imgSrc); },
+    
+    _initCanvas: async function(imgSrc) {
+        this.undoStack = []; document.getElementById('textOverlay').innerHTML = ''; this.activeText = null; this.setTool('pen');
+        const img = new Image();
+        img.onload = async () => {
+            const MAX_W = window.innerWidth - 32; const MAX_H = window.innerHeight - 100; let w = img.width, h = img.height;
+            if (w > MAX_W || h > MAX_H) { const ratio = Math.min(MAX_W / w, MAX_H / h); w = w * ratio; h = h * ratio; }
+            this.canvas.style.width = w + 'px'; this.canvas.style.height = h + 'px';
+            
+            this.canvas.width = img.width; this.canvas.height = img.height; this.ctx.drawImage(img, 0, 0);
+            
+            let currentPhotoObj;
+            if(this.targetMode === 'db') { const log = await AppDB.logs.get(this.logId); currentPhotoObj = log.images[this.dbIdx]; }
+            else { currentPhotoObj = LogModal.tempMedia[this.dbIdx]; }
+
+            const dateStr = currentPhotoObj ? AppUtils.formatDate(currentPhotoObj.createdAt) : '';
+            if (dateStr) { const fs = Math.max(12, this.canvas.width / 40); this.ctx.font = `bold ${fs}px Roboto`; this.ctx.textBaseline = 'bottom'; this.ctx.fillStyle = 'rgba(0,0,0,0.6)'; this.ctx.fillText(`Registrada: ${dateStr}`, 10 + 2, this.canvas.height - 10 + 2); this.ctx.fillStyle = '#fff'; this.ctx.fillText(`Registrada: ${dateStr}`, 10, this.canvas.height - 10); }
+            this.saveState(); AppState.openModal(this);
+        };
+        img.src = imgSrc;
+    },
+    closeUI: function() { AppState.closeModalUI(); },
+    onHardwareBack: function() { document.getElementById('textOverlay').innerHTML = ''; document.getElementById('colorPopup').classList.remove('show'); this.isDraggingText = false; },
+    
+    toggleColorPopup: function(e) { e.preventDefault(); e.stopPropagation(); document.getElementById('colorPopup').classList.toggle('show'); },
+
+    save: async function() {
+        try {
+            const texts = document.getElementById('textOverlay').children;
+            if (texts.length > 0) {
+                const rect = this.canvas.getBoundingClientRect(); const scaleX = this.canvas.width / rect.width; const scaleY = this.canvas.height / rect.height;
+                for (let i = 0; i < texts.length; i++) {
+                    const el = texts[i]; const left = parseFloat(el.style.left); const top = parseFloat(el.style.top); const fontSizeCSS = parseFloat(el.style.fontSize);
+                    const canvasX = left * scaleX; const canvasY = top * scaleY; const canvasFontSize = fontSizeCSS * scaleY;
+                    this.ctx.font = `bold ${canvasFontSize}px Roboto, sans-serif`; this.ctx.fillStyle = el.style.color; this.ctx.textBaseline = 'top'; this.ctx.strokeStyle = 'rgba(0,0,0,0.8)'; this.ctx.lineWidth = Math.max(2, canvasFontSize / 10);
+                    const lines = el.innerText.split('\n'); let currentY = canvasY;
+                    for(let line of lines) { this.ctx.strokeText(line, canvasX, currentY); this.ctx.fillText(line, canvasX, currentY); currentY += canvasFontSize * 1.2; }
+                }
+            }
+            const dataUrl = this.canvas.toDataURL('image/jpeg', 0.8);
+            if (this.targetMode === 'db') { const log = await AppDB.logs.get(this.logId); if(log && log.images[this.dbIdx]) { log.images[this.dbIdx].data = dataUrl; log.images[this.dbIdx].size = dataUrl.length * 0.75; log.updatedAt = Date.now(); } await AppDB.logs.put(log); App.renderList(); App.calculateStorage(); } 
+            else if (this.targetMode === 'temp') { if(LogModal.tempMedia[this.dbIdx]) { LogModal.tempMedia[this.dbIdx].data = dataUrl; LogModal.tempMedia[this.dbIdx].size = dataUrl.length * 0.75; } LogModal.updateUI(); }
+            if (CarouselModal.el.classList.contains('active') && CarouselModal.imagesArray[this.dbIdx]) { CarouselModal.imagesArray[this.dbIdx].data = dataUrl; CarouselModal.imagesArray[this.dbIdx].size = CarouselModal.imagesArray[this.dbIdx].data.length * 0.75; CarouselModal.render(); CarouselModal.bindZoom(); CarouselModal.updateGlobalActions(); }
+            this.closeUI();
+        } catch(e) { CustomDialog.alert("Erro ao guardar edição.", "Erro"); }
+    },
+    setTool: function(tool) {
+        this.activeTool = tool; document.getElementById('btnPen').classList.toggle('active', tool === 'pen'); document.getElementById('btnText').classList.toggle('active', tool === 'text');
+        this.canvas.className = tool === 'text' ? 'cursor-text' : 'cursor-crosshair';
+        const hints = { 'pen': 'Desenhe livremente', 'text': 'Toque para digitar. Toque e arraste para mover.' }; document.getElementById('editorHint').textContent = hints[tool];
+        if (tool !== 'text' && this.activeText) { this.activeText.blur(); }
+    },
+    setColor: function(color) { this.activeColor = color; document.getElementById('activeColorBtn').style.backgroundColor = color; document.getElementById('colorPopup').classList.remove('show'); if (this.activeTool === 'text' && this.activeText) { this.activeText.style.color = color; } },
+    saveState: function() { if(this.undoStack.length >= 15) this.undoStack.shift(); this.undoStack.push(this.canvas.toDataURL()); },
+    undo: function() { if(this.undoStack.length > 1) { this.undoStack.pop(); const img = new Image(); img.onload = () => { this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height); this.ctx.drawImage(img, 0, 0); }; img.src = this.undoStack[this.undoStack.length - 1]; } },
+    getCoords: function(e) { const rect = this.canvas.getBoundingClientRect(); const clientX = e.touches ? e.touches[0].clientX : e.clientX; const clientY = e.touches ? e.touches[0].clientY : e.clientY; const scaleX = this.canvas.width / rect.width; const scaleY = this.canvas.height / rect.height; return { x: (clientX - rect.left) * scaleX, y: (clientY - rect.top) * scaleY }; },
+    startDraw: function(e) {
+        if (this.activeTool === 'text') {
+            e.preventDefault(); if (this.activeText) { this.activeText.blur(); this.activeText = null; return; }
+            const rect = this.canvas.getBoundingClientRect(); const clientX = e.touches ? e.touches[0].clientX : e.clientX; const clientY = e.touches ? e.touches[0].clientY : e.clientY; const x = clientX - rect.left; const y = clientY - rect.top;
+            const el = document.createElement('div'); el.contentEditable = true; el.style.position = 'absolute'; el.style.left = x + 'px'; el.style.top = y + 'px'; el.style.color = this.activeColor; el.style.fontSize = Math.max(14, this.sizeInput.value * 6) + 'px'; el.style.pointerEvents = 'auto'; el.style.whiteSpace = 'nowrap'; el.style.outline = 'none'; el.style.minWidth = '20px'; el.style.lineHeight = '1'; el.style.fontFamily = 'Roboto, sans-serif'; el.style.fontWeight = 'bold'; el.style.textShadow = '1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000';
+            el.addEventListener('focus', () => { this.activeText = el; el.style.border = '1px dashed #fff'; }); el.addEventListener('blur', () => { el.style.border = 'none'; if(el.textContent.trim() === '') el.remove(); if(this.activeText === el) this.activeText = null; });
+            const setupDrag = (ev, cX, cY) => { ev.stopPropagation(); if (this.activeTool !== 'text') this.setTool('text'); this.activeText = el; this.isDraggingText = true; this.dragStartX = cX; this.dragStartY = cY; this.dragStartLeft = parseFloat(el.style.left) || 0; this.dragStartTop = parseFloat(el.style.top) || 0; };
+            el.addEventListener('touchstart', (ev) => setupDrag(ev, ev.touches[0].clientX, ev.touches[0].clientY), {passive: false}); el.addEventListener('mousedown', (ev) => setupDrag(ev, ev.clientX, ev.clientY));
+            document.getElementById('textOverlay').appendChild(el); setTimeout(() => { el.focus(); }, 50); return;
+        }
+        e.preventDefault(); const pos = this.getCoords(e); this.isDrawing = true; this.lastPos = pos;
+        this.ctx.beginPath(); this.ctx.arc(pos.x, pos.y, this.sizeInput.value / 2, 0, Math.PI * 2); this.ctx.globalCompositeOperation = 'source-over'; this.ctx.fillStyle = this.activeColor; this.ctx.fill();
+    },
+    draw: function(e) { if (!this.isDrawing || this.activeTool === 'text') return; e.preventDefault(); const pos = this.getCoords(e); this.ctx.beginPath(); this.ctx.lineCap = 'round'; this.ctx.lineJoin = 'round'; this.ctx.lineWidth = this.sizeInput.value; this.ctx.globalCompositeOperation = 'source-over'; this.ctx.strokeStyle = this.activeColor; this.ctx.moveTo(this.lastPos.x, this.lastPos.y); this.ctx.lineTo(pos.x, pos.y); this.ctx.stroke(); this.lastPos = pos; },
+    stopDraw: function(e) { if (!this.isDrawing) return; e.preventDefault(); this.isDrawing = false; this.saveState(); }
+};
+
+Editor.overlay.addEventListener('touchmove', (e) => { if (Editor.isDraggingText && Editor.activeText) { e.preventDefault(); Editor.activeText.style.left = (Editor.dragStartLeft + e.touches[0].clientX - Editor.dragStartX) + 'px'; Editor.activeText.style.top = (Editor.dragStartTop + e.touches[0].clientY - Editor.dragStartY) + 'px'; } }, {passive: false});
+Editor.overlay.addEventListener('mousemove', (e) => { if (Editor.isDraggingText && Editor.activeText) { e.preventDefault(); Editor.activeText.style.left = (Editor.dragStartLeft + e.clientX - Editor.dragStartX) + 'px'; Editor.activeText.style.top = (Editor.dragStartTop + e.clientY - Editor.dragStartY) + 'px'; } });
+const stopTextDrag = () => { Editor.isDraggingText = false; };
+Editor.overlay.addEventListener('touchend', stopTextDrag); Editor.overlay.addEventListener('mouseup', stopTextDrag); Editor.overlay.addEventListener('mouseleave', stopTextDrag);
+Editor.sizeInput.addEventListener('input', (e) => { if(Editor.activeTool === 'text' && Editor.activeText) { Editor.activeText.style.fontSize = Math.max(14, e.target.value * 6) + 'px'; } });
+Editor.canvas.addEventListener('mousedown', (e) => Editor.startDraw(e)); Editor.canvas.addEventListener('mousemove', (e) => Editor.draw(e)); Editor.canvas.addEventListener('mouseup', (e) => Editor.stopDraw(e)); Editor.canvas.addEventListener('mouseleave', (e) => Editor.stopDraw(e));
+Editor.canvas.addEventListener('touchstart', (e) => Editor.startDraw(e), {passive: false}); Editor.canvas.addEventListener('touchmove', (e) => Editor.draw(e), {passive: false}); Editor.canvas.addEventListener('touchend', (e) => Editor.stopDraw(e), {passive: false});
+
+App.init();
+</script>
+</body>
+</html>
