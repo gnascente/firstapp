@@ -5,6 +5,8 @@ CREATE TABLE IF NOT EXISTS public.cards (
     title text not null,
     content text,
     image_path text,
+    locked_by uuid references auth.users(id),
+    locked_at timestamp with time zone,
     created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
