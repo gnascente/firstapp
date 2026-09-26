@@ -13,8 +13,11 @@ persist = true
 # ...
 # ...
 [vars]
-SUPABASE_PUBLISHABLE_KEY = "sb_publishable_ABMBNom80X3Bwf9wzY7doQ_qgPsqV4W"
-SUPABASE_URL = "https://fhmcmprjyxncbpeirmnu.supabase.co"
+APPWRITE_ENDPOINT = "https://sfo.cloud.appwrite.io/v1"
+APPWRITE_PROJECT_ID = "6ab7319800354a4656bd"
+APPWRITE_DATABASE_ID = "firstapp" # A definir
+APPWRITE_COLLECTION_ID = "cards" # A definir
+APPWRITE_BUCKET_ID = "firstappfiles" # A definir
 # ...
 
 
