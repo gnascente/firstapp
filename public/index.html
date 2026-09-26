@@ -772,6 +772,12 @@ Editor.canvas.addEventListener('touchstart', (e) => Editor.startDraw(e), {passiv
 
         // --- Supabase CRUD ---
         let supabaseClient;
+        const authForm = document.getElementById('auth-form');
+        const authNameInput = document.getElementById('auth-name');
+        const authEmailInput = document.getElementById('auth-email');
+        const authPasswordInput = document.getElementById('auth-password');
+        const authMessage = document.getElementById('auth-message');
+
         const form = document.getElementById('card-form');
         const container = document.getElementById('cards-container');
         const titleInput = document.getElementById('card-title-input');
@@ -820,6 +826,44 @@ Editor.canvas.addEventListener('touchstart', (e) => Editor.startDraw(e), {passiv
                 container.innerHTML = `<p style="color:red;">Erro na inicialização: ${err.message}</p>`;
             }
         }
+        authForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = authNameInput.value.trim();
+            const email = authEmailInput.value.trim();
+            const password = authPasswordInput.value;
+            authMessage.innerText = 'Processando...';
+
+            let { error: signInError } = await supabaseClient.auth.signInWithPassword({
+                email,
+                password
+            });
+
+            if (signInError) {
+                // If login fails, try to register
+                if (signInError.message.includes('Invalid login credentials')) {
+                    const { error: signUpError } = await supabaseClient.auth.signUp({
+                        email,
+                        password,
+                        options: {
+                            data: {
+                                name: name
+                            }
+                        }
+                    });
+                    if (signUpError) {
+                        authMessage.innerText = 'Erro ao registrar: ' + signUpError.message;
+                    } else {
+                        authMessage.innerText = 'Registro realizado com sucesso! Aguarde o login...';
+                    }
+                } else {
+                    authMessage.innerText = 'Erro ao fazer login: ' + signInError.message;
+                }
+            } else {
+                authMessage.innerText = '';
+                authForm.reset();
+            }
+        });
+
         document.getElementById('btn-logout').addEventListener('click', async () => {
             await supabaseClient.auth.signOut();
         });
