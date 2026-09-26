@@ -1061,7 +1061,7 @@ Editor.canvas.addEventListener('touchstart', (e) => Editor.startDraw(e), {passiv
                 // Update
                 const { error } = await supabaseClient
                     .from('cards')
-                    .update({ title, content, image_path: imagePath })
+                    .update({ title, content, image_path: imagePath, locked_by: null, locked_at: null })
                     .eq('id', id);
                 if (error) alert('Erro ao atualizar: ' + error.message);
             } else {
