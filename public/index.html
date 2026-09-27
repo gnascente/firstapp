@@ -2447,7 +2447,7 @@
             mediaHtml = `<img src="${viewUrl}" alt="Imagem do card" class="image-preview" style="max-width: 100%; border-radius: 4px; margin-bottom: 1rem;">`;
           }
 
-          let authorDisp = card.author_name || "Desconhecido";
+          let authorDisp = card.authorName || "Desconhecido";
           let dateDisp =
             typeof AppUtils !== "undefined"
               ? AppUtils.formatDate(card.createdAt)
@@ -2608,15 +2608,15 @@
         try {
           // Bloquear o card
           await fetch("/api/cards/" + id, {
-              method: "PUT",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                  title,
-                  content,
-                  image_path: imagePath,
-                  locked_by: session.$id,
-                  locked_at: new Date().toISOString()
-              })
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              title,
+              content,
+              image_path: imagePath,
+              locked_by: session.$id,
+              locked_at: new Date().toISOString(),
+            }),
           });
         } catch (error) {
           console.error("Erro ao bloquear:", error);
@@ -2638,18 +2638,18 @@
         if (id) {
           try {
             await fetch("/api/cards/" + id, {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    title: titleInput.value,
-                    content: contentInput.value,
-                    image_path: imagePathInput.value,
-                    locked_by: null,
-                    locked_at: null
-                })
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                title: titleInput.value,
+                content: contentInput.value,
+                image_path: imagePathInput.value,
+                locked_by: null,
+                locked_at: null,
+              }),
             });
           } catch (e) {
-             console.error("Erro ao desbloquear", e);
+            console.error("Erro ao desbloquear", e);
           }
         }
         resetForm();
