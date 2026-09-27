@@ -13,7 +13,7 @@ persist = true
 [[d1_databases]]
 binding = "DB"
 database_name = "firstapp-db"
-database_id = "default" # The user wants to create one via Wrangler or let Wrangler create it locally during dev.
+database_id = "aef9502e-5934-42e1-b66b-e781f3bb6bae"
 
 [[r2_buckets]]
 binding = "MY_BUCKET"
