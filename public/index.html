@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>FirstApp - PWA Cloudflare v1.1.0</title>
+    <title>FirstApp - PWA Cloudflare v1.1.1</title>
 
     <!-- PWA Meta Tags -->
     <link rel="manifest" href="/manifest.json" />
@@ -1376,8 +1376,7 @@
         }
       }
     </style>
-    <!-- Supabase CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/appwrite@16.0.2"></script>
+    <!-- Scripts Utilities -->
     <script>
       var AppUtils = {
         getPdfName: function (base64Str, defaultName = "Documento PDF") {
@@ -2244,7 +2243,7 @@
     <!-- Navbar -->
     <nav class="navbar">
       <div class="hamburger-menu">☰</div>
-      <div class="app-name">FirstApp v1.1.0</div>
+      <div class="app-name">FirstApp v1.1.1</div>
     </nav>
 
     <!-- Main Content -->
@@ -2348,13 +2347,7 @@
         });
       }
 
-      // --- Appwrite CRUD ---
-      const { Client, Account, Databases, Storage, ID } = window.Appwrite;
-
-      let client;
-      let account;
-      let databases;
-      let storage;
+      // --- Custom API CRUD ---
       const authForm = document.getElementById("auth-form");
       const authNameInput = document.getElementById("auth-name");
       const authEmailInput = document.getElementById("auth-email");
@@ -2377,26 +2370,17 @@
 
       let session = null;
       let user = null;
-      let envConfig = null;
       let imageChanged = false;
 
       async function checkSession() {
-        try {
-          user = await account.get();
-          session = user; // Set session flag
-
-          // Buscar um JWT temporário para passar ao Worker ao fazer chamadas proxy (Uploads)
-          try {
-            const jwtResponse = await account.createJWT();
-            session.jwt = jwtResponse.jwt;
-          } catch (jwtErr) {
-            console.warn("Nao foi possivel gerar JWT para o proxy", jwtErr);
-          }
-
+        // Mock authentication for demonstration
+        if (localStorage.getItem("app_user")) {
+          user = JSON.parse(localStorage.getItem("app_user"));
+          session = user;
           document.getElementById("auth-container").style.display = "none";
           document.getElementById("card-form-container").style.display =
             "block";
-        } catch (err) {
+        } else {
           user = null;
           session = null;
           document.getElementById("auth-container").style.display = "block";
@@ -2406,76 +2390,29 @@
       }
 
       async function init() {
-        try {
-          const response = await fetch("/api/env");
-          if (!response.ok)
-            throw new Error("Não foi possível obter credenciais do env");
-          envConfig = await response.json();
-
-          if (!envConfig.appwriteEndpoint || !envConfig.appwriteProjectId) {
-            container.innerHTML =
-              '<p style="color:red;">Credenciais do Appwrite não configuradas no Cloudflare.</p>';
-            return;
-          }
-
-          client = new Client();
-          client
-            .setEndpoint(envConfig.appwriteEndpoint)
-            .setProject(envConfig.appwriteProjectId);
-
-          account = new Account(client);
-          databases = new Databases(client);
-          storage = new Storage(client);
-
-          await checkSession();
-        } catch (err) {
-          container.innerHTML = `<p style="color:red;">Erro na inicialização: ${err.message}</p>`;
-        }
+        await checkSession();
       }
+
       authForm.addEventListener("submit", async (e) => {
         e.preventDefault();
         const name = authNameInput.value.trim();
         const email = authEmailInput.value.trim();
-        const password = authPasswordInput.value;
-        authMessage.innerText = "Processando...";
 
-        try {
-          await account.createEmailPasswordSession(email, password);
-          authMessage.innerText = "";
-          authForm.reset();
-          await checkSession();
-        } catch (signInError) {
-          if (
-            signInError.code === 401 ||
-            signInError.message.toLowerCase().includes("invalid credentials") ||
-            signInError.code === 404
-          ) {
-            try {
-              await account.create(ID.unique(), email, password, name);
-              authMessage.innerText =
-                "Registro realizado com sucesso! Entrando...";
-              await account.createEmailPasswordSession(email, password);
-              authForm.reset();
-              await checkSession();
-            } catch (signUpError) {
-              authMessage.innerText =
-                "Erro ao registrar: " + signUpError.message;
-            }
-          } else {
-            authMessage.innerText =
-              "Erro ao fazer login: " + signInError.message;
-          }
-        }
+        const mockUser = {
+          $id: email,
+          name: name || email,
+          email: email,
+        };
+        localStorage.setItem("app_user", JSON.stringify(mockUser));
+        authMessage.innerText = "Login realizado com sucesso!";
+        authForm.reset();
+        await checkSession();
       });
 
       document
         .getElementById("btn-logout")
         .addEventListener("click", async () => {
-          try {
-            await account.deleteSession("current");
-          } catch (err) {
-            console.error(err);
-          }
+          localStorage.removeItem("app_user");
           await checkSession();
         });
 
@@ -2489,8 +2426,6 @@
         let totalBytes = 0;
 
         for (const card of cards) {
-          totalBytes += parseInt(card.size_bytes || 0, 10);
-
           const li = document.createElement("li");
           li.className = "task-item card";
           li.id = "entity-" + card.id;
@@ -2507,35 +2442,16 @@
           }
 
           let mediaHtml = "";
-          if (
-            card.media &&
-            card.media.length > 0 &&
-            typeof renderStackedDeckHTML === "function"
-          ) {
-            const publicMedia = card.media.map((m) => {
-              if (m.data && m.data.startsWith("data:")) return m;
-              const pubData = storage.getFileView(
-                envConfig.appwriteBucketId,
-                m.path,
-              );
-              return { ...m, data: pubData.href };
-            });
-            mediaHtml = renderStackedDeckHTML(publicMedia, card.id);
-          } else if (card.image_path) {
-            const viewUrl = storage.getFileView(
-              envConfig.appwriteBucketId,
-              card.image_path,
-            );
-            if (viewUrl) {
-              mediaHtml = `<img src="${viewUrl.href}" alt="Imagem do card" class="image-preview" style="max-width: 100%; border-radius: 4px; margin-bottom: 1rem;">`;
-            }
+          if (card.imagePath) {
+            const viewUrl = `/files/${encodeURIComponent(card.imagePath)}`;
+            mediaHtml = `<img src="${viewUrl}" alt="Imagem do card" class="image-preview" style="max-width: 100%; border-radius: 4px; margin-bottom: 1rem;">`;
           }
 
           let authorDisp = card.author_name || "Desconhecido";
           let dateDisp =
             typeof AppUtils !== "undefined"
-              ? AppUtils.formatDate(card.created_at)
-              : new Date(card.created_at).toLocaleString("pt-BR");
+              ? AppUtils.formatDate(card.createdAt)
+              : new Date(card.createdAt).toLocaleString("pt-BR");
 
           li.innerHTML = `
                     <div class="task-header" style="display: block; margin-bottom: 12px; clear: both;">
@@ -2555,23 +2471,13 @@
 
           if (session) {
             li.querySelector(".btn-edit").addEventListener("click", () => {
-              editCard(card.id, card.title, card.content, card.image_path);
+              editCard(card.id, card.title, card.content, card.imagePath);
             });
             li.querySelector(".btn-delete").addEventListener("click", () => {
               deleteCard(card.id);
             });
           }
           container.appendChild(li);
-        }
-
-        const storageFooter = document.querySelector(".storage-footer");
-        const storageText = document.getElementById("storageFooterText");
-        if (storageFooter && storageText) {
-          storageFooter.style.display = "flex";
-          storageFooter.style.position = "fixed";
-          storageFooter.style.bottom = "0";
-          const mb = (totalBytes / 1024 / 1024).toFixed(2);
-          storageText.innerText = `${mb} MB utilizados no banco de dados`;
         }
       }
 
@@ -2585,38 +2491,15 @@
           container.style.gap = "16px";
         }
 
-        const cachedCardsRaw = localStorage.getItem("firstapp_cards");
-        if (cachedCardsRaw) {
-          try {
-            const cachedCards = JSON.parse(cachedCardsRaw);
-            renderCardsList(cachedCards);
-          } catch (e) {}
-        } else {
-          container.innerHTML = "<p>Carregando...</p>";
-        }
+        container.innerHTML = "<p>Carregando...</p>";
 
         try {
-          const response = await databases.listDocuments(
-            envConfig.appwriteDatabaseId,
-            envConfig.appwriteCollectionId,
-            [window.Appwrite.Query.orderDesc("$createdAt")],
-          );
-
-          const cards = response.documents.map((doc) => ({
-            id: doc.$id,
-            title: doc.title,
-            content: doc.content,
-            image_path: doc.image_path,
-            created_at: doc.$createdAt,
-            author_name: doc.author_name || "Desconhecido",
-            size_bytes: doc.size_bytes || 0,
-          }));
-
-          localStorage.setItem("firstapp_cards", JSON.stringify(cards));
-          renderCardsList(cards);
+          const response = await fetch("/api/cards");
+          if (!response.ok) throw new Error("Falha ao buscar cards");
+          const data = await response.json();
+          renderCardsList(data.documents);
         } catch (error) {
-          if (!cachedCardsRaw)
-            container.innerHTML = `<p style="color:red;">Erro ao buscar cards: ${error.message}</p>`;
+          container.innerHTML = `<p style="color:red;">Erro ao buscar cards: ${error.message}</p>`;
           console.error(error);
         }
       }
@@ -2635,60 +2518,34 @@
           const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
 
           try {
-            const chunkSize = 1024 * 1024; // 1MB
-            const totalChunks = Math.ceil(file.size / chunkSize);
-            const uploadId = `${Date.now()}-${Math.random().toString(36).substring(2)}`;
-
             const submitBtn = form.querySelector('button[type="submit"]');
             const originalBtnText = submitBtn.innerText;
             submitBtn.disabled = true;
+            submitBtn.innerText = `Salvando imagem...`;
 
-            for (let i = 0; i < totalChunks; i++) {
-              const start = i * chunkSize;
-              const end = Math.min(start + chunkSize, file.size);
-              const chunk = file.slice(start, end);
+            const uploadResponse = await fetch("/api/upload", {
+              method: "PUT",
+              headers: {
+                "X-File-Name": fileName,
+                "X-Content-Type": file.type,
+              },
+              body: file, // we send the file directly
+            });
 
-              submitBtn.innerText = `Salvando imagem... ${Math.round((i / totalChunks) * 100)}%`;
-
-              let currentFileId = "unique()";
-              if (i > 0) {
-                currentFileId = window.lastUploadedFileId || "unique()";
-              }
-
-              const uploadResponse = await fetch("/api/upload", {
-                method: "PUT", // Bypass firewall
-                headers: {
-                  "X-Appwrite-JWT": session.jwt || "",
-                  "X-Appwrite-File-Id": currentFileId,
-                  "Content-Range": `bytes ${start}-${end - 1}/${file.size}`,
-                  "X-Upload-Id": uploadId,
-                  "X-Chunk-Index": i.toString(),
-                  "X-Total-Chunks": totalChunks.toString(),
-                  "X-File-Name": fileName,
-                  "X-Content-Type": file.type,
-                },
-                body: chunk,
-              });
-
-              if (!uploadResponse.ok) {
-                submitBtn.innerText = originalBtnText;
-                submitBtn.disabled = false;
-                throw new Error("Falha no upload do chunk " + i);
-              }
-
-              const responseData = await uploadResponse.json();
-              if (responseData.error) {
-                submitBtn.innerText = originalBtnText;
-                submitBtn.disabled = false;
-                throw new Error(responseData.error);
-              }
-
-              window.lastUploadedFileId = responseData.fileId;
-              if (responseData.final) {
-                imagePath = responseData.path; // Retorna o ID no appwrite
-                window.lastUploadedFileId = null; // reseta
-              }
+            if (!uploadResponse.ok) {
+              submitBtn.innerText = originalBtnText;
+              submitBtn.disabled = false;
+              throw new Error("Falha no upload");
             }
+
+            const responseData = await uploadResponse.json();
+            if (responseData.error) {
+              submitBtn.innerText = originalBtnText;
+              submitBtn.disabled = false;
+              throw new Error(responseData.error);
+            }
+
+            imagePath = responseData.path;
 
             submitBtn.innerText = originalBtnText;
             submitBtn.disabled = false;
@@ -2701,35 +2558,33 @@
         if (id) {
           // Update
           try {
-            await databases.updateDocument(
-              envConfig.appwriteDatabaseId,
-              envConfig.appwriteCollectionId,
-              id,
-              {
+            await fetch("/api/cards/" + id, {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
                 title,
                 content,
                 image_path: imagePath,
                 locked_by: null,
                 locked_at: null,
-              },
-            );
+              }),
+            });
           } catch (error) {
             alert("Erro ao atualizar: " + error.message);
           }
         } else {
           // Insert
           try {
-            await databases.createDocument(
-              envConfig.appwriteDatabaseId,
-              envConfig.appwriteCollectionId,
-              ID.unique(),
-              {
+            await fetch("/api/cards", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
                 title,
                 content,
                 image_path: imagePath,
                 author_name: session.name,
-              },
-            );
+              }),
+            });
           } catch (error) {
             alert("Erro ao criar: " + error.message);
           }
@@ -2742,11 +2597,7 @@
       window.deleteCard = async function (id) {
         if (!confirm("Deseja realmente excluir este card?")) return;
         try {
-          await databases.deleteDocument(
-            envConfig.appwriteDatabaseId,
-            envConfig.appwriteCollectionId,
-            id,
-          );
+          await fetch("/api/cards/" + id, { method: "DELETE" });
           loadCards();
         } catch (error) {
           alert("Erro ao excluir: " + error.message);
@@ -2755,27 +2606,20 @@
 
       window.editCard = async function (id, title, content, imagePath) {
         try {
-          const doc = await databases.getDocument(
-            envConfig.appwriteDatabaseId,
-            envConfig.appwriteCollectionId,
-            id,
-          );
-          if (doc.locked_by && doc.locked_by !== session.$id) {
-            alert("Este card está bloqueado por outro usuário.");
-            return;
-          }
-          await databases.updateDocument(
-            envConfig.appwriteDatabaseId,
-            envConfig.appwriteCollectionId,
-            id,
-            {
-              locked_by: session.$id,
-              locked_at: new Date().toISOString(),
-            },
-          );
+          // Bloquear o card
+          await fetch("/api/cards/" + id, {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                  title,
+                  content,
+                  image_path: imagePath,
+                  locked_by: session.$id,
+                  locked_at: new Date().toISOString()
+              })
+          });
         } catch (error) {
-          alert("Erro ao tentar editar: " + error.message);
-          return;
+          console.error("Erro ao bloquear:", error);
         }
 
         idInput.value = id;
@@ -2793,13 +2637,20 @@
         const id = idInput.value;
         if (id) {
           try {
-            await databases.updateDocument(
-              envConfig.appwriteDatabaseId,
-              envConfig.appwriteCollectionId,
-              id,
-              { locked_by: null, locked_at: null },
-            );
-          } catch (e) {}
+            await fetch("/api/cards/" + id, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    title: titleInput.value,
+                    content: contentInput.value,
+                    image_path: imagePathInput.value,
+                    locked_by: null,
+                    locked_at: null
+                })
+            });
+          } catch (e) {
+             console.error("Erro ao desbloquear", e);
+          }
         }
         resetForm();
       });
