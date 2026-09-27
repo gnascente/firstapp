@@ -1,0 +1,1 @@
+ALTER TABLE `cards` ADD `author_name` text;

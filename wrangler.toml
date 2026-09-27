@@ -1,23 +1,20 @@
 name = "firstapp"
 compatibility_date = "2023-10-30"
-main = "worker.js"
+main = "src/index.ts"
 
 [assets]
 directory = "public"
 
-# ...
 [observability.logs]
 enabled = true
 invocation_logs = true
 persist = true
-# ...
-# ...
-[vars]
-APPWRITE_ENDPOINT = "https://sfo.cloud.appwrite.io/v1"
-APPWRITE_PROJECT_ID = "6ab7319800354a4656bd"
-APPWRITE_DATABASE_ID = "firstapp" # A definir
-APPWRITE_COLLECTION_ID = "cards" # A definir
-APPWRITE_BUCKET_ID = "firstappfiles" # A definir
-# ...
 
+[[d1_databases]]
+binding = "DB"
+database_name = "firstapp-db"
+database_id = "default" # The user wants to create one via Wrangler or let Wrangler create it locally during dev.
 
+[[r2_buckets]]
+binding = "MY_BUCKET"
+bucket_name = "mystorage"

@@ -4,7 +4,9 @@
   "description": "Este é um template básico para iniciar uma aplicação \"Hello World\" no Cloudflare Pages.",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "wrangler d1 migrations apply DB"
   },
   "repository": {
     "type": "git",
@@ -19,6 +21,15 @@
   },
   "homepage": "https://github.com/gnascente/firstapp#readme",
   "devDependencies": {
-    "canvas": "^3.2.3"
+    "@cloudflare/workers-types": "^5.20260927.1",
+    "@types/node": "^26.6.3",
+    "canvas": "^3.2.3",
+    "drizzle-kit": "^0.31.11",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "wrangler": "^4.141.0"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.45.3"
   }
 }
