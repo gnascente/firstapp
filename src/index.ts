@@ -16,8 +16,8 @@ export default {
     if (url.pathname.startsWith("/api/")) {
       const db = drizzle(env.DB);
 
-      // GET /api/cards
-      if (url.pathname === "/api/cards" && request.method === "GET") {
+      // GET /api/equipamentos
+      if (url.pathname === "/api/equipamentos" && request.method === "GET") {
         try {
           const allCards = await db.select().from(cards).orderBy(desc(cards.createdAt));
           return new Response(JSON.stringify({ documents: allCards }), {
@@ -31,8 +31,8 @@ export default {
         }
       }
 
-      // POST /api/cards
-      if (url.pathname === "/api/cards" && request.method === "POST") {
+      // POST /api/equipamentos
+      if (url.pathname === "/api/equipamentos" && request.method === "POST") {
         try {
           const body = (await request.json()) as any;
           await db.insert(cards).values({
@@ -53,8 +53,8 @@ export default {
         }
       }
 
-      // PUT /api/cards/:id
-      if (url.pathname.startsWith("/api/cards/") && request.method === "PUT") {
+      // PUT /api/equipamentos/:id
+      if (url.pathname.startsWith("/api/equipamentos/") && request.method === "PUT") {
         const id = parseInt(url.pathname.split("/").pop() || "0", 10);
         if (!id) return new Response("Invalid ID", { status: 400 });
 
@@ -81,8 +81,8 @@ export default {
         }
       }
 
-      // DELETE /api/cards/:id
-      if (url.pathname.startsWith("/api/cards/") && request.method === "DELETE") {
+      // DELETE /api/equipamentos/:id
+      if (url.pathname.startsWith("/api/equipamentos/") && request.method === "DELETE") {
         const id = parseInt(url.pathname.split("/").pop() || "0", 10);
         if (!id) return new Response("Invalid ID", { status: 400 });
 
