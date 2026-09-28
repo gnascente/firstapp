@@ -291,7 +291,7 @@
             <i class="material-icons" style="color:var(--primary);" id="headerIcon">oil_barrel</i>
             <div style="display:flex; flex-direction:column; line-height:1; min-width: 0;">
                 <span id="headerText">Oráculo P-31</span>
-                <span id="headerVersion" style="font-size: 10px; color: var(--on-surface-variant); font-weight: normal; margin-top:2px;">v 4.8.6</span>
+                <span id="headerVersion" style="font-size: 10px; color: var(--on-surface-variant); font-weight: normal; margin-top:2px;">v 4.8.7</span>
             </div>
         </h1>
         <div class="header-actions">
@@ -935,7 +935,7 @@ var App = {
             // 2. Fetch Index
             syncIndicator.innerText = "A obter índice..." + authorSuffix;
             const indexRes = await fetch(`/api/backup?action=index&prefix=${prefix}&ts=${Date.now()}`);
-            if(!indexRes.ok) throw new Error("Falha ao obter índice da nuvem.");
+            if(!indexRes.ok) { let errText = await indexRes.text(); try { errText = JSON.parse(errText).error; } catch(e){} throw new Error(errText ? `Falha ao obter índice da nuvem: ${errText}` : "Falha ao obter índice da nuvem."); }
             const indexResText = await indexRes.text();
             let remoteIndex;
             try {
@@ -1031,8 +1031,7 @@ var App = {
                     body: chunkStr
                 });
 
-                if(!uploadRes.ok) {
-                    throw new Error(`Falha ao enviar pacote ${i+1}`);
+                if(!uploadRes.ok) { let errText = await uploadRes.text(); try { errText = JSON.parse(errText).error; } catch(e){} throw new Error(errText ? `Falha ao enviar pacote ${i+1}: ${errText}` : `Falha ao enviar pacote ${i+1}`);
                 }
 
                 let uploadData;
