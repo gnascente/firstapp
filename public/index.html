@@ -200,6 +200,23 @@
         .autocomplete-dropdown { position: absolute; top: 100%; left: 0; right: 0; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; box-shadow: var(--shadow); max-height: 180px; overflow-y: auto; z-index: 2000; display: none; flex-direction: column; margin-top: 4px; }
         .autocomplete-item { padding: 12px 16px; border-bottom: 1px solid rgba(255,255,255,0.05); cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 14px; }
         .autocomplete-item:hover { background: rgba(255,255,255,0.05); }
+        .mention-link { color: var(--primary); font-weight: 500; cursor: pointer; text-decoration: underline; text-decoration-style: dotted; }
+
+        /* Timeline Styles */
+        .timeline-day-group { display: flex; flex-direction: column; width: 100%; margin-bottom: 24px; position: relative; }
+        .timeline-date-header { display: flex; align-items: center; background: #1a1a1a; padding: 4px 16px; border-radius: 4px; font-size: 13px; font-weight: bold; color: #fff; margin-bottom: 16px; position: sticky; top: 76px; z-index: 10; margin-left: -16px; margin-right: -16px; }
+        .timeline-entry { display: flex; gap: 16px; margin-bottom: 24px; position: relative; }
+        .timeline-entry:not(:last-child)::after { content: ''; position: absolute; left: 24px; top: 60px; bottom: -24px; width: 1px; background: var(--surface-variant); z-index: 0; }
+        .timeline-left { display: flex; flex-direction: column; align-items: center; min-width: 50px; z-index: 1; }
+        .timeline-day-name { font-size: 11px; color: var(--on-surface-variant); text-transform: uppercase; font-weight: bold; }
+        .timeline-day-num { font-size: 24px; font-weight: bold; color: var(--on-surface); line-height: 1; margin-top: 4px; }
+        .timeline-time { font-size: 10px; color: var(--on-surface-variant); margin-top: 6px; }
+        .timeline-right { flex-grow: 1; display: flex; flex-direction: column; padding-bottom: 8px; border-bottom: 1px solid var(--surface-variant); }
+        .timeline-text { font-size: 15px; line-height: 1.4; color: #fff; word-break: break-word; white-space: pre-wrap; font-weight: 500; }
+        .timeline-meta { font-size: 12px; color: var(--on-surface-variant); margin-top: 8px; display: flex; align-items: center; gap: 4px; }
+        .timeline-media-wrapper { width: 80px; height: 80px; flex-shrink: 0; border-radius: 8px; overflow: hidden; margin-left: 12px; position: relative; border: 1px solid #555; cursor: pointer; }
+        .timeline-content-row { display: flex; justify-content: space-between; align-items: flex-start; }
+        .timeline-highlight-focus { background-color: rgba(255, 235, 59, 0.4) !important; transition: background-color 0.5s; border-radius: 4px; }
 
         .modal-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin-top: 24px; }
         .btn { border: none; padding: 10px 18px; border-radius: 24px; font-weight: 500; cursor: pointer; font-size: 14px; white-space: nowrap; }
@@ -291,7 +308,7 @@
             <i class="material-icons" style="color:var(--primary);" id="headerIcon">oil_barrel</i>
             <div style="display:flex; flex-direction:column; line-height:1; min-width: 0;">
                 <span id="headerText">Oráculo P-31</span>
-                <span id="headerVersion" style="font-size: 10px; color: var(--on-surface-variant); font-weight: normal; margin-top:2px;">v 4.8.7</span>
+                <span id="headerVersion" style="font-size: 10px; color: var(--on-surface-variant); font-weight: normal; margin-top:2px;">v 4.8.8</span>
             </div>
         </h1>
         <div class="header-actions">
@@ -300,6 +317,7 @@
             <div style="position: relative;" id="menuWrapper">
                 <i class="material-icons action-icon" onclick="App.toggleMenu(event)">more_vert</i>
                 <div id="mainMenu" class="dropdown-menu">
+                <div class="menu-item" onclick="App.openTimeline()"><i class="material-icons">timeline</i> Linha do Tempo</div>
                     <input type="file" id="restoreLocalFile" accept=".zip,.json" style="display:none" onchange="App.restoreFromLocal(event)">
                     <div class="menu-item" onclick="document.getElementById('restoreLocalFile').click()"><i class="material-icons">folder_zip</i> Restaurar (Local)</div>
                     <div class="menu-item" onclick="App.exportToLocal()"><i class="material-icons">download</i> Exportar (Local)</div>
@@ -346,6 +364,21 @@
             </div>
         </div>
         <ul class="task-list" id="entityList"></ul>
+    </div>
+
+    <div id="viewTimeline" class="view-section">
+        <div class="search-container" style="display: flex; gap: 8px; align-items: center;">
+            <div class="search-box" style="flex-grow: 1;">
+                <i class="material-icons search-icon">search</i>
+                <input type="text" id="timelineSearchInput" name="q_search_timeline" placeholder="Buscar na linha do tempo..." autocomplete="new-password" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" oninput="clearTimeout(App.timelineSearchTimeout); App.timelineSearchTimeout = setTimeout(() => App.renderTimelineSearch(), 200);">
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 4px;">
+                <i class="material-icons action-icon" style="background: var(--surface-variant); border-radius: 4px; padding: 2px;" onclick="App.jumpTimelineSearch('up')">keyboard_arrow_up</i>
+                <i class="material-icons action-icon" style="background: var(--surface-variant); border-radius: 4px; padding: 2px;" onclick="App.jumpTimelineSearch('down')">keyboard_arrow_down</i>
+            </div>
+            <div id="timelineSearchCount" style="font-size: 11px; color: var(--on-surface-variant); white-space: nowrap; width: 30px; text-align: center;">0/0</div>
+        </div>
+        <div id="timelineContainer" style="padding: 16px; display: flex; flex-direction: column; gap: 0;"></div>
     </div>
 
     <div class="storage-footer" onclick="App.showStorageDetails()" style="cursor: pointer;">
@@ -432,7 +465,8 @@
         </div>
 
         <div class="input-group">
-            <textarea id="logText" name="q_log_text" class="input-field" placeholder="Descreva o andamento, evento ou observação..." autocomplete="new-password" role="presentation" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true"></textarea>
+            <textarea id="logText" name="q_log_text" class="input-field" placeholder="Descreva o andamento, evento ou observação... (Use @ para mencionar equipamentos)" autocomplete="new-password" role="presentation" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" oninput="LogModal.handleTextareaInput(event)"></textarea>
+            <div id="logMentionAutocomplete" class="autocomplete-dropdown"></div>
         </div>
 
         <div class="input-group" style="display: flex; gap: 8px;">
@@ -590,6 +624,7 @@ var AppUtils = {
         const match = base64Str.match(/name=([^;]+);/); return match ? decodeURIComponent(match[1]) : defaultName;
     },
     formatDate: function(ts) { if (!ts) return ""; const d = new Date(ts); return `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear().toString().slice(-2)} ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`; },
+    escapeHTML: function(str) { return str.replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)); },
     highlight: function(text, term) { if (!term) return text; const regex = new RegExp(`(${term})`, 'gi'); return text.replace(regex, '<mark class="highlight">$1</mark>'); },
 
     compressVideo: async function(file, onProgress) {
@@ -1483,8 +1518,10 @@ Stack: ${e.stack}`;
     goHome: function() {
         this.currentView = 'home';
         document.getElementById('viewHome').classList.add('active'); document.getElementById('viewList').classList.remove('active');
+        document.getElementById('viewTimeline').classList.remove('active');
         document.getElementById('headerIcon').innerText = 'oil_barrel'; document.getElementById('headerText').innerText = 'Oráculo P-31';
         document.getElementById('btnBack').style.display = 'none'; document.getElementById('headerVersion').style.display = 'inline';
+        document.getElementById('mainFab').style.display = 'none';
 
         document.getElementById('homeSearchInput').value = '';
         this.renderHomeSearch();
@@ -1550,12 +1587,18 @@ Stack: ${e.stack}`;
     openModule: function(type, name, icon) {
         this.currentView = 'list'; this.moduleType = type; this.moduleName = name; this.moduleIcon = icon;
         document.getElementById('viewHome').classList.remove('active'); document.getElementById('viewList').classList.add('active');
+        document.getElementById('viewTimeline').classList.remove('active');
         document.getElementById('headerIcon').innerText = icon; document.getElementById('headerText').innerText = name;
         document.getElementById('btnBack').style.display = 'inline-block'; document.getElementById('headerVersion').style.display = 'none';
+        document.getElementById('mainFab').style.display = 'none';
         document.getElementById('searchInput').value = ''; this.renderList(); history.pushState({ view: 'list' }, '');
     },
 
     focusEntity: async function(id, focusTerm = '', focusLogId = null) {
+        if (id === 'global-timeline') {
+            this.openTimeline();
+            return;
+        }
         const entity = await AppDB.entities.get(id); if(!entity || entity.isDeleted) return;
         this.searchFocusTerm = focusTerm;
 
@@ -1569,8 +1612,10 @@ Stack: ${e.stack}`;
 
         this.currentView = 'list'; this.moduleType = targetModuleType; this.moduleName = targetModuleName; this.moduleIcon = targetModuleIcon;
         document.getElementById('viewHome').classList.remove('active'); document.getElementById('viewList').classList.add('active');
+        document.getElementById('viewTimeline').classList.remove('active');
         document.getElementById('headerIcon').innerText = targetModuleIcon; document.getElementById('headerText').innerText = targetModuleName;
         document.getElementById('btnBack').style.display = 'inline-block'; document.getElementById('headerVersion').style.display = 'none';
+        document.getElementById('mainFab').style.display = 'none';
 
         document.getElementById('searchInput').value = focusTerm;
         await this.renderList();
@@ -1607,7 +1652,7 @@ Stack: ${e.stack}`;
     },
 
     goBack: function(fromPopState = false) {
-        if (this.currentView === 'list') { this.goHome(); if(!fromPopState) history.back(); }
+        if (this.currentView === 'list' || this.currentView === 'timeline') { this.goHome(); if(!fromPopState) history.back(); }
     },
 
     createEntityOnTheFly: async function(name, parentId = null) {
@@ -1697,7 +1742,18 @@ Stack: ${e.stack}`;
                 }
             }
 
-            let displayedText = log.text; if(searchTerm) displayedText = AppUtils.highlight(displayedText, searchTerm);
+            let displayedText = log.text || '';
+
+            displayedText = AppUtils.escapeHTML(displayedText);
+
+            // Format mentions as links before highlight to avoid messing up HTML
+            displayedText = displayedText.replace(/@\[(.*?)\]\((.*?)\)/g, (match, name, id) => {
+                const safeName = AppUtils.escapeHTML(name);
+                const safeId = AppUtils.escapeHTML(id);
+                return `<span class="mention-link" onclick="App.focusEntity('${safeId}')">@${safeName}</span>`;
+            });
+
+            if(searchTerm) displayedText = AppUtils.highlight(displayedText, searchTerm);
 
             let toggleHtml = '';
             let addIconHtml = '';
@@ -1736,6 +1792,206 @@ Stack: ${e.stack}`;
 
         groupHtml += `</div>`;
         return groupHtml;
+    },
+
+    timelineSearchTimeout: null,
+    timelineCurrentMatches: [],
+    timelineMatchIndex: -1,
+
+    openTimeline: async function() {
+        this.currentView = 'timeline';
+        MenuModal.closeUI();
+        document.getElementById('viewHome').classList.remove('active');
+        document.getElementById('viewList').classList.remove('active');
+        document.getElementById('viewTimeline').classList.add('active');
+
+        document.getElementById('headerIcon').innerText = 'timeline';
+        document.getElementById('headerText').innerText = 'Linha do Tempo';
+        document.getElementById('btnBack').style.display = 'inline-block';
+        document.getElementById('headerVersion').style.display = 'none';
+
+        const fab = document.getElementById('mainFab');
+        fab.style.display = 'grid';
+        fab.onclick = () => LogModal.open(null, 'global-timeline');
+
+        // Garante que a entidade global-timeline existe silenciosamente
+        let globalEntity = await AppDB.entities.get('global-timeline');
+        if (!globalEntity) {
+            await AppDB.entities.put({ id: 'global-timeline', type: 'system', name: 'Timeline Global', createdAt: Date.now(), updatedAt: Date.now(), parentId: null });
+        }
+
+        document.getElementById('timelineSearchInput').value = '';
+        this.timelineCurrentMatches = [];
+        this.timelineMatchIndex = -1;
+        document.getElementById('timelineSearchCount').innerText = '0/0';
+
+        await this.renderTimeline();
+        history.pushState({ view: 'timeline' }, '');
+    },
+
+    renderTimelineSearch: function() {
+        const term = document.getElementById('timelineSearchInput').value.toLowerCase().trim();
+        const container = document.getElementById('timelineContainer');
+
+        // Remove old highlights
+        const oldHighlights = container.querySelectorAll('.timeline-highlight-focus');
+        oldHighlights.forEach(el => el.classList.remove('timeline-highlight-focus'));
+
+        this.timelineCurrentMatches = [];
+        this.timelineMatchIndex = -1;
+
+        if (!term) {
+            document.getElementById('timelineSearchCount').innerText = '0/0';
+            this.renderTimeline(); // Re-render to clear mark tags
+            return;
+        }
+
+        // We need to re-render with highlight tags
+        this.renderTimeline(term).then(() => {
+            const marks = container.querySelectorAll('mark.highlight');
+            this.timelineCurrentMatches = Array.from(marks).filter(mark => mark.closest('.timeline-entry'));
+
+            if (this.timelineCurrentMatches.length > 0) {
+                this.timelineMatchIndex = 0;
+                this.updateTimelineSearchCount();
+                this.jumpTimelineSearch('current');
+            } else {
+                document.getElementById('timelineSearchCount').innerText = '0/0';
+            }
+        });
+    },
+
+    updateTimelineSearchCount: function() {
+        const countEl = document.getElementById('timelineSearchCount');
+        if (this.timelineCurrentMatches.length === 0) {
+            countEl.innerText = '0/0';
+        } else {
+            countEl.innerText = `${this.timelineMatchIndex + 1}/${this.timelineCurrentMatches.length}`;
+        }
+    },
+
+    jumpTimelineSearch: function(direction) {
+        if (this.timelineCurrentMatches.length === 0) return;
+
+        const oldMarks = document.querySelectorAll('.timeline-highlight-focus');
+        oldMarks.forEach(el => el.classList.remove('timeline-highlight-focus'));
+
+        if (direction === 'up') {
+            this.timelineMatchIndex = (this.timelineMatchIndex - 1 + this.timelineCurrentMatches.length) % this.timelineCurrentMatches.length;
+        } else if (direction === 'down') {
+            this.timelineMatchIndex = (this.timelineMatchIndex + 1) % this.timelineCurrentMatches.length;
+        }
+
+        const target = this.timelineCurrentMatches[this.timelineMatchIndex];
+        if (target) {
+            const entry = target.closest('.timeline-entry');
+            if (entry) {
+                entry.classList.add('timeline-highlight-focus');
+                entry.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                setTimeout(() => entry.classList.remove('timeline-highlight-focus'), 2000);
+            }
+        }
+        this.updateTimelineSearchCount();
+    },
+
+    renderTimeline: async function(highlightTerm = '') {
+        const container = document.getElementById('timelineContainer');
+        container.innerHTML = '<div class="empty-state"><i class="material-icons" style="animation: spin 1s linear infinite;">sync</i><p>Aguarde...</p></div>';
+
+        const allLogs = await AppDB.logs.filter(l => !l.isDeleted).toArray();
+        const timelineLogs = allLogs.filter(l => l.originEntityId === 'global-timeline' || l.relatedEntities.some(rel => rel.id === 'global-timeline'));
+
+        if (timelineLogs.length === 0) {
+            container.innerHTML = `<div class="empty-state"><i class="material-icons">timeline</i><p>Nenhum registro na linha do tempo.<br>Clique no + para adicionar.</p></div>`;
+            return;
+        }
+
+        timelineLogs.sort((a, b) => b.createdAt - a.createdAt);
+
+        let html = '';
+        let currentDayStr = '';
+
+        const daysOfWeek = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB'];
+
+        for (let log of timelineLogs) {
+            const dateObj = new Date(log.createdAt);
+            const dayNum = dateObj.getDate().toString().padStart(2, '0');
+            const monthNames = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+            const monthStr = monthNames[dateObj.getMonth()];
+            const yearStr = dateObj.getFullYear();
+            const dayName = daysOfWeek[dateObj.getDay()];
+            const timeStr = `${dateObj.getHours().toString().padStart(2, '0')}:${dateObj.getMinutes().toString().padStart(2, '0')}`;
+
+            const groupDateStr = `${monthStr} ${yearStr}`;
+
+            if (groupDateStr !== currentDayStr) {
+                if (currentDayStr !== '') html += `</div>`; // Close previous group
+                html += `<div class="timeline-day-group">
+                            <div class="timeline-date-header">${groupDateStr}</div>`;
+                currentDayStr = groupDateStr;
+            }
+
+            let textContent = log.text || '';
+
+            textContent = AppUtils.escapeHTML(textContent);
+
+            // Format mentions as links before highlight to avoid messing up HTML
+            textContent = textContent.replace(/@\[(.*?)\]\((.*?)\)/g, (match, name, id) => {
+                const safeName = AppUtils.escapeHTML(name);
+                const safeId = AppUtils.escapeHTML(id);
+                return `<span class="mention-link" onclick="App.focusEntity('${safeId}')">@${safeName}</span>`;
+            });
+
+            if (highlightTerm) {
+                textContent = AppUtils.highlight(textContent, highlightTerm);
+            }
+
+            let mediaHtml = '';
+            if (log.images && log.images.length > 0) {
+                let img = log.images[0];
+                let clickHandler = `CarouselModal.open('${log.id}')`;
+                let thumbSrc = img.data;
+
+                if (img.isVideo || (img.data.startsWith('data:video/') || img.data.endsWith('.webm') || img.data.endsWith('.mp4'))) {
+                    thumbSrc = img.thumbnail || '';
+                    mediaHtml = `<div class="timeline-media-wrapper" onclick="${clickHandler}" style="background: url('${thumbSrc}') center/cover;"><div style="background:rgba(0,0,0,0.5); width:100%; height:100%; display:flex; align-items:center; justify-content:center;"><i class="material-icons" style="color:white;">play_circle_outline</i></div>`;
+                } else if ((img.data.startsWith('data:application/pdf') || img.data.endsWith('.pdf'))) {
+                    mediaHtml = `<div class="timeline-media-wrapper" onclick="${clickHandler}" style="background: var(--surface-variant); display:flex; align-items:center; justify-content:center; flex-direction:column;"><i class="material-icons" style="color:var(--danger); font-size: 32px;">picture_as_pdf</i><span style="font-size:9px; margin-top:4px; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; padding:0 4px;">PDF</span>`;
+                } else {
+                    mediaHtml = `<div class="timeline-media-wrapper" onclick="${clickHandler}"><img src="${thumbSrc}" style="width:100%; height:100%; object-fit:cover;">`;
+                }
+
+                if (log.images.length > 1) {
+                    mediaHtml += `<div style="position:absolute; bottom:4px; right:4px; background:rgba(0,0,0,0.7); color:white; font-size:10px; font-weight:bold; padding:2px 6px; border-radius:8px;">+${log.images.length - 1}</div>`;
+                }
+                mediaHtml += `</div>`;
+            }
+
+            html += `
+                <div class="timeline-entry" id="timeline-log-${log.id}">
+                    <div class="timeline-left">
+                        <div class="timeline-day-name">${dayName}</div>
+                        <div class="timeline-day-num">${dayNum}</div>
+                        <div class="timeline-time">${timeStr}</div>
+                    </div>
+                    <div class="timeline-right">
+                        <div class="timeline-content-row">
+                            <div style="flex-grow:1; display:flex; flex-direction:column;">
+                                <div class="timeline-text">${textContent}</div>
+                                <div class="timeline-meta">
+                                    <i class="material-icons" style="font-size:14px; cursor:pointer;" onclick="LogModal.open('${log.id}', 'global-timeline')">edit</i>
+                                    <span>${log.authorName || 'N/A'}</span>
+                                </div>
+                            </div>
+                            ${mediaHtml}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        if (currentDayStr !== '') html += `</div>`; // Close last group
+
+        container.innerHTML = html;
     },
 
     renderList: async function() {
@@ -2074,10 +2330,73 @@ var LogModal = {
 
         document.getElementById('logLinkInput').value = '';
         document.getElementById('logLinkAutocomplete').style.display = 'none';
+        document.getElementById('logMentionAutocomplete').style.display = 'none';
         await this.renderLinks();
         this.updateUI(); AppState.openModal(this);
     },
     closeUI: function() { AppState.closeModalUI(); },
+
+    handleTextareaInput: async function(e) {
+        const text = e.target.value;
+        const cursor = e.target.selectionStart;
+        const textBeforeCursor = text.substring(0, cursor);
+        const lastAtSignIndex = textBeforeCursor.lastIndexOf('@');
+
+        const dropdown = document.getElementById('logMentionAutocomplete');
+
+        if (lastAtSignIndex !== -1) {
+            // Check if it's a valid mention start (either start of string or preceded by space)
+            if (lastAtSignIndex === 0 || textBeforeCursor[lastAtSignIndex - 1].match(/\s/)) {
+                const term = textBeforeCursor.substring(lastAtSignIndex + 1).toLowerCase();
+
+                dropdown.innerHTML = '<div class="autocomplete-item" style="justify-content: center; color: var(--primary);"><i class="material-icons" style="font-size:16px; animation: spin 1s linear infinite;">sync</i> Aguarde...</div>';
+                dropdown.style.display = 'flex';
+
+                let allEntities = await AppDB.entities.where('type').equals('equipamento').toArray();
+                let available = allEntities.filter(e => !e.isDeleted);
+                if (term) available = available.filter(e => e.name.toLowerCase().includes(term));
+
+                if (available.length === 0) { dropdown.style.display = 'none'; return; }
+
+                dropdown.innerHTML = available.slice(0, 5).map(e => `<div class="autocomplete-item" onclick="LogModal.insertMention('${e.id}', '${e.name.replace(/'/g, "\\'")}')"><i class="material-icons" style="font-size:16px; opacity:0.6;">precision_manufacturing</i> ${e.name}</div>`).join('');
+                dropdown.style.display = 'flex';
+                return;
+            }
+        }
+        dropdown.style.display = 'none';
+    },
+
+    insertMention: function(id, name) {
+        const textarea = document.getElementById('logText');
+        const text = textarea.value;
+        const cursor = textarea.selectionStart;
+        const textBeforeCursor = text.substring(0, cursor);
+        const textAfterCursor = text.substring(cursor);
+
+        const lastAtSignIndex = textBeforeCursor.lastIndexOf('@');
+
+        if (lastAtSignIndex !== -1) {
+            const beforeMention = text.substring(0, lastAtSignIndex);
+            // Replace the @term with @[Name](id) syntax
+            const mentionText = `@[${name}](${id}) `;
+
+            textarea.value = beforeMention + mentionText + textAfterCursor;
+
+            // Add to related entities if not already there
+            if (!this.tempRelations.some(rel => rel.id === id)) {
+                this.tempRelations.push({ type: 'equipamento', id: id });
+                this.renderLinks();
+            }
+
+            // Move cursor after the inserted mention
+            const newCursorPos = beforeMention.length + mentionText.length;
+            textarea.setSelectionRange(newCursorPos, newCursorPos);
+            textarea.focus();
+        }
+
+        document.getElementById('logMentionAutocomplete').style.display = 'none';
+    },
+
     searchLinks: async function() {
         const term = document.getElementById('logLinkInput').value.toLowerCase().trim();
         const dropdown = document.getElementById('logLinkAutocomplete');
