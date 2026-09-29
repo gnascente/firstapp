@@ -208,8 +208,8 @@
         /* Timeline Styles */
         .timeline-day-group { display: flex; flex-direction: column; width: 100%; margin-bottom: 24px; position: relative; }
         .timeline-date-header { display: flex; align-items: center; background: #1a1a1a; padding: 4px 16px; border-radius: 4px; font-size: 13px; font-weight: bold; color: #fff; margin-bottom: 16px; position: sticky; top: 76px; z-index: 10; margin-left: -16px; margin-right: -16px; }
-        .timeline-entry { display: flex; gap: 16px; margin-bottom: 24px; position: relative; }
-        .timeline-entry:not(:last-child)::after { content: ''; position: absolute; left: 24px; top: 60px; bottom: -24px; width: 1px; background: var(--surface-variant); z-index: 0; }
+        .timeline-entry { display: flex; gap: 16px; margin-bottom: 8px; position: relative; }
+        .timeline-entry:not(:last-child)::after { content: ''; position: absolute; left: 24px; top: 60px; bottom: -8px; width: 1px; background: var(--surface-variant); z-index: 0; }
         .timeline-left { display: flex; flex-direction: column; align-items: center; min-width: 50px; z-index: 1; }
         .timeline-day-name { font-size: 11px; color: var(--on-surface-variant); text-transform: uppercase; font-weight: bold; }
         .timeline-day-num { font-size: 24px; font-weight: bold; color: var(--on-surface); line-height: 1; margin-top: 4px; }
@@ -371,7 +371,7 @@
     </div>
 
     <div id="viewTimeline" class="view-section">
-        <div class="search-container" style="display: flex; gap: 8px; align-items: center;">
+        <div class="search-container" style="gap: 8px; align-items: center;">
             <div class="search-box" style="flex-grow: 1;">
                 <i class="material-icons search-icon">search</i>
                 <input type="text" id="timelineSearchInput" name="q_search_timeline" placeholder="Buscar na linha do tempo..." autocomplete="new-password" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" oninput="clearTimeout(App.timelineSearchTimeout); App.timelineSearchTimeout = setTimeout(() => App.renderTimelineSearch(), 200);">
@@ -435,6 +435,13 @@
             <button class="btn btn-text" onclick="document.getElementById('printReportModal').classList.remove('active')">Cancelar</button>
             <button class="btn btn-filled" onclick="App.executePrint()">Gerar</button>
         </div>
+    </div>
+</div>
+
+<div id="logContextMenu" class="dropdown-menu" style="position: fixed; display: none; flex-direction: column; z-index: 9999; box-shadow: 0 4px 12px rgba(0,0,0,0.5);">
+    <div class="menu-item" onclick="App.editLogFromContext()">
+        <i class="material-icons">edit</i>
+        <span>Editar</span>
     </div>
 </div>
 
@@ -1878,7 +1885,7 @@ Stack: ${e.stack}`;
             let actionText = (log.updatedAt && log.updatedAt > log.createdAt) ? 'Editado por ' : 'Incluído por ';
 
             groupHtml += `
-                <div class="log-entry" id="log-${log.id}">
+                <div class="log-entry" id="log-${log.id}" onpointerdown="App.startLogLongPress(event, '${log.id}', '${contextEntityId}')" onpointerup="App.cancelLogLongPress()" onpointerleave="App.cancelLogLongPress()" onpointercancel="App.cancelLogLongPress()" oncontextmenu="App.handleLogContextMenu(event, '${log.id}', '${contextEntityId}')">
                     <div class="log-header">
                         <span style="display:flex; align-items:center;">
                             ${toggleHtml}
@@ -1892,7 +1899,6 @@ Stack: ${e.stack}`;
                     ${mediaHtml}
                     ${linksBarHtml}
                     <div class="timeline-meta" style="align-self: flex-end; justify-content: flex-end; width: 100%; font-size: 6.6px; margin-top: 4px;">
-                        <i class="material-icons" style="font-size:9px; cursor:pointer;" onclick="LogModal.open('${log.id}', '${contextEntityId}')">edit</i>
                         <span>${actionText}${authorDisp}</span>
                     </div>
                 </div>
@@ -1906,6 +1912,57 @@ Stack: ${e.stack}`;
     timelineSearchTimeout: null,
     timelineCurrentMatches: [],
     timelineMatchIndex: -1,
+
+    logLongPressTimeout: null,
+    logLongPressContext: null,
+
+    startLogLongPress: function(e, logId, contextEntityId) {
+        if (e.pointerType === 'mouse' && e.button !== 0) return; // Only left click for mouse
+        this.logLongPressContext = { logId, contextEntityId, x: e.clientX, y: e.clientY };
+        this.logLongPressTimeout = setTimeout(() => {
+            this.showLogContextMenu(this.logLongPressContext.x, this.logLongPressContext.y);
+            this.logLongPressContext.triggered = true;
+        }, 500); // 500ms for long press
+    },
+    cancelLogLongPress: function() {
+        if (this.logLongPressTimeout) {
+            clearTimeout(this.logLongPressTimeout);
+            this.logLongPressTimeout = null;
+        }
+    },
+    handleLogContextMenu: function(e, logId, contextEntityId) {
+        e.preventDefault();
+        this.logLongPressContext = { logId, contextEntityId, triggered: true };
+        this.showLogContextMenu(e.clientX, e.clientY);
+    },
+    showLogContextMenu: function(x, y) {
+        if ('vibrate' in navigator) navigator.vibrate(50);
+        const menu = document.getElementById('logContextMenu');
+        menu.style.display = 'flex';
+        // Basic bounds checking
+        let rx = x;
+        let ry = y;
+        if (x + 150 > window.innerWidth) rx = window.innerWidth - 150;
+        if (y + 100 > window.innerHeight) ry = window.innerHeight - 100;
+        menu.style.left = rx + 'px';
+        menu.style.top = ry + 'px';
+
+        // Close when clicking outside
+        const closeHandler = (e) => {
+            if (!menu.contains(e.target)) {
+                menu.style.display = 'none';
+                document.removeEventListener('pointerdown', closeHandler);
+            }
+        };
+        setTimeout(() => document.addEventListener('pointerdown', closeHandler), 10);
+    },
+    editLogFromContext: function() {
+        const menu = document.getElementById('logContextMenu');
+        menu.style.display = 'none';
+        if (this.logLongPressContext && this.logLongPressContext.logId) {
+            LogModal.open(this.logLongPressContext.logId, this.logLongPressContext.contextEntityId);
+        }
+    },
 
     openTimeline: async function() {
         this.currentView = 'timeline';
@@ -2103,7 +2160,7 @@ Stack: ${e.stack}`;
             }
 
             html += `
-                <div class="timeline-entry" id="timeline-log-${log.id}">
+                <div class="timeline-entry" id="timeline-log-${log.id}" onpointerdown="App.startLogLongPress(event, '${log.id}', 'global-timeline')" onpointerup="App.cancelLogLongPress()" onpointerleave="App.cancelLogLongPress()" onpointercancel="App.cancelLogLongPress()" oncontextmenu="App.handleLogContextMenu(event, '${log.id}', 'global-timeline')">
                     <div class="timeline-left">
                         <div class="timeline-day-name">${dayName}</div>
                         <div class="timeline-day-num">${dayNum}</div>
@@ -2117,7 +2174,6 @@ Stack: ${e.stack}`;
                             ${mediaHtml}
                         </div>
                         <div class="timeline-meta" style="align-self: flex-end; justify-content: flex-end; width: 100%; font-size: 7.2px;">
-                            <i class="material-icons" style="font-size:10px; cursor:pointer;" onclick="LogModal.open('${log.id}', 'global-timeline')">edit</i>
                             <span>${(log.updatedAt && log.updatedAt > log.createdAt) ? 'Editado por ' : 'Incluído por '}${log.authorName || 'N/A'}</span>
                         </div>
                     </div>
@@ -2500,16 +2556,26 @@ var LogModal = {
                 dropdown.style.margin = '0';
                 dropdown.style.zIndex = '3000';
 
-                dropdown.innerHTML = '<div class="autocomplete-item" style="justify-content: center; color: var(--primary);"><i class="material-icons" style="font-size:16px; animation: spin 1s linear infinite;">sync</i> Aguarde...</div>';
-                dropdown.style.display = 'flex';
-
                 let allEntities = await AppDB.entities.where('type').equals('equipamento').toArray();
                 let available = allEntities.filter(e => !e.isDeleted);
-                if (term) available = available.filter(e => e.name.toLowerCase().includes(term));
 
-                if (available.length === 0) { dropdown.style.display = 'none'; return; }
+                let hasExactMatch = false;
+                if (term) {
+                    available = available.filter(e => {
+                        if (e.name.toLowerCase() === term) hasExactMatch = true;
+                        return e.name.toLowerCase().includes(term);
+                    });
+                }
 
-                dropdown.innerHTML = available.slice(0, 5).map(e => `<div class="autocomplete-item" onclick="LogModal.insertMention('${e.id}', '${e.name.replace(/'/g, "\\'")}')"><i class="material-icons" style="font-size:16px; opacity:0.6;">precision_manufacturing</i> ${e.name}</div>`).join('');
+                if (available.length === 0 && !term) { dropdown.style.display = 'none'; return; }
+
+                let html = available.slice(0, 5).map(e => `<div class="autocomplete-item" onclick="LogModal.insertMention('${e.id}', '${e.name.replace(/'/g, "\\'")}')"><i class="material-icons" style="font-size:16px; opacity:0.6;">precision_manufacturing</i> ${e.name}</div>`).join('');
+
+                if (term && !hasExactMatch) {
+                    html += `<div class="autocomplete-item" onclick="LogModal.insertMention('new-eq-${term.replace(/'/g, "\\'")}', '${term.replace(/'/g, "\\'")}')"><i class="material-icons" style="font-size:16px; opacity:0.6;">add</i> Criar equipamento "${term}"</div>`;
+                }
+
+                dropdown.innerHTML = html;
                 dropdown.style.display = 'flex';
                 return;
             }
@@ -2534,7 +2600,12 @@ var LogModal = {
 
             // Add to related entities if not already there
             if (!this.tempRelations.some(rel => rel.id === id)) {
-                this.tempRelations.push({ type: 'equipamento', id: id });
+                let relData = { type: 'equipamento', id: id };
+                if (id.startsWith('new-eq-')) {
+                    relData.isNew = true;
+                    relData.name = name;
+                }
+                this.tempRelations.push(relData);
                 this.renderLinks();
             }
 
@@ -2550,9 +2621,6 @@ var LogModal = {
     searchLinks: async function() {
         const term = document.getElementById('logLinkInput').value.toLowerCase().trim();
         const dropdown = document.getElementById('logLinkAutocomplete');
-
-        dropdown.innerHTML = '<div class="autocomplete-item" style="justify-content: center; color: var(--primary);"><i class="material-icons" style="font-size:16px; animation: spin 1s linear infinite;">sync</i> Aguarde...</div>';
-        dropdown.style.display = 'flex';
 
         let allEntities = await AppDB.entities.toArray();
         let available = allEntities.filter(e => !e.isDeleted && e.type !== 'tarefa' && e.id !== this.originId && !this.tempRelations.some(rel => rel.id === e.id));
@@ -2578,8 +2646,8 @@ var LogModal = {
         const container = document.getElementById('logLinkPills');
         let html = [];
         for(let rel of this.tempRelations) {
-            let e = await AppDB.entities.get(rel.id) || rel;
-            html.push(`<div class="pill-dark">${e.name} <i class="material-icons" onclick="LogModal.removeLink('${e.id}')">close</i></div>`);
+            let e = rel.isNew ? rel : (await AppDB.entities.get(rel.id) || rel);
+            html.push(`<div class="pill-dark">${e.name} <i class="material-icons" onclick="LogModal.removeLink('${rel.id}')">close</i></div>`);
         }
         container.innerHTML = html.join('');
     },
@@ -2603,11 +2671,33 @@ var LogModal = {
         if(!text && this.tempMedia.length === 0) { await CustomDialog.alert('Insira um texto ou anexe uma imagem/documento/vídeo.', 'Aviso'); return; }
 
         try {
+            const now = Date.now();
+
+            for (let i = 0; i < this.tempRelations.length; i++) {
+                if (this.tempRelations[i].isNew) {
+                    const realId = now.toString() + Math.random().toString(36).substring(2, 7);
+                    await AppDB.entities.put({
+                        id: realId,
+                        type: 'equipamento',
+                        name: this.tempRelations[i].name,
+                        createdAt: now,
+                        updatedAt: now,
+                        parentId: null
+                    });
+
+                    const oldId = this.tempRelations[i].id;
+                    const escapedOldId = AppUtils.escapeRegex(oldId);
+                    document.getElementById('logText').value = document.getElementById('logText').value.replace(new RegExp(`@\\[${AppUtils.escapeRegex(this.tempRelations[i].name)}\\]\\(${escapedOldId}\\)`, 'g'), `@[${this.tempRelations[i].name}](${realId})`);
+
+                    this.tempRelations[i].id = realId;
+                    delete this.tempRelations[i].isNew;
+                    delete this.tempRelations[i].name;
+                }
+            }
+
             const originEntity = await AppDB.entities.get(this.originId);
             const coreRelation = { type: originEntity.type, id: originEntity.id };
             const finalRelations = [coreRelation, ...this.tempRelations.map(rel => ({ type: rel.type, id: rel.id }))];
-
-            const now = Date.now();
 
             if (this.editLogId) {
                 const log = await AppDB.logs.get(this.editLogId);
