@@ -311,7 +311,7 @@
             <i class="material-icons" style="color:var(--primary);" id="headerIcon">oil_barrel</i>
             <div style="display:flex; flex-direction:column; line-height:1; min-width: 0;">
                 <span id="headerText">Oráculo P-31</span>
-                <span id="headerVersion" style="font-size: 10px; color: var(--on-surface-variant); font-weight: normal; margin-top:2px;">v 4.8.9</span>
+                <span id="headerVersion" style="font-size: 10px; color: var(--on-surface-variant); font-weight: normal; margin-top:2px;">v 4.8.10</span>
             </div>
         </h1>
         <div class="header-actions">
@@ -668,7 +668,14 @@ var AppUtils = {
         div.appendChild(span);
 
         document.body.appendChild(div);
-        const coordinates = { top: span.offsetTop + parseInt(computed['borderTopWidth']), left: span.offsetLeft + parseInt(computed['borderLeftWidth']), height: parseInt(computed['lineHeight']) };
+        let lh = parseInt(computed['lineHeight']);
+        if (isNaN(lh)) {
+            let fs = parseInt(computed['fontSize']);
+            lh = isNaN(fs) ? 16 : fs * 1.2;
+        }
+        const borderTop = parseInt(computed['borderTopWidth']) || 0;
+        const borderLeft = parseInt(computed['borderLeftWidth']) || 0;
+        const coordinates = { top: span.offsetTop + borderTop, left: span.offsetLeft + borderLeft, height: lh };
         document.body.removeChild(div);
         return coordinates;
     },
@@ -1875,16 +1882,19 @@ Stack: ${e.stack}`;
                     <div class="log-header">
                         <span style="display:flex; align-items:center;">
                             ${toggleHtml}
-                            <i class="material-icons" style="font-size:12px; margin-right:4px;">schedule</i> ${AppUtils.formatDate(log.createdAt)} ${actionText}${authorDisp}
+                            <i class="material-icons" style="font-size:12px; margin-right:4px;">schedule</i> ${AppUtils.formatDate(log.createdAt)}
                         </span>
                         <div class="log-actions">
                             ${addIconHtml}
-                            <i class="material-icons action-icon" style="font-size:14px;" title="Editar Registo" onclick="LogModal.open('${log.id}', '${contextEntityId}')">edit</i>
                         </div>
                     </div>
                     ${log.text ? `<div class="log-text selectable-text">${displayedText}</div>` : ''}
                     ${mediaHtml}
                     ${linksBarHtml}
+                    <div class="timeline-meta" style="align-self: flex-end; justify-content: flex-end; width: 100%; font-size: 6.6px; margin-top: 4px;">
+                        <i class="material-icons" style="font-size:9px; cursor:pointer;" onclick="LogModal.open('${log.id}', '${contextEntityId}')">edit</i>
+                        <span>${actionText}${authorDisp}</span>
+                    </div>
                 </div>
             `;
         }
@@ -2103,12 +2113,12 @@ Stack: ${e.stack}`;
                         <div class="timeline-content-row">
                             <div style="flex-grow:1; display:flex; flex-direction:column;">
                                 <div class="timeline-text">${textContent}</div>
-                                <div class="timeline-meta">
-                                    <i class="material-icons" style="font-size:14px; cursor:pointer;" onclick="LogModal.open('${log.id}', 'global-timeline')">edit</i>
-                                    <span>${(log.updatedAt && log.updatedAt > log.createdAt) ? 'Editado por ' : 'Incluído por '}${log.authorName || 'N/A'}</span>
-                                </div>
                             </div>
                             ${mediaHtml}
+                        </div>
+                        <div class="timeline-meta" style="align-self: flex-end; justify-content: flex-end; width: 100%; font-size: 7.2px;">
+                            <i class="material-icons" style="font-size:10px; cursor:pointer;" onclick="LogModal.open('${log.id}', 'global-timeline')">edit</i>
+                            <span>${(log.updatedAt && log.updatedAt > log.createdAt) ? 'Editado por ' : 'Incluído por '}${log.authorName || 'N/A'}</span>
                         </div>
                     </div>
                 </div>
@@ -2442,7 +2452,8 @@ var LogModal = {
             this.groupId = log.groupId || log.id;
             textInput.value = log.text;
             this.tempMedia = [...(log.images || [])];
-            this.tempRelations = log.relatedEntities.filter(rel => rel.id !== this.originId).map(rel => ({ id: rel.id, type: rel.type }));
+            let rels = log.relatedEntities || [];
+            this.tempRelations = rels.filter(rel => rel.id !== this.originId).map(rel => ({ id: rel.id, type: rel.type }));
             document.getElementById('logModalTitle').innerText = 'Editar Registo';
             document.getElementById('logModalDeleteBtn').style.display = 'block';
         } else {
