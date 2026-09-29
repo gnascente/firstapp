@@ -207,7 +207,8 @@
 
         /* Timeline Styles */
         .timeline-day-group { display: flex; flex-direction: column; width: 100%; margin-bottom: 24px; position: relative; }
-        .timeline-date-header { display: flex; align-items: center; background: #1a1a1a; padding: 4px 16px; border-radius: 4px; font-size: 13px; font-weight: bold; color: #fff; margin-bottom: 16px; position: sticky; top: 76px; z-index: 10; margin-left: -16px; margin-right: -16px; }
+        .timeline-date-header { display: flex; align-items: center; background: #1a1a1a; padding: 4px 16px; border-radius: 4px; font-size: 13px; font-weight: bold; color: #fff; margin-bottom: 16px; position: sticky; top: 0; z-index: 10; margin-left: -16px; margin-right: -16px; }
+        .search-container.show-search ~ #timelineContainer .timeline-date-header { top: 74px; }
         .timeline-entry { display: flex; gap: 16px; margin-bottom: 8px; position: relative; }
         .timeline-entry:not(:last-child)::after { content: ''; position: absolute; left: 24px; top: 60px; bottom: -8px; width: 1px; background: var(--surface-variant); z-index: 0; }
         .timeline-left { display: flex; flex-direction: column; align-items: center; min-width: 50px; z-index: 1; }
@@ -311,7 +312,7 @@
             <i class="material-icons" style="color:var(--primary);" id="headerIcon">oil_barrel</i>
             <div style="display:flex; flex-direction:column; line-height:1; min-width: 0;">
                 <span id="headerText">Oráculo P-31</span>
-                <span id="headerVersion" style="font-size: 10px; color: var(--on-surface-variant); font-weight: normal; margin-top:2px;">v 4.8.10</span>
+                <span id="headerVersion" style="font-size: 10px; color: var(--on-surface-variant); font-weight: normal; margin-top:2px;">v 4.8.11</span>
             </div>
         </h1>
         <div class="header-actions">
@@ -583,7 +584,19 @@ var AppState = {
     closeModalUI: function() { if(this.modals.length > 0) history.back(); },
     handlePopState: function(e) {
         if (this.modals.length > 0) { let m = this.modals.pop(); m.el.classList.remove('active'); if(m.onHardwareBack) m.onHardwareBack(); }
-        else if (App.currentView !== 'home') { App.goBack(true); }
+        else if (e.state && e.state.view) {
+            if (e.state.view === 'home') App.goHome(true);
+            else if (e.state.view === 'list') {
+                App.moduleType = e.state.moduleType; App.moduleName = e.state.moduleName; App.moduleIcon = e.state.moduleIcon; App.currentView = 'list';
+                document.getElementById('viewHome').classList.remove('active'); document.getElementById('viewList').classList.add('active'); document.getElementById('viewTimeline').classList.remove('active');
+                document.getElementById('headerIcon').innerText = App.moduleIcon; document.getElementById('headerText').innerText = App.moduleName;
+                document.getElementById('btnBack').style.display = 'inline-block'; document.getElementById('headerVersion').style.display = 'none'; document.getElementById('mainFab').style.display = 'none';
+                App.renderList();
+            }
+            else if (e.state.view === 'timeline') App.openTimeline(true);
+        } else {
+            App.goHome(true);
+        }
     }
 };
 window.addEventListener('popstate', (e) => AppState.handlePopState(e));
@@ -858,8 +871,12 @@ var App = {
     },
 
     startAutoSyncCheck: function() {
-        setInterval(async () => {
+        let lastCheck = 0;
+        const checkSync = async () => {
             if (!navigator.onLine) return;
+            const now = Date.now();
+            if (now - lastCheck < 60000) return; // Debounce 1 min
+            lastCheck = now;
             try {
                 const prefix = "oraculo_sync_master";
                 const res = await fetch(`/api/backup?action=masterDate&prefix=${prefix}&ts=${Date.now()}`, { cache: 'no-store' });
@@ -886,7 +903,14 @@ var App = {
             } catch (e) {
                 // Silently fail, it's a background process
             }
-        }, 30000); // 30 seconds
+        };
+        setInterval(checkSync, 300000); // 5 minutes
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') {
+                checkSync();
+            }
+        });
+        checkSync();
     },
 
     saveExpandedState: function() {
@@ -1235,6 +1259,9 @@ var App = {
                     body: JSON.stringify({ action: 'cleanup', prefix: prefix, macAddress: macAddress })
                 });
                 syncIndicator.style.display = 'none';
+                localStorage.setItem('oraculo_last_master_uploaded_at', new Date().toISOString());
+                const syncBtn = document.getElementById('syncIconBtn');
+                if (syncBtn) syncBtn.classList.remove('sync-highlight');
                 await CustomDialog.alert("A aplicação já se encontrava totalmente atualizada. Nenhum fragmento trafegado.", "Sincronizado");
                 return;
             }
@@ -1600,7 +1627,7 @@ Stack: ${e.stack}`;
         }, 100);
     },
 
-    goHome: function() {
+    goHome: function(fromPopState = false) {
         this.currentView = 'home';
         document.getElementById('viewHome').classList.add('active'); document.getElementById('viewList').classList.remove('active');
         document.getElementById('viewTimeline').classList.remove('active');
@@ -1669,14 +1696,15 @@ Stack: ${e.stack}`;
         });
     },
 
-    openModule: function(type, name, icon) {
+    openModule: function(type, name, icon, fromPopState = false) {
         this.currentView = 'list'; this.moduleType = type; this.moduleName = name; this.moduleIcon = icon;
         document.getElementById('viewHome').classList.remove('active'); document.getElementById('viewList').classList.add('active');
         document.getElementById('viewTimeline').classList.remove('active');
         document.getElementById('headerIcon').innerText = icon; document.getElementById('headerText').innerText = name;
         document.getElementById('btnBack').style.display = 'inline-block'; document.getElementById('headerVersion').style.display = 'none';
         document.getElementById('mainFab').style.display = 'none';
-        document.getElementById('searchInput').value = ''; this.renderList(); history.pushState({ view: 'list' }, '');
+        document.getElementById('searchInput').value = ''; this.renderList();
+        if(!fromPopState) history.pushState({ view: 'list', moduleType: type, moduleName: name, moduleIcon: icon }, '');
     },
 
     focusEntity: async function(id, focusTerm = '', focusLogId = null) {
@@ -1704,7 +1732,7 @@ Stack: ${e.stack}`;
 
         document.getElementById('searchInput').value = focusTerm;
         await this.renderList();
-        history.pushState({ view: 'list' }, '');
+        history.pushState({ view: 'list', moduleType: targetModuleType, moduleName: targetModuleName, moduleIcon: targetModuleIcon }, '');
 
         setTimeout(() => {
             const elId = focusLogId ? 'log-' + focusLogId : 'entity-' + id;
@@ -1737,7 +1765,13 @@ Stack: ${e.stack}`;
     },
 
     goBack: function(fromPopState = false) {
-        if (this.currentView === 'list' || this.currentView === 'timeline') { this.goHome(); if(!fromPopState) history.back(); }
+        if (this.currentView === 'list' || this.currentView === 'timeline') {
+            if(!fromPopState) {
+                history.back();
+            } else {
+                this.goHome(true);
+            }
+        }
     },
 
     createEntityOnTheFly: async function(name, parentId = null) {
@@ -1964,7 +1998,7 @@ Stack: ${e.stack}`;
         }
     },
 
-    openTimeline: async function() {
+    openTimeline: async function(fromPopState = false) {
         this.currentView = 'timeline';
         MenuModal.closeUI();
         document.getElementById('viewHome').classList.remove('active');
@@ -1992,7 +2026,7 @@ Stack: ${e.stack}`;
         document.getElementById('timelineSearchCount').innerText = '0/0';
 
         await this.renderTimeline();
-        history.pushState({ view: 'timeline' }, '');
+        if(!fromPopState) history.pushState({ view: 'timeline' }, '');
     },
 
     renderTimelineSearch: function() {
