@@ -312,7 +312,7 @@
             <i class="material-icons" style="color:var(--primary);" id="headerIcon">oil_barrel</i>
             <div style="display:flex; flex-direction:column; line-height:1; min-width: 0;">
                 <span id="headerText">Oráculo P-31</span>
-                <span id="headerVersion" style="font-size: 10px; color: var(--on-surface-variant); font-weight: normal; margin-top:2px;">v 4.8.11</span>
+                <span id="headerVersion" style="font-size: 10px; color: var(--on-surface-variant); font-weight: normal; margin-top:2px;">v 4.8.12</span>
             </div>
         </h1>
         <div class="header-actions">
@@ -326,6 +326,7 @@
                     <input type="file" id="restoreLocalFile" accept=".zip,.json" style="display:none" onchange="App.restoreFromLocal(event)">
                     <div class="menu-item" onclick="document.getElementById('restoreLocalFile').click()"><i class="material-icons">folder_zip</i> Restaurar (Local)</div>
                     <div class="menu-item" onclick="App.exportToLocal()"><i class="material-icons">download</i> Exportar (Local)</div>
+                    <div class="menu-item" onclick="App.generateMockData()"><i class="material-icons">science</i> Gerar Dados Teste</div>
                 </div>
             </div>
         </div>
@@ -844,6 +845,99 @@ var App = {
     expandedGroups: new Set(JSON.parse(localStorage.getItem('OraculoExpandedGroups') || '[]')),
     storageDetails: { videos: 0, images: 0, pdfs: 0, messages: 0 },
     currentAuthor: null, macAddress: null,
+
+    generateMockData: async function() {
+        if (!await CustomDialog.confirm("Deseja gerar dados aleatórios de teste para a Linha do Tempo (Dez/2025 até hoje)? Isso adicionará cerca de 60 registos fictícios.", "Gerar Dados Teste")) {
+            return;
+        }
+
+        try {
+            document.getElementById('progressModal').classList.add('active');
+            document.getElementById('progressTitle').innerText = "A Gerar Dados...";
+            document.getElementById('progressText').innerText = "0%";
+            document.getElementById('progressCancelBtn').style.display = 'none';
+
+            let globalEntity = await AppDB.entities.get('global-timeline');
+            if (!globalEntity) {
+                await AppDB.entities.put({ id: 'global-timeline', type: 'system', name: 'Timeline Global', createdAt: Date.now(), updatedAt: Date.now(), parentId: null });
+            }
+
+            const startDate = new Date(2025, 11, 1).getTime(); // Dec 1, 2025
+            const endDate = Date.now();
+            const timeDiff = endDate - startDate;
+
+            const events = [
+                "Verificação diária concluída sem anomalias.",
+                "Substituição de filtro de óleo na unidade A.",
+                "Temperatura do sensor 3 acima do limite normal. Ajustado parâmetro X.",
+                "Limpeza geral da área de operação.",
+                "Revisão do equipamento principal finalizada.",
+                "Falha de comunicação com o servidor secundário. Restabelecido após 10min.",
+                "Atualização do sistema de controlo para v1.2.",
+                "Inspeção visual da tubagem de ar comprimido: OK.",
+                "Calibração do medidor de pressão.",
+                "Reunião de segurança matinal.",
+                "Testes de carga na bateria auxiliar. Resultados dentro do esperado.",
+                "Substituição da lâmpada de sinalização.",
+                "Nível de fluido hidráulico completado.",
+                "Vazamento menor detectado e selado na válvula V-04.",
+                "Manutenção preventiva no motor de exaustão.",
+                "Auditoria externa: área aprovada.",
+                "Simulação de emergência realizada com sucesso.",
+                "Aguardando peças de reposição para a bomba B.",
+                "Início do turno. Sistema operando nominalmente.",
+                "Fim do turno. Nenhuma ocorrência grave."
+            ];
+
+            const authors = ["João Silva", "Maria Oliveira", "Carlos Santos", "Ana Costa", "Rui Moreira", "Teresa Almeida"];
+
+            const newLogs = [];
+            const numLogs = 60;
+            const now = Date.now();
+
+            for (let i = 0; i < numLogs; i++) {
+                const randomTime = startDate + Math.random() * timeDiff;
+                const randomEvent = events[Math.floor(Math.random() * events.length)];
+                const randomAuthor = authors[Math.floor(Math.random() * authors.length)];
+                const logId = randomTime.toString() + Math.random().toString(36).substring(2, 7);
+
+                newLogs.push({
+                    id: logId,
+                    text: randomEvent,
+                    images: [],
+                    createdAt: randomTime,
+                    updatedAt: randomTime,
+                    originEntityId: 'global-timeline',
+                    relatedEntities: [{ type: 'system', id: 'global-timeline' }],
+                    groupId: logId,
+                    authorName: randomAuthor,
+                    isDeleted: false
+                });
+
+                if (i % 10 === 0) {
+                     document.getElementById('progressText').innerText = Math.round((i / numLogs) * 100) + "%";
+                     await new Promise(r => setTimeout(r, 10)); // UI yield
+                }
+            }
+
+            await AppDB.logs.bulkPut(newLogs);
+
+            document.getElementById('progressModal').classList.remove('active');
+            MenuModal.closeUI();
+
+            if (this.currentView === 'timeline') {
+                this.renderTimeline();
+            } else {
+                this.openTimeline();
+            }
+
+            await CustomDialog.alert(`${numLogs} registos fictícios foram gerados com sucesso!`, "Concluído");
+
+        } catch(e) {
+            document.getElementById('progressModal').classList.remove('active');
+            await CustomDialog.alert("Erro ao gerar dados: " + e.message, "Erro");
+        }
+    },
 
     init: async function() {
         let mac = localStorage.getItem('oraculo_device_mac');
@@ -2581,6 +2675,30 @@ var LogModal = {
             // Check if it's a valid mention start (either start of string or preceded by space)
             if (lastAtSignIndex === 0 || textBeforeCursor[lastAtSignIndex - 1].match(/\s/)) {
                 const term = textBeforeCursor.substring(lastAtSignIndex + 1).toLowerCase();
+
+                let resolvedNames = [];
+                for (let rel of LogModal.tempRelations) {
+                    if (rel.isNew && rel.name) {
+                        resolvedNames.push(rel.name.toLowerCase());
+                    } else if (rel.id) {
+                        let cached = window.cachedEntitiesMap ? window.cachedEntitiesMap.get(rel.id) : null;
+                        if (cached) {
+                            resolvedNames.push(cached.toLowerCase());
+                        } else {
+                            let entity = await AppDB.entities.get(rel.id);
+                            if (entity) {
+                                if (!window.cachedEntitiesMap) window.cachedEntitiesMap = new Map();
+                                window.cachedEntitiesMap.set(entity.id, entity.name);
+                                resolvedNames.push(entity.name.toLowerCase());
+                            }
+                        }
+                    }
+                }
+
+                if (resolvedNames.some(name => term.startsWith(name + ' '))) {
+                    dropdown.style.display = 'none';
+                    return;
+                }
 
                 const coords = AppUtils.getCaretCoordinates(e.target, lastAtSignIndex);
                 dropdown.style.top = (coords.top + coords.height + e.target.offsetTop - e.target.scrollTop) + 'px';
