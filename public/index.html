@@ -131,6 +131,9 @@
         .log-item-group { background: rgba(0,0,0,0.15); border-radius: 8px; display: flex; flex-direction: column; overflow: hidden; transition: background-color 0.5s; }
         .log-entry { padding: 12px; display: flex; flex-direction: column; gap: 6px; transition: background-color 0.5s; }
         .log-entry + .log-entry { border-top: 1px solid rgba(255,255,255,0.05); }
+        .selection-mode .log-entry, .selection-mode .timeline-entry { cursor: pointer; }
+        .selection-mode .log-entry:hover, .selection-mode .timeline-entry:hover { background-color: rgba(255, 255, 255, 0.05); }
+        .selection-mode .log-entry.selected, .selection-mode .timeline-entry.selected { background-color: rgba(92, 124, 250, 0.2); border-radius: 8px; box-shadow: inset 0 0 0 2px var(--primary); }
 
         /* Regras para o modo colapsado */
         .log-item-group.collapsed .log-entry:not(:first-child) { display: none !important; }
@@ -317,6 +320,7 @@
         </h1>
         <div class="header-actions">
             <i class="material-icons action-icon" onclick="App.toggleGlobalSearch()" title="Buscar">search</i>
+            <i class="material-icons action-icon" onclick="App.toggleSelectionMode()" title="Compartilhar Registos">share</i>
             <i class="material-icons action-icon" id="syncIconBtn" onclick="App.syncCloud()" title="Sincronizar Nuvem">sync</i>
             <i class="material-icons action-icon" onclick="App.openPrintModal()" title="Imprimir Relatório">print</i>
             <div style="position: relative;" id="menuWrapper">
@@ -845,6 +849,7 @@ var App = {
     expandedGroups: new Set(JSON.parse(localStorage.getItem('OraculoExpandedGroups') || '[]')),
     storageDetails: { videos: 0, images: 0, pdfs: 0, messages: 0 },
     currentAuthor: null, macAddress: null,
+    isSelectionMode: false, selectedLogs: new Set(),
 
     generateMockData: async function() {
         if (!await CustomDialog.confirm("Deseja gerar dados aleatórios de teste para a Linha do Tempo (Dez/2025 até hoje)? Isso adicionará cerca de 60 registos fictícios.", "Gerar Dados Teste")) {
@@ -1085,6 +1090,158 @@ var App = {
     },
 
     toggleMenu: (e) => { e.stopPropagation(); const menu = document.getElementById('mainMenu'); if (menu.classList.contains('show')) MenuModal.closeUI(); else MenuModal.open(); },
+
+    toggleSelectionMode: function() {
+        this.isSelectionMode = !this.isSelectionMode;
+        if (!this.isSelectionMode) {
+            for (let id of this.selectedLogs) {
+                document.getElementById('log-' + id)?.classList.remove('selected');
+                document.getElementById('timeline-log-' + id)?.classList.remove('selected');
+            }
+            this.selectedLogs.clear();
+        }
+        document.body.classList.toggle('selection-mode', this.isSelectionMode);
+        this.updateSelectionUI();
+    },
+
+    toggleLogSelection: function(logId, e) {
+        if (!this.isSelectionMode) return;
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        if (this.selectedLogs.has(logId)) {
+            this.selectedLogs.delete(logId);
+            document.getElementById('log-' + logId)?.classList.remove('selected');
+            document.getElementById('timeline-log-' + logId)?.classList.remove('selected');
+        } else {
+            this.selectedLogs.add(logId);
+            document.getElementById('log-' + logId)?.classList.add('selected');
+            document.getElementById('timeline-log-' + logId)?.classList.add('selected');
+        }
+        this.updateSelectionUI();
+    },
+
+    shareSelectedLogs: async function() {
+        if (this.selectedLogs.size === 0) return;
+        const logIds = Array.from(this.selectedLogs);
+
+        let logsToShare = [];
+        for (let id of logIds) {
+            let log = await AppDB.logs.get(id);
+            if (log) logsToShare.push(log);
+        }
+
+        // Group by entity
+        let grouped = {};
+        for (let log of logsToShare) {
+            let eName = 'Linha do Tempo';
+            if (log.originEntityId !== 'global-timeline') {
+                let e = await AppDB.entities.get(log.originEntityId);
+                if (e) eName = e.name;
+            }
+            if (!grouped[eName]) grouped[eName] = [];
+            grouped[eName].push(log);
+        }
+
+        let shareText = '';
+        let shareFiles = [];
+        let fileCounter = 1;
+
+        for (let [eName, logs] of Object.entries(grouped)) {
+            shareText += `*${eName}*\n`;
+            for (let log of logs.sort((a, b) => a.createdAt - b.createdAt)) {
+                let plainText = log.text || '';
+                // Remove specific markdown wrappers but keep names
+                plainText = plainText.replace(/@\[(.*?)\]\(.*?\)/g, '@$1');
+
+                let attachmentsText = [];
+                if (log.images && log.images.length > 0) {
+                    for (let img of log.images) {
+                        try {
+                            const arr = img.data.split(',');
+                            const mimePart = arr[0];
+                            const mime = mimePart.match(/:(.*?);/)[1];
+                            const bstr = atob(arr[1]);
+                            let n = bstr.length;
+                            const u8arr = new Uint8Array(n);
+                            while(n--){ u8arr[n] = bstr.charCodeAt(n); }
+
+                            let ext = 'bin';
+                            if (mime.includes('jpeg') || mime.includes('jpg')) ext = 'jpg';
+                            else if (mime.includes('png')) ext = 'png';
+                            else if (mime.includes('pdf')) ext = 'pdf';
+                            else if (mime.includes('mp4') || mime.includes('video')) ext = 'mp4';
+
+                            let filename = `foto${fileCounter}.${ext}`;
+                            attachmentsText.push(filename);
+
+                            let blob = new Blob([u8arr], {type: mime});
+                            let file = new File([blob], filename, {type: mime});
+                            shareFiles.push(file);
+                            fileCounter++;
+                        } catch(e) {
+                            console.error("Error converting file for share:", e);
+                        }
+                    }
+                }
+
+                shareText += `- ${plainText}`;
+                if (attachmentsText.length > 0) {
+                    shareText += ` (anexos: ${attachmentsText.join(', ')})`;
+                }
+                shareText += '\n\n';
+            }
+        }
+
+        shareText = shareText.trim();
+
+        try {
+            if (navigator.canShare && navigator.canShare({ files: shareFiles })) {
+                await navigator.share({
+                    text: shareText,
+                    files: shareFiles
+                });
+            } else if (navigator.share) {
+                await navigator.share({ text: shareText });
+                if (shareFiles.length > 0) CustomDialog.alert("Seu navegador não suporta compartilhamento de arquivos com este app. Apenas o texto foi compartilhado.", "Aviso");
+            } else {
+                await navigator.clipboard.writeText(shareText);
+                CustomDialog.alert("Seu navegador não suporta compartilhamento direto. O texto foi copiado para a área de transferência.", "Copiado");
+            }
+            this.toggleSelectionMode(); // Exit selection mode
+        } catch (error) {
+            console.error('Error sharing:', error);
+            if (error.name !== 'AbortError') {
+                await navigator.clipboard.writeText(shareText);
+                CustomDialog.alert("Erro ao compartilhar. O texto foi copiado para a área de transferência.", "Copiado");
+                this.toggleSelectionMode();
+            }
+        }
+    },
+
+    updateSelectionUI: function() {
+        let fab = document.getElementById('mainFab');
+        if (this.isSelectionMode) {
+            fab.style.display = 'grid';
+            fab.style.width = 'auto';
+            fab.style.borderRadius = '24px';
+            fab.style.padding = '0 20px';
+            fab.innerHTML = `<i class="material-icons" style="margin-right:8px;">share</i> Compartilhar Selecionados (${this.selectedLogs.size})`;
+            fab.onclick = () => App.shareSelectedLogs();
+        } else {
+            if (this.currentView === 'timeline') {
+                fab.style.display = 'grid';
+                fab.style.width = '48px';
+                fab.style.borderRadius = '16px';
+                fab.style.padding = '0';
+                fab.innerHTML = `<i class="material-icons">add</i>`;
+                fab.onclick = () => LogModal.open(null, 'global-timeline');
+            } else {
+                fab.style.display = 'none';
+            }
+        }
+    },
 
     toggleLogGroup: function(groupId, event) {
         if(event) event.stopPropagation();
@@ -2013,7 +2170,7 @@ Stack: ${e.stack}`;
             let actionText = (log.updatedAt && log.updatedAt > log.createdAt) ? 'Editado por ' : 'Incluído por ';
 
             groupHtml += `
-                <div class="log-entry" id="log-${log.id}" onpointerdown="App.startLogLongPress(event, '${log.id}', '${contextEntityId}')" onpointerup="App.cancelLogLongPress()" onpointerleave="App.cancelLogLongPress()" onpointercancel="App.cancelLogLongPress()" oncontextmenu="App.handleLogContextMenu(event, '${log.id}', '${contextEntityId}')">
+                <div class="log-entry" id="log-${log.id}" onclick="App.toggleLogSelection('${log.id}', event)" onpointerdown="App.startLogLongPress(event, '${log.id}', '${contextEntityId}')" onpointerup="App.cancelLogLongPress()" onpointerleave="App.cancelLogLongPress()" onpointercancel="App.cancelLogLongPress()" oncontextmenu="App.handleLogContextMenu(event, '${log.id}', '${contextEntityId}')">
                     <div class="log-header">
                         <span style="display:flex; align-items:center;">
                             ${toggleHtml}
@@ -2288,7 +2445,7 @@ Stack: ${e.stack}`;
             }
 
             html += `
-                <div class="timeline-entry" id="timeline-log-${log.id}" onpointerdown="App.startLogLongPress(event, '${log.id}', 'global-timeline')" onpointerup="App.cancelLogLongPress()" onpointerleave="App.cancelLogLongPress()" onpointercancel="App.cancelLogLongPress()" oncontextmenu="App.handleLogContextMenu(event, '${log.id}', 'global-timeline')">
+                <div class="timeline-entry" id="timeline-log-${log.id}" onclick="App.toggleLogSelection('${log.id}', event)" onpointerdown="App.startLogLongPress(event, '${log.id}', 'global-timeline')" onpointerup="App.cancelLogLongPress()" onpointerleave="App.cancelLogLongPress()" onpointercancel="App.cancelLogLongPress()" oncontextmenu="App.handleLogContextMenu(event, '${log.id}', 'global-timeline')">
                     <div class="timeline-left">
                         <div class="timeline-day-name">${dayName}</div>
                         <div class="timeline-day-num">${dayNum}</div>
