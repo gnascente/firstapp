@@ -315,7 +315,7 @@
             <i class="material-icons" style="color:var(--primary);" id="headerIcon">oil_barrel</i>
             <div style="display:flex; flex-direction:column; line-height:1; min-width: 0;">
                 <span id="headerText">Oráculo P-31</span>
-                <span id="headerVersion" style="font-size: 10px; color: var(--on-surface-variant); font-weight: normal; margin-top:2px;">v 4.8.12</span>
+                <span id="headerVersion" style="font-size: 10px; color: var(--on-surface-variant); font-weight: normal; margin-top:2px;">v 4.8.13</span>
             </div>
         </h1>
         <div class="header-actions">
@@ -1177,6 +1177,61 @@ var App = {
                             attachmentsText.push(filename);
 
                             let blob = new Blob([u8arr], {type: mime});
+
+                            // If it's an image, draw text on it
+                            if (ext === 'jpg' || ext === 'png') {
+                                const addTextToImage = async (imgBlob, text) => {
+                                    return new Promise((resolve) => {
+                                        const imgUrl = URL.createObjectURL(imgBlob);
+                                        const image = new Image();
+                                        image.onload = () => {
+                                            const canvas = document.createElement('canvas');
+                                            const ctx = canvas.getContext('2d');
+
+                                            // Make the banner height proportional to image width, or fixed
+                                            const bannerHeight = Math.max(80, Math.floor(image.height * 0.08));
+                                            canvas.width = image.width;
+                                            canvas.height = image.height + bannerHeight;
+
+                                            // Draw banner background
+                                            ctx.fillStyle = '#000000';
+                                            ctx.fillRect(0, 0, canvas.width, bannerHeight);
+
+                                            // Draw text
+                                            ctx.fillStyle = '#ffffff';
+                                            const fontSize = Math.max(30, Math.floor(bannerHeight * 0.6));
+                                            ctx.font = 'bold ' + fontSize + 'px sans-serif';
+                                            ctx.textBaseline = 'middle';
+                                            ctx.textAlign = 'center';
+                                            // truncate text if too long, though we don't expect it to be
+                                            ctx.fillText(text, canvas.width / 2, bannerHeight / 2);
+
+                                            // Draw original image
+                                            ctx.drawImage(image, 0, bannerHeight);
+
+                                            canvas.toBlob((newBlob) => {
+                                                URL.revokeObjectURL(imgUrl);
+                                                resolve(newBlob);
+                                            }, mime, 0.9);
+                                        };
+                                        image.onerror = () => {
+                                            URL.revokeObjectURL(imgUrl);
+                                            resolve(imgBlob); // fallback to original if error
+                                        };
+                                        image.src = imgUrl;
+                                    });
+                                };
+
+                                // Generate title text for the image
+                                let imageText = eName;
+                                if (eName === 'Linha do Tempo') {
+                                    imageText = plainText.substring(0, 30) + (plainText.length > 30 ? '...' : '');
+                                    if (!imageText) imageText = 'Registro';
+                                }
+
+                                blob = await addTextToImage(blob, imageText);
+                            }
+
                             let file = new File([blob], filename, {type: mime});
                             shareFiles.push(file);
                             fileCounter++;
