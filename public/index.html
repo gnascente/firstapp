@@ -3072,6 +3072,7 @@ var LogModal = {
 
 const handleLogMedia = async (e) => {
     const files = Array.from(e.target.files);
+    e.target.value = ''; // Clear early to prevent duplicate change events on some mobile browsers
     if(files.length === 0) return;
 
     let hasVideo = files.some(f => f.type.startsWith('video/'));
@@ -3089,9 +3090,9 @@ const handleLogMedia = async (e) => {
         if(hasVideo) LogModal.tempMedia = LogModal.tempMedia.filter(m => !m.isPlaceholder);
         LogModal.updateUI(); CustomDialog.alert("Erro ao processar ficheiros: " + err.message, "Erro");
     }
-    e.target.value = '';
 };
-document.getElementById('logCam').addEventListener('change', handleLogMedia); document.getElementById('logGal').addEventListener('change', handleLogMedia);
+document.getElementById('logCam').addEventListener('change', handleLogMedia);
+document.getElementById('logGal').addEventListener('change', handleLogMedia);
 
 var CarouselModal = {
     el: document.getElementById('carouselModal'), container: document.getElementById('carouselContainer'), currentLogId: null, imagesArray: [], currentIndex: 0, originalTitle: '',
