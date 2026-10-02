@@ -1,20 +1,20 @@
 name = "firstapp"
 compatibility_date = "2023-10-30"
-main = "worker.js"
+main = "src/index.ts"
 
 [assets]
 directory = "public"
 
-# ...
 [observability.logs]
 enabled = true
 invocation_logs = true
 persist = true
-# ...
-# ...
-[vars]
-SUPABASE_PUBLISHABLE_KEY = "sb_publishable_ABMBNom80X3Bwf9wzY7doQ_qgPsqV4W"
-SUPABASE_URL = "https://fhmcmprjyxncbpeirmnu.supabase.co"
-# ...
 
+[[d1_databases]]
+binding = "DB"
+database_name = "firstapp-db"
+database_id = "aef9502e-5934-42e1-b66b-e781f3bb6bae"
 
+[[r2_buckets]]
+binding = "MY_BUCKET"
+bucket_name = "mystorage"

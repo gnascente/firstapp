@@ -1,0 +1,18 @@
+--- public/index.html
++++ public/index.html
+@@ -668,7 +668,14 @@
+         div.appendChild(span);
+
+         document.body.appendChild(div);
+-        const coordinates = { top: span.offsetTop + parseInt(computed['borderTopWidth']), left: span.offsetLeft + parseInt(computed['borderLeftWidth']), height: parseInt(computed['lineHeight']) };
++        let lh = parseInt(computed['lineHeight']);
++        if (isNaN(lh)) {
++            let fs = parseInt(computed['fontSize']);
++            lh = isNaN(fs) ? 16 : fs * 1.2;
++        }
++        const borderTop = parseInt(computed['borderTopWidth']) || 0;
++        const borderLeft = parseInt(computed['borderLeftWidth']) || 0;
++        const coordinates = { top: span.offsetTop + borderTop, left: span.offsetLeft + borderLeft, height: lh };
+         document.body.removeChild(div);
+         return coordinates;
+     },

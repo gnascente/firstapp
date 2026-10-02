@@ -1,156 +1,41 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-PT" translate="no">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FirstApp - PWA Cloudflare v1.1.0</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon.png">
 
-    <!-- PWA Meta Tags -->
-    <link rel="manifest" href="/manifest.json">
-    <meta name="theme-color" content="#2d3748">
+    <script>
+        if ('serviceWorker' in navigator) {
+            caches.keys().then(function(names) { for (let name of names) caches.delete(name); });
+            navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                for(let registration of registrations) registration.unregister();
+            });
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js?v=' + new Date().getTime())
+                    .then(() => console.log('Service Worker Atualizado.'))
+                    .catch((err) => console.log('Falha ao registar:', err));
+            });
+        }
+    </script>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
+    <meta name="google" content="notranslate">
+    <title>Oráculo P-31</title>
+
+    <meta name="theme-color" content="#000000">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="FirstApp">
-    <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
+    <meta name="apple-mobile-web-app-title" content="Oráculo P-31">
+
+    <!-- Version updated to reflect sync fixes -->
+
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
+
     <style>
-        body {
-            font-family: sans-serif;
-            margin: 0;
-            background-color: #1a202c; /* Dark blue background */
-            color: #e2e8f0;
-        }
-
-        /* Navbar styles */
-        .navbar {
-            background-color: #2d3748;
-            padding: 1rem;
-            display: flex;
-            align-items: center;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-        }
-
-        .hamburger-menu {
-            font-size: 1.5rem;
-            cursor: pointer;
-            margin-right: 1rem;
-            color: #e2e8f0;
-        }
-
-        .app-name {
-            font-size: 1.25rem;
-            font-weight: bold;
-            color: #f38020; /* Keep the original Cloudflare orange for accent */
-        }
-
-        /* Main content styles */
-        .container {
-            padding: 2rem;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        h1 {
-            font-size: 2.5rem;
-            color: #f38020;
-            margin-bottom: 2rem;
-        }
-
-        /* Cards container */
-        .cards-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1.5rem;
-            width: 100%;
-            max-width: 1000px;
-        }
-
-        /* Individual card styles */
-        .card {
-            background-color: #2d3748;
-            border-radius: 8px;
-            padding: 1.5rem;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            transition: transform 0.2s;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-        }
-
-        .card:hover {
-            transform: translateY(-5px);
-        }
-
-        .card-title {
-            font-size: 1.25rem;
-            margin-bottom: 0.75rem;
-            color: #cbd5e0;
-        }
-
-        .card-content {
-            font-size: 1rem;
-            color: #a0aec0;
-            line-height: 1.5;
-            margin-bottom: 1rem;
-        }
-
-        /* Form styles */
-        .form-container {
-            background-color: #2d3748;
-            padding: 1.5rem;
-            border-radius: 8px;
-            margin-bottom: 2rem;
-            width: 100%;
-            max-width: 500px;
-        }
-
-        .form-container input, .form-container textarea {
-            width: 100%;
-            padding: 0.75rem;
-            margin-bottom: 1rem;
-            border: 1px solid #4a5568;
-            border-radius: 4px;
-            background-color: #1a202c;
-            color: #e2e8f0;
-            box-sizing: border-box;
-        }
-
-        .btn {
-            background-color: #f38020;
-            color: white;
-            padding: 0.5rem 1rem;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: bold;
-        }
-
-        .btn:hover {
-            background-color: #dd6b20;
-        }
-
-        .card-actions {
-            display: flex;
-            gap: 0.5rem;
-            margin-top: 1rem;
-        }
-
-        .btn-delete {
-            background-color: #e53e3e;
-        }
-
-        .btn-delete:hover {
-            background-color: #c53030;
-        }
-
-        .btn-edit {
-            background-color: #3182ce;
-        }
-
-        .btn-edit:hover {
-            background-color: #2b6cb0;
-        }
-
         :root {
             --primary: #a8c7fa;
             --on-primary: #062e6f;
@@ -173,6 +58,8 @@
         body {
             background-color: var(--background);
             color: var(--on-surface);
+            display: flex; justify-content: center; padding: 0; height: 100dvh; overflow: hidden; box-sizing: border-box; outline: none; margin: 0;
+            -webkit-touch-callout: none !important; -webkit-user-select: none !important; user-select: none !important;
         }
 
         input, textarea, .selectable-text { -webkit-user-select: auto !important; user-select: auto !important; }
@@ -181,14 +68,16 @@
         .material-icons { pointer-events: none; -webkit-user-select: none !important; user-select: none !important; -webkit-touch-callout: none !important; }
         .action-icon, .tool-btn, .carousel-btn, .carousel-nav-btn { pointer-events: auto; -webkit-user-select: none !important; user-select: none !important; -webkit-touch-callout: none !important; }
 
-        .container { width: 100%; max-width: 100%; background: var(--surface); border-radius: 0; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; overflow: hidden; position: relative; height: 100%; }
+        .container { width: 100%; max-width: 480px; background: var(--surface); border-radius: 0; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; overflow: hidden; position: relative; height: 100%; }
 
         header { padding: 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--surface-variant); background: var(--surface); z-index: 20; flex-shrink: 0; }
         header h1 { font-size: 20px; font-weight: 500; display: flex; align-items: center; gap: 8px; flex-grow: 1; overflow: hidden; }
         header h1 span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .header-actions { display: flex; gap: 16px; align-items: center; flex-shrink: 0;}
 
-        .home-search-container { padding: 16px; background: var(--surface); border-bottom: 1px solid var(--surface-variant); flex-shrink: 0; z-index: 15; position: relative;}
+        .home-search-container { padding: 16px; background: var(--surface); border-bottom: 1px solid var(--surface-variant); flex-shrink: 0; z-index: 15; position: relative; display: none; }
+        .home-search-container.show-search { display: block; }
+
         .home-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; padding: 24px; flex-shrink: 0;}
 
         .module-card {
@@ -209,7 +98,8 @@
         .menu-item:hover { background: var(--surface-variant); }
         .menu-item .material-icons { font-size: 20px; color: var(--on-surface-variant); pointer-events: none;}
 
-        .search-container { padding: 16px; background: var(--surface); position: sticky; top: 0; z-index: 15; border-bottom: 1px solid var(--surface-variant); flex-shrink: 0;}
+        .search-container { padding: 16px; background: var(--surface); position: sticky; top: 0; z-index: 15; border-bottom: 1px solid var(--surface-variant); flex-shrink: 0; display: none; }
+        .search-container.show-search { display: flex; }
         .search-box { position: relative; display: flex; align-items: center; }
         .search-box input {
             flex-grow: 1; background: var(--background); border: 1px solid var(--border); color: var(--on-surface); padding: 12px 16px 12px 44px; border-radius: 24px;
@@ -241,6 +131,9 @@
         .log-item-group { background: rgba(0,0,0,0.15); border-radius: 8px; display: flex; flex-direction: column; overflow: hidden; transition: background-color 0.5s; }
         .log-entry { padding: 12px; display: flex; flex-direction: column; gap: 6px; transition: background-color 0.5s; }
         .log-entry + .log-entry { border-top: 1px solid rgba(255,255,255,0.05); }
+        .selection-mode .log-entry, .selection-mode .timeline-entry { cursor: pointer; }
+        .selection-mode .log-entry:hover, .selection-mode .timeline-entry:hover { background-color: rgba(255, 255, 255, 0.05); }
+        .selection-mode .log-entry.selected, .selection-mode .timeline-entry.selected { background-color: rgba(92, 124, 250, 0.2); border-radius: 8px; box-shadow: inset 0 0 0 2px var(--primary); }
 
         /* Regras para o modo colapsado */
         .log-item-group.collapsed .log-entry:not(:first-child) { display: none !important; }
@@ -289,9 +182,9 @@
         .image-preview { width: 100%; max-height: 200px; object-fit: cover; border-radius: 12px; border: 1px solid var(--border); cursor: pointer; margin-top: 8px; margin-bottom: 8px; display: block; }
         .pdf-preview { display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(0,0,0,0.2); border: 1px solid var(--border); border-radius: 12px; color: var(--danger); cursor: pointer; }
 
-        .fab { position: fixed; bottom: 54px; left: 50%; transform: translateX(-50%); background-color: var(--primary); color: var(--on-primary); border: none; width: 56px; height: 56px; border-radius: 16px; box-shadow: var(--shadow); cursor: pointer; display: grid; place-content: center; z-index: 99; transition: transform 0.2s; }
-        .fab:active { transform: translateX(-50%) scale(0.9); }
-        @media (min-width: 500px) { .fab { left: calc(50% + 180px); } }
+        .fab { position: fixed; bottom: 54px; right: 24px; left: auto; transform: none; background-color: var(--primary); color: var(--on-primary); border: none; width: 56px; height: 56px; border-radius: 16px; box-shadow: var(--shadow); cursor: pointer; display: grid; place-content: center; z-index: 99; transition: transform 0.2s; }
+        .fab:active { transform: scale(0.9); }
+        @media (min-width: 500px) { .fab { right: calc(50% - 220px); left: auto; transform: none; } .fab:active { transform: scale(0.9); } }
 
         /* Modals */
         .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: flex-end; z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
@@ -313,6 +206,24 @@
         .autocomplete-dropdown { position: absolute; top: 100%; left: 0; right: 0; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; box-shadow: var(--shadow); max-height: 180px; overflow-y: auto; z-index: 2000; display: none; flex-direction: column; margin-top: 4px; }
         .autocomplete-item { padding: 12px 16px; border-bottom: 1px solid rgba(255,255,255,0.05); cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 14px; }
         .autocomplete-item:hover { background: rgba(255,255,255,0.05); }
+        .mention-link { color: var(--primary); font-weight: 500; cursor: pointer; text-decoration: underline; text-decoration-style: dotted; }
+
+        /* Timeline Styles */
+        .timeline-day-group { display: flex; flex-direction: column; width: 100%; margin-bottom: 24px; position: relative; }
+        .timeline-date-header { display: flex; align-items: center; background: #1a1a1a; padding: 4px 16px; border-radius: 4px; font-size: 13px; font-weight: bold; color: #fff; margin-bottom: 16px; position: sticky; top: 0; z-index: 10; margin-left: -16px; margin-right: -16px; }
+        .search-container.show-search ~ #timelineContainer .timeline-date-header { top: 74px; }
+        .timeline-entry { display: flex; gap: 16px; margin-bottom: 8px; position: relative; }
+        .timeline-entry:not(:last-child)::after { content: ''; position: absolute; left: 24px; top: 60px; bottom: -8px; width: 1px; background: var(--surface-variant); z-index: 0; }
+        .timeline-left { display: flex; flex-direction: column; align-items: center; min-width: 50px; z-index: 1; }
+        .timeline-day-name { font-size: 11px; color: var(--on-surface-variant); text-transform: uppercase; font-weight: bold; }
+        .timeline-day-num { font-size: 24px; font-weight: bold; color: var(--on-surface); line-height: 1; margin-top: 4px; }
+        .timeline-time { font-size: 10px; color: var(--on-surface-variant); margin-top: 6px; }
+        .timeline-right { flex-grow: 1; display: flex; flex-direction: column; padding-bottom: 8px; border-bottom: 1px solid var(--surface-variant); }
+        .timeline-text { font-size: 15px; line-height: 1.4; color: #fff; word-break: break-word; white-space: pre-wrap; font-weight: 500; }
+        .timeline-meta { font-size: 12px; color: var(--on-surface-variant); margin-top: 8px; display: flex; align-items: center; gap: 4px; }
+        .timeline-media-wrapper { width: 80px; height: 80px; flex-shrink: 0; border-radius: 8px; overflow: hidden; margin-left: 12px; position: relative; border: 1px solid #555; cursor: pointer; }
+        .timeline-content-row { display: flex; justify-content: space-between; align-items: flex-start; }
+        .timeline-highlight-focus { background-color: rgba(255, 235, 59, 0.4) !important; transition: background-color 0.5s; border-radius: 4px; }
 
         .modal-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin-top: 24px; }
         .btn { border: none; padding: 10px 18px; border-radius: 24px; font-weight: 500; cursor: pointer; font-size: 14px; white-space: nowrap; }
@@ -391,14 +302,408 @@
 
             .play-overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.6); border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         }
-
     </style>
-    <!-- Supabase CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
+</head>
+<body>
+
+<div id="printArea"></div>
+
+<div class="container">
+    <header id="mainHeader">
+        <i class="material-icons action-icon" id="btnBack" style="display:none; margin-right: 12px;" onclick="App.goBack()">arrow_back</i>
+        <h1 id="headerTitle">
+            <i class="material-icons" style="color:var(--primary);" id="headerIcon">oil_barrel</i>
+            <div style="display:flex; flex-direction:column; line-height:1; min-width: 0;">
+                <span id="headerText">Oráculo P-31</span>
+                <span id="headerVersion" style="font-size: 10px; color: var(--on-surface-variant); font-weight: normal; margin-top:2px;">v 4.8.13</span>
+            </div>
+        </h1>
+        <div class="header-actions">
+            <i class="material-icons action-icon" onclick="App.toggleGlobalSearch()" title="Buscar">search</i>
+            <i class="material-icons action-icon" onclick="App.toggleSelectionMode()" title="Compartilhar Registos">share</i>
+            <i class="material-icons action-icon" id="syncIconBtn" onclick="App.syncCloud()" title="Sincronizar Nuvem">sync</i>
+            <i class="material-icons action-icon" onclick="App.openPrintModal()" title="Imprimir Relatório">print</i>
+            <div style="position: relative;" id="menuWrapper">
+                <i class="material-icons action-icon" onclick="App.toggleMenu(event)">more_vert</i>
+                <div id="mainMenu" class="dropdown-menu">
+                <div class="menu-item" onclick="App.openTimeline()"><i class="material-icons">timeline</i> Linha do Tempo</div>
+                    <input type="file" id="restoreLocalFile" accept=".zip,.json" style="display:none" onchange="App.restoreFromLocal(event)">
+                    <div class="menu-item" onclick="document.getElementById('restoreLocalFile').click()"><i class="material-icons">folder_zip</i> Restaurar (Local)</div>
+                    <div class="menu-item" onclick="App.exportToLocal()"><i class="material-icons">download</i> Exportar (Local)</div>
+                    <div class="menu-item" onclick="App.generateMockData()"><i class="material-icons">science</i> Gerar Dados Teste</div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div id="viewHome" class="view-section active">
+        <div class="home-search-container">
+            <div class="search-box">
+                <i class="material-icons search-icon">search</i>
+                <input type="text" id="homeSearchInput" name="q_search_home" placeholder="Busca global em tudo..." autocomplete="new-password" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" oninput="clearTimeout(App.searchTimeout); App.searchTimeout = setTimeout(() => App.renderHomeSearch(), 200);">
+            </div>
+        </div>
+        <div class="home-grid" id="homeGrid">
+            <div class="module-card" onclick="App.openModule('servico', 'Serviços', 'handyman')">
+                <i class="material-icons">handyman</i><span>Serviços</span>
+            </div>
+            <div class="module-card" onclick="App.openModule('equipamento', 'Equipamentos', 'precision_manufacturing')">
+                <i class="material-icons">precision_manufacturing</i><span>Equipamentos</span>
+            </div>
+            <div class="module-card" onclick="App.openModule('pessoa', 'Pessoas', 'people')">
+                <i class="material-icons">people</i><span>Pessoas</span>
+            </div>
+            <div class="module-card" onclick="App.openModule('documento', 'Documentos', 'description')">
+                <i class="material-icons">description</i><span>Documentos</span>
+            </div>
+            <div class="module-card" onclick="App.openModule('auditoria', 'Auditorias', 'verified_user')">
+                <i class="material-icons">verified_user</i><span>Auditorias</span>
+            </div>
+            <div class="module-card" onclick="App.openModule('material', 'Materiais', 'inventory_2')">
+                <i class="material-icons">inventory_2</i><span>Materiais</span>
+            </div>
+        </div>
+        <ul class="task-list" id="homeSearchList" style="display:none;"></ul>
+    </div>
+
+    <div id="viewList" class="view-section">
+        <div class="search-container">
+            <div class="search-box">
+                <i class="material-icons search-icon">search</i>
+                <input type="text" id="searchInput" name="q_search_list" placeholder="Buscar ou criar novo..." autocomplete="new-password" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" oninput="clearTimeout(App.searchTimeout); App.searchTimeout = setTimeout(() => App.renderList(), 200);">
+            </div>
+        </div>
+        <ul class="task-list" id="entityList"></ul>
+    </div>
+
+    <div id="viewTimeline" class="view-section">
+        <div class="search-container" style="gap: 8px; align-items: center;">
+            <div class="search-box" style="flex-grow: 1;">
+                <i class="material-icons search-icon">search</i>
+                <input type="text" id="timelineSearchInput" name="q_search_timeline" placeholder="Buscar na linha do tempo..." autocomplete="new-password" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" oninput="clearTimeout(App.timelineSearchTimeout); App.timelineSearchTimeout = setTimeout(() => App.renderTimelineSearch(), 200);">
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 4px;">
+                <i class="material-icons action-icon" style="background: var(--surface-variant); border-radius: 4px; padding: 2px;" onclick="App.jumpTimelineSearch('up')">keyboard_arrow_up</i>
+                <i class="material-icons action-icon" style="background: var(--surface-variant); border-radius: 4px; padding: 2px;" onclick="App.jumpTimelineSearch('down')">keyboard_arrow_down</i>
+            </div>
+            <div id="timelineSearchCount" style="font-size: 11px; color: var(--on-surface-variant); white-space: nowrap; width: 30px; text-align: center;">0/0</div>
+        </div>
+        <div id="timelineContainer" style="padding: 16px; display: flex; flex-direction: column; gap: 0;"></div>
+    </div>
+
+    <div class="storage-footer" onclick="App.showStorageDetails()" style="cursor: pointer;">
+        <i class="material-icons" style="font-size: 14px;">storage</i> <span id="storageFooterText">A calcular memória...</span>
+    </div>
+</div>
+
+<button class="fab" id="mainFab" style="display:none;" onclick="LogModal.open(null, App.currentEntityId)">
+    <i class="material-icons">add</i>
+</button>
+
+<div class="dialog-overlay" id="customDialogModal">
+    <div class="dialog-content">
+        <h3 id="customDialogTitle" style="text-align:left;">Aviso</h3>
+        <p id="customDialogMessage" style="text-align:left; line-height: 1.4; margin-bottom: 24px;"></p>
+
+        <div id="customDialogInputContainer" style="display: none; margin-bottom: 20px;">
+            <input type="text" id="customDialogInput" class="input-field" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true">
+        </div>
+
+        <textarea id="customDialogCopyable" class="input-field" readonly style="display: none; margin-bottom: 20px; font-family: monospace; font-size: 12px; height: 100px; background: #222; border: 1px solid #444; color: #ffb4ab;" onclick="this.select()"></textarea>
+
+        <div class="modal-actions" style="justify-content: flex-end;">
+            <button class="btn btn-text" id="customDialogCancel" style="display: none;">Cancelar</button>
+            <button class="btn btn-filled" id="customDialogConfirm">OK</button>
+        </div>
+    </div>
+</div>
+
+<div class="progress-modal" id="progressModal">
+    <div class="progress-content">
+        <h3 id="progressTitle" style="margin-bottom: 16px; color: var(--on-surface); text-align:center;">Aguarde...</h3>
+        <p id="progressText" style="margin-bottom: 24px; font-weight: bold; color: var(--primary); font-size: 16px; text-align:center;">0%</p>
+        <button class="btn btn-filled" id="progressCancelBtn" style="width: 100%; background-color: var(--surface-variant); color: var(--danger);">Cancelar</button>
+    </div>
+</div>
+
+<div class="dialog-overlay" id="printReportModal">
+    <div class="dialog-content">
+        <h3 style="text-align:left; margin-bottom: 16px;">Imprimir Relatório</h3>
+        <div class="input-group">
+            <label style="font-size: 13px; font-weight: 500; color: var(--on-surface-variant); margin-bottom: 8px; display: block; text-align: left;">Data Início:</label>
+            <input type="date" id="printStartDate" class="input-field">
+        </div>
+        <div class="input-group">
+            <label style="font-size: 13px; font-weight: 500; color: var(--on-surface-variant); margin-bottom: 8px; display: block; text-align: left;">Data Fim:</label>
+            <input type="date" id="printEndDate" class="input-field">
+        </div>
+        <div class="modal-actions" style="justify-content: flex-end;">
+            <button class="btn btn-text" onclick="document.getElementById('printReportModal').classList.remove('active')">Cancelar</button>
+            <button class="btn btn-filled" onclick="App.executePrint()">Gerar</button>
+        </div>
+    </div>
+</div>
+
+<div id="logContextMenu" class="dropdown-menu" style="position: fixed; display: none; flex-direction: column; z-index: 9999; box-shadow: 0 4px 12px rgba(0,0,0,0.5);">
+    <div class="menu-item" onclick="App.editLogFromContext()">
+        <i class="material-icons">edit</i>
+        <span>Editar</span>
+    </div>
+</div>
+
+<div class="modal-overlay" id="entityModal">
+    <div class="modal-content">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <h2 id="entityModalTitle">Editar Entidade</h2>
+            <i class="material-icons action-icon danger" onclick="EntityModal.delete()">delete</i>
+        </div>
+        <div class="input-group">
+            <input type="text" id="entityNameEditInput" name="q_entity_edit" class="input-field" placeholder="Nome" autocomplete="new-password" role="presentation" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true">
+        </div>
+        <div class="modal-actions">
+            <button class="btn btn-text" onclick="EntityModal.closeUI()">Cancelar</button>
+            <button class="btn btn-filled" onclick="EntityModal.save()">Guardar</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="logModal">
+    <div class="modal-content">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <h2 id="logModalTitle">Registar Evento</h2>
+            <i class="material-icons action-icon danger" id="logModalDeleteBtn" onclick="LogModal.delete()" style="display:none;">delete</i>
+        </div>
+
+        <div class="input-group" id="logLinkContainer">
+            <label style="font-size: 13px; font-weight: 500; color: var(--on-surface-variant); margin-bottom: 8px; display: block;">Vincular a:</label>
+            <input type="text" id="logLinkInput" name="q_log_link" class="input-field" placeholder="Buscar entidade primária..." autocomplete="new-password" role="presentation" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" onfocus="LogModal.searchLinks()" oninput="LogModal.searchLinks()">
+            <div id="logLinkAutocomplete" class="autocomplete-dropdown"></div>
+            <div id="logLinkPills" class="pills-container" style="margin-top: 12px;"></div>
+        </div>
+
+        <div class="input-group">
+            <textarea id="logText" name="q_log_text" class="input-field" placeholder="Descreva o andamento, evento ou observação... (Use @ para mencionar equipamentos)" autocomplete="new-password" role="presentation" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" oninput="LogModal.handleTextareaInput(event)"></textarea>
+            <div id="logMentionAutocomplete" class="autocomplete-dropdown"></div>
+        </div>
+
+        <div class="input-group" style="display: flex; gap: 8px;">
+            <label class="upload-btn" style="flex: 1;">
+                <i class="material-icons">photo_camera</i> Mídia
+                <input type="file" id="logCam" class="hidden-file" accept="image/*,video/*" capture="environment" multiple>
+            </label>
+            <label class="upload-btn" style="flex: 1;">
+                <i class="material-icons">folder</i> Ficheiro
+                <input type="file" id="logGal" class="hidden-file" accept="image/*,application/pdf,video/*" multiple>
+            </label>
+        </div>
+        <div class="form-preview-container" id="logPreviewContainer">
+            <div id="logMediaWrapper" style="width: 100%;"></div>
+        </div>
+        <div class="modal-actions">
+            <button class="btn btn-text" onclick="LogModal.closeUI()">Cancelar</button>
+            <button class="btn btn-filled" id="logSaveBtn" onclick="LogModal.save()">Guardar Registo</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="taskCreateModal">
+    <div class="modal-content">
+        <h2>Nova Tarefa de Serviço</h2>
+        <div class="input-group" style="margin-top: 16px;">
+            <input type="text" id="taskNameInput" name="q_task_name" class="input-field" placeholder="Nome da Tarefa (Ex: Desmontagem)" autocomplete="new-password" role="presentation" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true">
+        </div>
+        <div class="modal-actions">
+            <button class="btn btn-text" onclick="TaskModal.closeUI()">Cancelar</button>
+            <button class="btn btn-filled" onclick="TaskModal.save()">Criar Tarefa</button>
+        </div>
+    </div>
+</div>
+
+<div class="carousel-overlay" id="carouselModal">
+    <div class="carousel-header">
+        <div style="color: white; font-size: 13px; font-weight:bold; margin-top: 8px; text-shadow: 1px 1px 2px black;" id="carouselSizeIndicator"></div>
+        <div class="carousel-actions-global">
+            <div class="carousel-btn edit" id="carouselEditBtn" onclick="CarouselModal.editCurrent()"><i class="material-icons">edit</i></div>
+            <div class="carousel-btn delete" id="carouselDeleteBtn" onclick="CarouselModal.deleteCurrent()"><i class="material-icons" style="color:var(--danger)">delete</i></div>
+        </div>
+        <i class="material-icons action-icon" style="color:white; font-size:32px;" onclick="CarouselModal.closeUI()">close</i>
+    </div>
+    <div class="carousel-nav-btn left" id="carouselNavLeft" onclick="CarouselModal.prev()"><i class="material-icons">chevron_left</i></div>
+    <div class="carousel-nav-btn right" id="carouselNavRight" onclick="CarouselModal.next()"><i class="material-icons">chevron_right</i></div>
+    <div class="carousel-container" id="carouselContainer"></div>
+</div>
+
+<div class="editor-overlay" id="editorOverlay" onclick="document.getElementById('colorPopup').classList.remove('show')">
+    <div class="canvas-container" id="canvasContainer">
+        <div class="editor-hint" id="editorHint">Desenhe livremente na imagem</div>
+        <div class="canvas-wrapper">
+            <canvas id="mainCanvas"></canvas>
+            <div id="textOverlay"></div>
+        </div>
+    </div>
+
+    <div id="colorPopup" class="color-popup">
+        <div class="color-dot" style="background-color: #ff3333" onclick="event.stopPropagation(); Editor.setColor('#ff3333')"></div>
+        <div class="color-dot" style="background-color: #33cc33" onclick="event.stopPropagation(); Editor.setColor('#33cc33')"></div>
+        <div class="color-dot" style="background-color: #3366ff" onclick="event.stopPropagation(); Editor.setColor('#3366ff')"></div>
+        <div class="color-dot" style="background-color: #ffff33" onclick="event.stopPropagation(); Editor.setColor('#ffff33')"></div>
+        <div class="color-dot" style="background-color: #ffffff" onclick="event.stopPropagation(); Editor.setColor('#ffffff')"></div>
+        <div class="color-dot" style="background-color: #000000" onclick="event.stopPropagation(); Editor.setColor('#000000')"></div>
+    </div>
+
+    <div class="editor-toolbar" onclick="event.stopPropagation()">
+        <button class="tool-btn" onclick="Editor.closeUI()"><i class="material-icons">close</i></button>
+        <div class="editor-sep"></div>
+        <button class="tool-btn active" id="btnPen" onclick="Editor.setTool('pen')"><i class="material-icons">edit</i></button>
+        <button class="tool-btn" id="btnText" onclick="Editor.setTool('text')"><i class="material-icons">text_fields</i></button>
+        <div class="editor-sep"></div>
+
+        <div class="color-palette-container">
+            <div id="activeColorBtn" class="active-color-dot" style="background-color: #ff3333;" onclick="event.preventDefault(); event.stopPropagation(); document.getElementById('colorPopup').classList.toggle('show');"></div>
+        </div>
+
+        <div class="editor-sep"></div>
+        <input type="range" id="editorSize" class="size-slider" min="2" max="9" step="0.5" value="3">
+        <div class="editor-sep"></div>
+        <button class="tool-btn" onclick="Editor.undo()"><i class="material-icons">undo</i></button>
+        <button class="tool-btn" onclick="Editor.save()" style="background: var(--primary); color: var(--on-primary); margin-left: auto;"><i class="material-icons">check</i></button>
+    </div>
+</div>
+
+<script>
+// --- INICIALIZAÇÃO DO DEXIE ---
+const AppDB = new Dexie('OraculoP31');
+AppDB.version(1).stores({ entities: 'id, type, name, parentId, createdAt', logs: 'id, originEntityId' });
+
+window.cachedEntitiesMap = new Map();
+AppDB.entities.toArray().then(entities => {
+    entities.forEach(e => {
+        window.cachedEntitiesMap.set(e.id, e.name);
+    });
+});
+
+// --- CORE UTILS & STATE MANAGEMENT ---
+var AppState = {
+    modals: [],
+    openModal: function(modalObj) { modalObj.el.classList.add('active'); this.modals.push(modalObj); history.pushState({ modalId: modalObj.el.id }, ''); },
+    closeModalUI: function() { if(this.modals.length > 0) history.back(); },
+    handlePopState: function(e) {
+        if (this.modals.length > 0) { let m = this.modals.pop(); m.el.classList.remove('active'); if(m.onHardwareBack) m.onHardwareBack(); }
+        else if (e.state && e.state.view) {
+            if (e.state.view === 'home') App.goHome(true);
+            else if (e.state.view === 'list') {
+                App.moduleType = e.state.moduleType; App.moduleName = e.state.moduleName; App.moduleIcon = e.state.moduleIcon; App.currentView = 'list';
+                document.getElementById('viewHome').classList.remove('active'); document.getElementById('viewList').classList.add('active'); document.getElementById('viewTimeline').classList.remove('active');
+                document.getElementById('headerIcon').innerText = App.moduleIcon; document.getElementById('headerText').innerText = App.moduleName;
+                document.getElementById('btnBack').style.display = 'inline-block'; document.getElementById('headerVersion').style.display = 'none'; document.getElementById('mainFab').style.display = 'none';
+                App.renderList();
+            }
+            else if (e.state.view === 'timeline') App.openTimeline(true);
+        } else {
+            App.goHome(true);
+        }
+    }
+};
+window.addEventListener('popstate', (e) => AppState.handlePopState(e));
+
+var CustomDialog = {
+    el: document.getElementById('customDialogModal'), titleEl: document.getElementById('customDialogTitle'),
+    msgEl: document.getElementById('customDialogMessage'), inputContainer: document.getElementById('customDialogInputContainer'),
+    inputEl: document.getElementById('customDialogInput'), btnCancel: document.getElementById('customDialogCancel'),
+    btnConfirm: document.getElementById('customDialogConfirm'), copyableEl: document.getElementById('customDialogCopyable'),
+    resolvePromise: null,
+    show: function(title, message, type, defaultValue = '', copyText = '') {
+        return new Promise((resolve) => {
+            this.titleEl.innerText = title || 'Aviso'; this.msgEl.innerHTML = message;
+            this.inputContainer.style.display = type === 'prompt' ? 'block' : 'none';
+            if (type === 'prompt') this.inputEl.value = defaultValue;
+
+            if (copyText) {
+                this.copyableEl.style.display = 'block';
+                this.copyableEl.value = copyText;
+            } else {
+                this.copyableEl.style.display = 'none';
+            }
+
+            this.btnCancel.style.display = (type === 'confirm' || type === 'prompt') ? 'block' : 'none';
+            this.btnConfirm.style.display = 'block';
+            this.resolvePromise = resolve;
+            this.btnConfirm.onclick = () => { AppState.closeModalUI(); this.resolvePromise(type === 'prompt' ? this.inputEl.value : true); this.resolvePromise = null; };
+            this.btnCancel.onclick = () => { AppState.closeModalUI(); this.resolvePromise(type === 'prompt' ? null : false); this.resolvePromise = null; };
+            AppState.openModal(this);
+            if (type === 'prompt') setTimeout(() => this.inputEl.focus(), 100);
+        });
+    },
+    onHardwareBack: function() { if(this.resolvePromise) { this.resolvePromise(this.inputContainer.style.display === 'block' ? null : false); this.resolvePromise = null; } },
+    alert: function(message, title, copyText = '') { return this.show(title, message, 'alert', '', copyText); },
+    confirm: function(message, title) { return this.show(title, message, 'confirm'); },
+    prompt: function(message, defaultValue, title) { return this.show(title, message, 'prompt', defaultValue); }
+};
+
+var MenuModal = {
+    el: document.getElementById('mainMenu'),
+    open: function() { this.el.classList.add('show'); AppState.modals.push(this); history.pushState({ modalId: 'mainMenu' }, ''); },
+    closeUI: function() { AppState.closeModalUI(); },
+    onHardwareBack: function() { this.el.classList.remove('show'); }
+};
+window.addEventListener('click', (e) => { const menu = document.getElementById('mainMenu'); if (menu && menu.classList.contains('show') && !e.target.closest('#menuWrapper')) { MenuModal.closeUI(); } });
+
+const MODULE_MAPPING = { 'servico':['Serviços','handyman'], 'equipamento':['Equipamentos','precision_manufacturing'], 'pessoa':['Pessoas','people'], 'documento':['Documentos','description'], 'auditoria':['Auditorias','verified_user'], 'material':['Materiais','inventory_2'], 'tarefa':['Tarefa','assignment'] };
+
 var AppUtils = {
-    getPdfName: function(base64Str, defaultName = "Documento PDF") { if(!base64Str) return defaultName; const match = base64Str.match(/name=([^;]+);/); return match ? decodeURIComponent(match[1]) : defaultName; },
+    getPdfName: function(base64Str, defaultName = "Documento PDF") {
+        if(!base64Str) return defaultName;
+        if(base64Str.startsWith('/files/')) {
+            const parts = base64Str.split('/');
+            return parts[parts.length - 1];
+        }
+        const match = base64Str.match(/name=([^;]+);/); return match ? decodeURIComponent(match[1]) : defaultName;
+    },
     formatDate: function(ts) { if (!ts) return ""; const d = new Date(ts); return `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear().toString().slice(-2)} ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`; },
+    escapeHTML: function(str) { return str.replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)); },
+    escapeRegex: function(string) { return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); },
     highlight: function(text, term) { if (!term) return text; const regex = new RegExp(`(${term})`, 'gi'); return text.replace(regex, '<mark class="highlight">$1</mark>'); },
+
+    getCaretCoordinates: function(element, position) {
+        const div = document.createElement('div');
+        const style = div.style;
+        const computed = window.getComputedStyle ? getComputedStyle(element) : element.currentStyle;
+
+        style.whiteSpace = 'pre-wrap';
+        style.wordWrap = 'break-word';
+        style.position = 'absolute';
+        style.visibility = 'hidden';
+
+        ['direction', 'boxSizing', 'width', 'height', 'overflowX', 'overflowY', 'borderTopWidth', 'borderRightWidth', 'borderBottomWidth', 'borderLeftWidth', 'borderStyle', 'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft', 'fontStyle', 'fontVariant', 'fontWeight', 'fontStretch', 'fontSize', 'fontSizeAdjust', 'lineHeight', 'fontFamily', 'textAlign', 'textTransform', 'textIndent', 'textDecoration', 'letterSpacing', 'wordSpacing', 'tabSize', 'MozTabSize'].forEach(prop => {
+            style[prop] = computed[prop];
+        });
+
+        if (element.nodeName === 'TEXTAREA') {
+            const isFirefox = window.mozInnerScreenX != null;
+            if (isFirefox) {
+                if (element.scrollHeight > parseInt(computed.height)) style.overflowY = 'scroll';
+            } else {
+                style.overflow = 'hidden';
+            }
+        }
+
+        div.textContent = element.value.substring(0, position);
+        const span = document.createElement('span');
+        span.textContent = element.value.substring(position) || '.';
+        div.appendChild(span);
+
+        document.body.appendChild(div);
+        let lh = parseInt(computed['lineHeight']);
+        if (isNaN(lh)) {
+            let fs = parseInt(computed['fontSize']);
+            lh = isNaN(fs) ? 16 : fs * 1.2;
+        }
+        const borderTop = parseInt(computed['borderTopWidth']) || 0;
+        const borderLeft = parseInt(computed['borderLeftWidth']) || 0;
+        const coordinates = { top: span.offsetTop + borderTop, left: span.offsetLeft + borderLeft, height: lh };
+        document.body.removeChild(div);
+        return coordinates;
+    },
 
     compressVideo: async function(file, onProgress) {
         return new Promise((resolve, reject) => {
@@ -458,14 +763,13 @@ var AppUtils = {
     }
 };
 
-
 async function processMultipleMedia(files, onProgress, callback) {
     if (!files || files.length === 0) return callback([]);
     let processedArray = [];
     for(let file of files) {
         let captureTime = Date.now();
         if (file.type === 'application/pdf') {
-            let customName = window.prompt("Nome curto para este PDF:", file.name);
+            let customName = await CustomDialog.prompt("Nome curto para este PDF:", file.name, "Nome do Arquivo");
             if (!customName) customName = file.name;
             const encodedName = encodeURIComponent(customName);
             const reader = new FileReader();
@@ -513,24 +817,23 @@ async function processMultipleMedia(files, onProgress, callback) {
     callback(processedArray);
 }
 
-
 function renderStackedDeckHTML(images, logId) {
     if (!images || images.length === 0) return '';
     let clickHandler = `CarouselModal.open('${logId}')`;
-    let pdfCount = images.filter(img => img.data && img.data.startsWith('data:application/pdf')).length;
+    let pdfCount = images.filter(img => img.data && (img.data.startsWith('data:application/pdf') || img.data.endsWith('.pdf'))).length;
     let countLabel = `+${images.length - 1}`; if (pdfCount > 0) countLabel += ` (${pdfCount} PDF)`;
 
     if (images.length === 1) {
         let img = images[0];
         if (img.isPlaceholder) return `<div class="pdf-preview deck-photo" style="position:relative; left:0; width:100%; height:auto; min-height:140px; background:#111;"><i class="material-icons" style="font-size:48px; color:var(--primary); animation: spin 1s linear infinite;">sync</i><span id="video-progress-text" style="font-size: 13px; margin-top: 8px; color:var(--primary); font-weight:bold;">A processar: 0%</span></div>`;
-        if (img.data.startsWith('data:application/pdf')) return `<div class="pdf-preview deck-photo" style="position:relative; left:0; width:100%; height:auto; min-height:140px; padding:12px;" onclick="${clickHandler}"><i class="material-icons" style="font-size:32px;">picture_as_pdf</i><span style="font-size: 13px; margin-top: 8px; text-align:center;">${AppUtils.getPdfName(img.data)}</span></div>`;
-        else if (img.isVideo || img.data.startsWith('data:video/')) return `<div class="pdf-preview deck-photo" style="position:relative; left:0; width:100%; height:auto; min-height:140px; background: url('${img.thumbnail || ''}') center/cover;" onclick="${clickHandler}"><div style="background:rgba(0,0,0,0.5); width:100%; height:100%; min-height:140px; display:flex; flex-direction:column; align-items:center; justify-content:center;"><i class="material-icons" style="font-size:48px; color:#fff;">play_circle_outline</i></div></div>`;
+        if ((img.data.startsWith('data:application/pdf') || img.data.endsWith('.pdf'))) return `<div class="pdf-preview deck-photo" style="position:relative; left:0; width:100%; height:auto; min-height:140px; padding:12px;" onclick="${clickHandler}"><i class="material-icons" style="font-size:32px;">picture_as_pdf</i><span style="font-size: 13px; margin-top: 8px; text-align:center;">${AppUtils.getPdfName(img.data)}</span></div>`;
+        else if (img.isVideo || (img.data.startsWith('data:video/') || img.data.endsWith('.webm') || img.data.endsWith('.mp4'))) return `<div class="pdf-preview deck-photo" style="position:relative; left:0; width:100%; height:auto; min-height:140px; background: url('${img.thumbnail || ''}') center/cover;" onclick="${clickHandler}"><div style="background:rgba(0,0,0,0.5); width:100%; height:100%; min-height:140px; display:flex; flex-direction:column; align-items:center; justify-content:center;"><i class="material-icons" style="font-size:48px; color:#fff;">play_circle_outline</i></div></div>`;
         else return `<img src="${img.data}" class="image-preview" onclick="${clickHandler}" style="margin:0;">`;
     } else {
         const photosHtml = images.slice(0, 3).map(img => {
             if (img.isPlaceholder) return `<div class="pdf-preview deck-photo" style="background:#111;"><i class="material-icons" style="font-size:24px; color:var(--primary); animation: spin 1s linear infinite;">sync</i></div>`;
-            if (img.data.startsWith('data:application/pdf')) return `<div class="pdf-preview deck-photo"><i class="material-icons" style="font-size:24px;">picture_as_pdf</i><span style="font-size:9px; margin-top:4px;">PDF</span></div>`;
-            else if (img.isVideo || img.data.startsWith('data:video/')) return `<div class="pdf-preview deck-photo" style="background: url('${img.thumbnail || ''}') center/cover;"><div style="background:rgba(0,0,0,0.5); width:100%; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center;"><i class="material-icons" style="font-size:24px; color:#fff;">play_circle_outline</i></div></div>`;
+            if ((img.data.startsWith('data:application/pdf') || img.data.endsWith('.pdf'))) return `<div class="pdf-preview deck-photo"><i class="material-icons" style="font-size:24px;">picture_as_pdf</i><span style="font-size:9px; margin-top:4px;">PDF</span></div>`;
+            else if (img.isVideo || (img.data.startsWith('data:video/') || img.data.endsWith('.webm') || img.data.endsWith('.mp4'))) return `<div class="pdf-preview deck-photo" style="background: url('${img.thumbnail || ''}') center/cover;"><div style="background:rgba(0,0,0,0.5); width:100%; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center;"><i class="material-icons" style="font-size:24px; color:#fff;">play_circle_outline</i></div></div>`;
             return `<img src="${img.data}" class="deck-photo">`;
         }).join('');
         let countHtml = `<div style="position: absolute; bottom: 8px; right: 18px; background: rgba(0,0,0,0.7); color:white; padding: 4px 8px; border-radius: 12px; font-size:12px; z-index: 4; font-weight:bold;">${countLabel}</div>`;
@@ -538,6 +841,2323 @@ function renderStackedDeckHTML(images, logId) {
     }
 }
 
+// --- MAIN APPLICATION LOGIC ---
+var App = {
+    currentView: 'home', moduleType: null, moduleName: null, moduleIcon: null, currentEntityId: null, searchFocusTerm: '',
+    searchTimeout: null, currentSearchId: 0,
+    expandedTasks: new Set(JSON.parse(localStorage.getItem('OraculoExpandedTasks') || '[]')),
+    expandedGroups: new Set(JSON.parse(localStorage.getItem('OraculoExpandedGroups') || '[]')),
+    storageDetails: { videos: 0, images: 0, pdfs: 0, messages: 0 },
+    currentAuthor: null, macAddress: null,
+    isSelectionMode: false, selectedLogs: new Set(),
+
+    generateMockData: async function() {
+        if (!await CustomDialog.confirm("Deseja gerar dados aleatórios de teste para a Linha do Tempo (Dez/2025 até hoje)? Isso adicionará cerca de 60 registos fictícios.", "Gerar Dados Teste")) {
+            return;
+        }
+
+        try {
+            document.getElementById('progressModal').classList.add('active');
+            document.getElementById('progressTitle').innerText = "A Gerar Dados...";
+            document.getElementById('progressText').innerText = "0%";
+            document.getElementById('progressCancelBtn').style.display = 'none';
+
+            let globalEntity = await AppDB.entities.get('global-timeline');
+            if (!globalEntity) {
+                await AppDB.entities.put({ id: 'global-timeline', type: 'system', name: 'Timeline Global', createdAt: Date.now(), updatedAt: Date.now(), parentId: null });
+            }
+
+            const startDate = new Date(2025, 11, 1).getTime(); // Dec 1, 2025
+            const endDate = Date.now();
+            const timeDiff = endDate - startDate;
+
+            const events = [
+                "Verificação diária concluída sem anomalias.",
+                "Substituição de filtro de óleo na unidade A.",
+                "Temperatura do sensor 3 acima do limite normal. Ajustado parâmetro X.",
+                "Limpeza geral da área de operação.",
+                "Revisão do equipamento principal finalizada.",
+                "Falha de comunicação com o servidor secundário. Restabelecido após 10min.",
+                "Atualização do sistema de controlo para v1.2.",
+                "Inspeção visual da tubagem de ar comprimido: OK.",
+                "Calibração do medidor de pressão.",
+                "Reunião de segurança matinal.",
+                "Testes de carga na bateria auxiliar. Resultados dentro do esperado.",
+                "Substituição da lâmpada de sinalização.",
+                "Nível de fluido hidráulico completado.",
+                "Vazamento menor detectado e selado na válvula V-04.",
+                "Manutenção preventiva no motor de exaustão.",
+                "Auditoria externa: área aprovada.",
+                "Simulação de emergência realizada com sucesso.",
+                "Aguardando peças de reposição para a bomba B.",
+                "Início do turno. Sistema operando nominalmente.",
+                "Fim do turno. Nenhuma ocorrência grave."
+            ];
+
+            const authors = ["João Silva", "Maria Oliveira", "Carlos Santos", "Ana Costa", "Rui Moreira", "Teresa Almeida"];
+
+            const newLogs = [];
+            const numLogs = 60;
+            const now = Date.now();
+
+            for (let i = 0; i < numLogs; i++) {
+                const randomTime = startDate + Math.random() * timeDiff;
+                const randomEvent = events[Math.floor(Math.random() * events.length)];
+                const randomAuthor = authors[Math.floor(Math.random() * authors.length)];
+                const logId = randomTime.toString() + Math.random().toString(36).substring(2, 7);
+
+                newLogs.push({
+                    id: logId,
+                    text: randomEvent,
+                    images: [],
+                    createdAt: randomTime,
+                    updatedAt: randomTime,
+                    originEntityId: 'global-timeline',
+                    relatedEntities: [{ type: 'system', id: 'global-timeline' }],
+                    groupId: logId,
+                    authorName: randomAuthor,
+                    isDeleted: false
+                });
+
+                if (i % 10 === 0) {
+                     document.getElementById('progressText').innerText = Math.round((i / numLogs) * 100) + "%";
+                     await new Promise(r => setTimeout(r, 10)); // UI yield
+                }
+            }
+
+            await AppDB.logs.bulkPut(newLogs);
+
+            document.getElementById('progressModal').classList.remove('active');
+            MenuModal.closeUI();
+
+            if (this.currentView === 'timeline') {
+                this.renderTimeline();
+            } else {
+                this.openTimeline();
+            }
+
+            await CustomDialog.alert(`${numLogs} registos fictícios foram gerados com sucesso!`, "Concluído");
+
+        } catch(e) {
+            document.getElementById('progressModal').classList.remove('active');
+            await CustomDialog.alert("Erro ao gerar dados: " + e.message, "Erro");
+        }
+    },
+
+    init: async function() {
+        let mac = localStorage.getItem('oraculo_device_mac');
+        if (!mac) {
+            mac = 'mac_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            localStorage.setItem('oraculo_device_mac', mac);
+        }
+        this.macAddress = mac;
+        let authorEntity = await AppDB.entities.get(mac);
+        if (!authorEntity) {
+            setTimeout(async () => {
+                let authorName = await CustomDialog.prompt("Qual o seu nome?", "", "Identificação de Autor");
+                if (authorName && authorName.trim()) {
+                    this.currentAuthor = authorName.trim();
+                    await AppDB.entities.put({ id: mac, type: 'device', name: this.currentAuthor, createdAt: Date.now(), updatedAt: Date.now(), parentId: null });
+                } else {
+                    this.currentAuthor = null;
+                }
+            }, 500);
+        } else {
+            this.currentAuthor = authorEntity.name;
+        }
+        this.goHome(); this.calculateStorage();
+        this.startAutoSyncCheck();
+    },
+
+    startAutoSyncCheck: function() {
+        let lastCheck = 0;
+        const checkSync = async () => {
+            if (!navigator.onLine) return;
+            const now = Date.now();
+            if (now - lastCheck < 60000) return; // Debounce 1 min
+            lastCheck = now;
+            try {
+                const prefix = "oraculo_sync_master";
+                const res = await fetch(`/api/backup?action=masterDate&prefix=${prefix}&ts=${Date.now()}`, { cache: 'no-store' });
+                if (res.ok) {
+                    const resText = await res.text();
+                    let data;
+                    try {
+                        data = JSON.parse(resText);
+                    } catch (parseErr) {
+                        return; // Silently handle proxy/firewall intercepts during background check
+                    }
+                    if (data && data.uploadedAt) {
+                        const lastSync = localStorage.getItem('oraculo_last_master_uploaded_at');
+                        const syncBtn = document.getElementById('syncIconBtn');
+                        if (syncBtn) {
+                            if (!lastSync || new Date(data.uploadedAt) > new Date(lastSync)) {
+                                syncBtn.classList.add('sync-highlight');
+                            } else {
+                                syncBtn.classList.remove('sync-highlight');
+                            }
+                        }
+                    }
+                }
+            } catch (e) {
+                // Silently fail, it's a background process
+            }
+        };
+        setInterval(checkSync, 300000); // 5 minutes
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') {
+                checkSync();
+            }
+        });
+        checkSync();
+    },
+
+    saveExpandedState: function() {
+        localStorage.setItem('OraculoExpandedGroups', JSON.stringify(Array.from(this.expandedGroups)));
+    },
+
+    saveExpandedTasksState: function() {
+        localStorage.setItem('OraculoExpandedTasks', JSON.stringify(Array.from(this.expandedTasks)));
+    },
+
+    toggleGlobalSearch: function() {
+        const homeSearch = document.querySelector('.home-search-container');
+        const listSearchContainers = document.querySelectorAll('.search-container');
+
+        let isShowing = false;
+
+        if (this.currentView === 'home') {
+            homeSearch.classList.toggle('show-search');
+            isShowing = homeSearch.classList.contains('show-search');
+            if (isShowing) {
+                setTimeout(() => document.getElementById('homeSearchInput').focus(), 100);
+            }
+        } else if (this.currentView === 'list' || this.currentView === 'timeline') {
+            listSearchContainers.forEach(c => c.classList.toggle('show-search'));
+            isShowing = listSearchContainers[0].classList.contains('show-search');
+            if (isShowing) {
+                if (this.currentView === 'list') {
+                    setTimeout(() => document.getElementById('searchInput').focus(), 100);
+                } else {
+                    setTimeout(() => document.getElementById('timelineSearchInput').focus(), 100);
+                }
+            }
+        }
+    },
+
+    calculateStorage: async function() {
+        try {
+            let details = { videos: 0, images: 0, pdfs: 0, messages: 0 };
+
+            await AppDB.entities.each(e => {
+                if (e.isDeleted) return;
+                details.messages += JSON.stringify(e).length;
+            });
+            await AppDB.logs.each(l => {
+                if (l.isDeleted) return;
+                let logClone = { ...l };
+                delete logClone.images;
+                details.messages += JSON.stringify(logClone).length;
+
+                if (l.images) {
+                    l.images.forEach(img => {
+                        let itemSize = img.size ? img.size : (img.data ? Math.round(img.data.length * 0.75) : 0);
+
+                        if (img.isVideo || (img.data && (img.data.startsWith('data:video/') || img.data.endsWith('.webm') || img.data.endsWith('.mp4')))) {
+                            details.videos += itemSize;
+                        } else if (img.data && (img.data.startsWith('data:application/pdf') || img.data.endsWith('.pdf'))) {
+                            details.pdfs += itemSize;
+                        } else {
+                            details.images += itemSize;
+                        }
+                    });
+                }
+            });
+
+            this.storageDetails = details;
+            let totalBytes = details.videos + details.images + details.pdfs + details.messages;
+            let mb = (totalBytes / 1024 / 1024).toFixed(2);
+
+            const footer = document.getElementById('storageFooterText');
+            if(footer) footer.innerText = `${mb} MB utilizados`;
+        } catch(e) {}
+    },
+
+    showStorageDetails: function() {
+        const mb = (bytes) => (bytes / 1024 / 1024).toFixed(2);
+        const msg = `Vídeos: ${mb(this.storageDetails.videos)} MB<br>Imagens: ${mb(this.storageDetails.images)} MB<br>PDFs: ${mb(this.storageDetails.pdfs)} MB<br>Mensagens: ${mb(this.storageDetails.messages)} MB`;
+        CustomDialog.alert(msg, "Detalhes de Armazenamento");
+    },
+
+    toggleMenu: (e) => { e.stopPropagation(); const menu = document.getElementById('mainMenu'); if (menu.classList.contains('show')) MenuModal.closeUI(); else MenuModal.open(); },
+
+    toggleSelectionMode: function() {
+        this.isSelectionMode = !this.isSelectionMode;
+        if (!this.isSelectionMode) {
+            for (let id of this.selectedLogs) {
+                document.getElementById('log-' + id)?.classList.remove('selected');
+                document.getElementById('timeline-log-' + id)?.classList.remove('selected');
+            }
+            this.selectedLogs.clear();
+        }
+        document.body.classList.toggle('selection-mode', this.isSelectionMode);
+        this.updateSelectionUI();
+    },
+
+    toggleLogSelection: function(logId, e) {
+        if (!this.isSelectionMode) return;
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        if (this.selectedLogs.has(logId)) {
+            this.selectedLogs.delete(logId);
+            document.getElementById('log-' + logId)?.classList.remove('selected');
+            document.getElementById('timeline-log-' + logId)?.classList.remove('selected');
+        } else {
+            this.selectedLogs.add(logId);
+            document.getElementById('log-' + logId)?.classList.add('selected');
+            document.getElementById('timeline-log-' + logId)?.classList.add('selected');
+        }
+        this.updateSelectionUI();
+    },
+
+    shareSelectedLogs: async function() {
+        if (this.selectedLogs.size === 0) return;
+        const logIds = Array.from(this.selectedLogs);
+
+        let logsToShare = [];
+        for (let id of logIds) {
+            let log = await AppDB.logs.get(id);
+            if (log) logsToShare.push(log);
+        }
+
+        // Group by entity
+        let grouped = {};
+        for (let log of logsToShare) {
+            let eName = 'Linha do Tempo';
+            if (log.originEntityId !== 'global-timeline') {
+                let e = await AppDB.entities.get(log.originEntityId);
+                if (e) eName = e.name;
+            }
+            if (!grouped[eName]) grouped[eName] = [];
+            grouped[eName].push(log);
+        }
+
+        let shareText = '';
+        let shareFiles = [];
+        let fileCounter = 1;
+
+        for (let [eName, logs] of Object.entries(grouped)) {
+            shareText += `*${eName}*\n`;
+            for (let log of logs.sort((a, b) => a.createdAt - b.createdAt)) {
+                let plainText = log.text || '';
+                // Remove specific markdown wrappers but keep names
+                plainText = plainText.replace(/@\[(.*?)\]\(.*?\)/g, '@$1');
+
+                let attachmentsText = [];
+                if (log.images && log.images.length > 0) {
+                    for (let img of log.images) {
+                        try {
+                            const arr = img.data.split(',');
+                            const mimePart = arr[0];
+                            const mime = mimePart.match(/:(.*?);/)[1];
+                            const bstr = atob(arr[1]);
+                            let n = bstr.length;
+                            const u8arr = new Uint8Array(n);
+                            while(n--){ u8arr[n] = bstr.charCodeAt(n); }
+
+                            let ext = 'bin';
+                            if (mime.includes('jpeg') || mime.includes('jpg')) ext = 'jpg';
+                            else if (mime.includes('png')) ext = 'png';
+                            else if (mime.includes('pdf')) ext = 'pdf';
+                            else if (mime.includes('mp4') || mime.includes('video')) ext = 'mp4';
+
+                            let filename = `foto${fileCounter}.${ext}`;
+                            attachmentsText.push(filename);
+
+                            let blob = new Blob([u8arr], {type: mime});
+
+                            // Extract PDF name if present
+                            let nameMatch = mimePart.match(/name=([^;]+)/);
+                            if (ext === 'pdf' && nameMatch) {
+                                filename = decodeURIComponent(nameMatch[1]);
+                                if (!filename.toLowerCase().endsWith('.pdf')) filename += '.pdf';
+                            }
+
+                            // If it's an image, draw text on it
+                            if (ext === 'jpg' || ext === 'png') {
+                                const addTextToImage = async (imgBlob, text) => {
+                                    return new Promise((resolve) => {
+                                        const imgUrl = URL.createObjectURL(imgBlob);
+                                        const image = new Image();
+                                        image.onload = () => {
+                                            const canvas = document.createElement('canvas');
+                                            const ctx = canvas.getContext('2d');
+
+                                            const bannerHeight = Math.max(80, Math.floor(image.height * 0.08));
+                                            canvas.width = image.width;
+                                            canvas.height = image.height + bannerHeight;
+
+                                            ctx.fillStyle = '#000000';
+                                            ctx.fillRect(0, 0, canvas.width, bannerHeight);
+
+                                            ctx.fillStyle = '#ffffff';
+                                            const fontSize = Math.max(30, Math.floor(bannerHeight * 0.6));
+                                            ctx.font = 'bold ' + fontSize + 'px sans-serif';
+                                            ctx.textBaseline = 'middle';
+                                            ctx.textAlign = 'center';
+                                            ctx.fillText(text, canvas.width / 2, bannerHeight / 2);
+
+                                            ctx.drawImage(image, 0, bannerHeight);
+
+                                            canvas.toBlob((newBlob) => {
+                                                URL.revokeObjectURL(imgUrl);
+                                                resolve(newBlob);
+                                            }, mime, 0.9);
+                                        };
+                                        image.onerror = () => {
+                                            URL.revokeObjectURL(imgUrl);
+                                            resolve(imgBlob);
+                                        };
+                                        image.src = imgUrl;
+                                    });
+                                };
+
+                                let imageText = eName;
+                                if (eName === 'Linha do Tempo') {
+                                    imageText = plainText.substring(0, 30) + (plainText.length > 30 ? '...' : '');
+                                    if (!imageText) imageText = 'Registro';
+                                }
+
+                                blob = await addTextToImage(blob, imageText);
+                            }
+
+                            let cleanMime = mime.includes('name=') ? mime.split(';')[0] : mime;
+                            let file = new File([blob], filename, {type: cleanMime});
+                            shareFiles.push(file);
+                            fileCounter++;
+                        } catch(e) {
+                            console.error("Error converting file for share:", e);
+                        }
+                    }
+                }
+
+                shareText += `- ${plainText}`;
+                if (attachmentsText.length > 0) {
+                    shareText += ` (anexos: ${attachmentsText.join(', ')})`;
+                }
+                shareText += '\n\n';
+            }
+        }
+
+        shareText = shareText.trim();
+
+        try {
+            if (navigator.canShare && navigator.canShare({ files: shareFiles })) {
+                const proceed = await CustomDialog.confirm("Imagens e arquivos processados! Deseja compartilhar agora?", "Pronto");
+                if (proceed) {
+                    await navigator.share({
+                        text: shareText,
+                        files: shareFiles
+                    });
+                } else return;
+            } else if (navigator.share) {
+                const proceed = await CustomDialog.confirm("Seu navegador não suporta compartilhar arquivos junto, compartilhar apenas o texto?", "Aviso");
+                if (proceed) {
+                    await navigator.share({ text: shareText });
+                } else return;
+            } else {
+                await navigator.clipboard.writeText(shareText);
+                CustomDialog.alert("Seu navegador não suporta compartilhamento direto. O texto foi copiado para a área de transferência.", "Copiado");
+            }
+            this.toggleSelectionMode(); // Exit selection mode
+        } catch (error) {
+            console.error('Error sharing:', error);
+            if (error.name !== 'AbortError') {
+                await navigator.clipboard.writeText(shareText);
+                CustomDialog.alert("Erro ao compartilhar. O texto foi copiado para a área de transferência.", "Copiado");
+                this.toggleSelectionMode();
+            }
+        }
+    },
+
+    updateSelectionUI: function() {
+        let fab = document.getElementById('mainFab');
+        if (this.isSelectionMode) {
+            fab.style.display = 'grid';
+            fab.style.width = 'auto';
+            fab.style.borderRadius = '24px';
+            fab.style.padding = '0 20px';
+            fab.innerHTML = `<i class="material-icons" style="margin-right:8px;">share</i> Compartilhar Selecionados (${this.selectedLogs.size})`;
+            fab.onclick = () => App.shareSelectedLogs();
+        } else {
+            if (this.currentView === 'timeline') {
+                fab.style.display = 'grid';
+                fab.style.width = '48px';
+                fab.style.borderRadius = '16px';
+                fab.style.padding = '0';
+                fab.innerHTML = `<i class="material-icons">add</i>`;
+                fab.onclick = () => LogModal.open(null, 'global-timeline');
+            } else {
+                fab.style.display = 'none';
+            }
+        }
+    },
+
+    toggleLogGroup: function(groupId, event) {
+        if(event) event.stopPropagation();
+        const el = document.getElementById(groupId);
+        if(el) {
+            el.classList.toggle('collapsed');
+            const isCollapsed = el.classList.contains('collapsed');
+
+            if (isCollapsed) {
+                App.expandedGroups.delete(groupId);
+            } else {
+                App.expandedGroups.add(groupId);
+            }
+            App.saveExpandedState();
+
+            const icon = el.querySelector('.group-toggle-icon');
+            if(icon) {
+                icon.innerText = isCollapsed ? 'expand_more' : 'expand_less';
+            }
+        }
+    },
+
+    toggleAllLogGroups: function(entityId) {
+        const entityEl = document.getElementById('entity-' + entityId);
+        if (!entityEl) return;
+        const groups = entityEl.querySelectorAll('.log-item-group');
+        if (groups.length === 0) return;
+
+        let allAreCollapsed = true;
+        groups.forEach(g => {
+            if (!g.classList.contains('collapsed')) {
+                allAreCollapsed = false;
+            }
+        });
+
+        groups.forEach(g => {
+            if (allAreCollapsed) {
+                g.classList.remove('collapsed');
+                App.expandedGroups.add(g.id);
+            } else {
+                g.classList.add('collapsed');
+                App.expandedGroups.delete(g.id);
+            }
+            let icon = g.querySelector('.group-toggle-icon');
+            if (icon) {
+                icon.innerText = allAreCollapsed ? 'expand_less' : 'expand_more';
+            }
+        });
+        App.saveExpandedState();
+    },
+    syncCloud: async function() {
+        if(!navigator.onLine) {
+            await CustomDialog.alert("Verifique a sua ligação à internet. Será gerado um backup local offline.", "Sem ligação");
+            this.exportToLocal(true, "Sem ligação à internet");
+            return;
+        }
+        if(!await CustomDialog.confirm("Iniciar sincronização otimizada com a nuvem? Isso ocorrerá em segundo plano.", "Sincronizar")) return;
+
+        const prefix = "oraculo_sync_master";
+        const macAddress = localStorage.getItem('oraculo_device_mac');
+        const authorSuffix = this.currentAuthor ? " (sistema sendo sincronizado por " + this.currentAuthor + ")" : "";
+
+        let syncIndicator = document.getElementById('syncIndicator');
+        if (!syncIndicator) {
+            syncIndicator = document.createElement('div');
+            syncIndicator.id = 'syncIndicator';
+            syncIndicator.style.cssText = 'position: relative; width: 100%; background: var(--primary); color: var(--on-primary); text-align: center; font-size: 12px; font-weight: bold; padding: 4px; z-index: 9999; box-shadow: 0 2px 4px rgba(0,0,0,0.5); flex-shrink: 0;';
+            document.querySelector('.container').prepend(syncIndicator);
+        }
+        syncIndicator.style.display = 'block';
+        syncIndicator.innerText = "A iniciar..." + authorSuffix;
+
+        try {
+            // 1. Lock the sync
+            const startRes = await fetch(`/api/backup`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'startSync', prefix: prefix, macAddress: macAddress, authorName: this.currentAuthor })
+            });
+            if (!startRes.ok) {
+                let errText = await startRes.text();
+                try { errText = JSON.parse(errText).error; } catch(e){}
+                throw new Error(errText || "Não foi possível iniciar a sincronização.");
+            }
+
+            // 2. Fetch Index
+            syncIndicator.innerText = "A obter índice..." + authorSuffix;
+            const indexRes = await fetch(`/api/backup?action=index&prefix=${prefix}&ts=${Date.now()}`);
+            if(!indexRes.ok) { let errText = await indexRes.text(); try { errText = JSON.parse(errText).error; } catch(e){} throw new Error(errText ? `Falha ao obter índice da nuvem: ${errText}` : "Falha ao obter índice da nuvem."); }
+            const indexResText = await indexRes.text();
+            let remoteIndex;
+            try {
+                remoteIndex = JSON.parse(indexResText);
+            } catch (e) {
+                throw new Error("A resposta do índice é inválida. A firewall pode estar a bloquear o tráfego.");
+            }
+
+            syncIndicator.innerText = "A analisar..." + authorSuffix;
+
+            const toDownloadIds = { entities: [], logs: [] };
+            let changesSent = 0;
+            let changesReceived = 0;
+            let uploadedPartUrls = [];
+
+            const remoteEntitiesMap = new Map();
+            if(remoteIndex.entities) remoteIndex.entities.forEach(r => remoteEntitiesMap.set(r.id, r));
+
+            const remoteLogsMap = new Map();
+            if(remoteIndex.logs) remoteIndex.logs.forEach(r => remoteLogsMap.set(r.id, r));
+
+            const CHUNK_SIZE = 3 * 1024 * 1024; // 3 MB chunks to allow larger single files while staying under 4.5MB Vercel limit
+            let currentChunk = { entities: [], logs: [] };
+            let currentChunkSize = 20; // estimate JSON bracket size overhead
+            let chunkIndex = 0;
+
+            let chunksToUpload = [];
+
+            const pushCurrentChunk = () => {
+                if (currentChunk.entities.length > 0 || currentChunk.logs.length > 0) {
+                    chunksToUpload.push(currentChunk);
+                }
+                currentChunk = { entities: [], logs: [] };
+                currentChunkSize = 20;
+            };
+
+            // Stream items to upload to prevent OOM
+            const entityKeys = await AppDB.entities.toCollection().primaryKeys();
+            for (const key of entityKeys) {
+                const lItem = await AppDB.entities.get(key);
+                if (!lItem) continue;
+                const rItem = remoteEntitiesMap.get(lItem.id);
+                const lTime = lItem.updatedAt || lItem.createdAt || 0;
+                if (!rItem || lTime > (rItem.updatedAt || 0)) {
+                    const strSize = JSON.stringify(lItem).length;
+                    // If a single item is larger than CHUNK_SIZE, send the current chunk first, then put this item in its own chunk
+                    if (currentChunkSize + strSize > CHUNK_SIZE && currentChunkSize > 20) {
+                        pushCurrentChunk();
+                    }
+                    currentChunk.entities.push(lItem);
+                    currentChunkSize += strSize + 1;
+                    changesSent++;
+                    // If the item itself exceeds chunk size, force an upload immediately after adding it
+                    if (currentChunkSize > CHUNK_SIZE) {
+                        pushCurrentChunk();
+                    }
+                }
+            }
+
+            const logKeys = await AppDB.logs.toCollection().primaryKeys();
+            for (const key of logKeys) {
+                const lItem = await AppDB.logs.get(key);
+                if (!lItem) continue;
+                const rItem = remoteLogsMap.get(lItem.id);
+                const lTime = lItem.updatedAt || lItem.createdAt || 0;
+                if (!rItem || lTime > (rItem.updatedAt || 0)) {
+                    const strSize = JSON.stringify(lItem).length;
+                    if (currentChunkSize + strSize > CHUNK_SIZE && currentChunkSize > 20) {
+                        pushCurrentChunk();
+                    }
+                    currentChunk.logs.push(lItem);
+                    currentChunkSize += strSize + 1;
+                    changesSent++;
+                    if (currentChunkSize > CHUNK_SIZE) {
+                        pushCurrentChunk();
+                    }
+                }
+            }
+
+            // Upload the last pending chunk
+            pushCurrentChunk();
+
+            const totalChunks = chunksToUpload.length;
+            for (let i = 0; i < totalChunks; i++) {
+                syncIndicator.innerText = `Parte ${i + 1}/${totalChunks}` + authorSuffix;
+                const chunkData = chunksToUpload[i];
+                const chunkFileName = `${prefix}_part_${macAddress}_${i}.json`;
+                const chunkStr = JSON.stringify(chunkData);
+
+                const uploadRes = await fetch(`/api/backup?action=uploadChunk&filename=${chunkFileName}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/octet-stream' },
+                    body: chunkStr
+                });
+
+                if(!uploadRes.ok) { let errText = await uploadRes.text(); try { errText = JSON.parse(errText).error; } catch(e){} throw new Error(errText ? `Falha ao enviar pacote ${i+1}: ${errText}` : `Falha ao enviar pacote ${i+1}`);
+                }
+
+                let uploadData;
+                try {
+                    const uploadResText = await uploadRes.text();
+                    uploadData = JSON.parse(uploadResText);
+                } catch (e) {
+                    throw new Error(`A resposta do envio do pacote ${i+1} é inválida. A firewall pode estar a bloquear o tráfego.`);
+                }
+
+                if (uploadData && uploadData.url) {
+                    uploadedPartUrls.push(uploadData.url);
+                } else {
+                    throw new Error(`Resposta de sucesso falso (sem URL) detectada no pacote ${i+1}. A firewall pode estar a bloquear o tráfego.`);
+                }
+
+                await new Promise(r => setTimeout(r, 50));
+            }
+
+            // Verify chunks are fully propagated on CDN before finalizing
+            if (uploadedPartUrls.length > 0) {
+                syncIndicator.innerText = "A propagar..." + authorSuffix;
+                for (let url of uploadedPartUrls) {
+                    let attempts = 0;
+                    let verified = false;
+                    while (attempts < 15 && !verified) {
+                        try {
+                            const vRes = await fetch(url + '?ts=' + Date.now(), { cache: 'no-store' });
+                            if (vRes.ok) {
+                                const text = await vRes.text();
+                                try {
+                                    JSON.parse(text);
+                                    verified = true;
+                                } catch(e) { }
+                            }
+                        } catch(e) { }
+
+                        if (!verified) {
+                            attempts++;
+                            await new Promise(r => setTimeout(r, 2000));
+                        }
+                    }
+                    if (!verified) {
+                        throw new Error("Falha na propagação do fragmento na rede. Tente novamente em alguns instantes.");
+                    }
+                }
+            }
+
+            // Find missing local items
+            const localEntitiesMap = new Map();
+            await AppDB.entities.each(e => localEntitiesMap.set(e.id, e.updatedAt || e.createdAt || 0));
+            if(remoteIndex.entities) {
+                remoteIndex.entities.forEach(rItem => {
+                    const lTime = localEntitiesMap.get(rItem.id);
+                    const rTime = rItem.updatedAt || 0;
+                    if(lTime === undefined || rTime > lTime) {
+                        toDownloadIds.entities.push(rItem.id);
+                        changesReceived++;
+                    }
+                });
+            }
+
+            const localLogsMap = new Map();
+            await AppDB.logs.each(l => localLogsMap.set(l.id, l.updatedAt || l.createdAt || 0));
+            if(remoteIndex.logs) {
+                remoteIndex.logs.forEach(rItem => {
+                    const lTime = localLogsMap.get(rItem.id);
+                    const rTime = rItem.updatedAt || 0;
+                    if(lTime === undefined || rTime > lTime) {
+                        toDownloadIds.logs.push(rItem.id);
+                        changesReceived++;
+                    }
+                });
+            }
+
+            if (changesSent === 0 && changesReceived === 0) {
+                syncIndicator.innerText = "A limpar..." + authorSuffix;
+                await fetch('/api/backup', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'cleanup', prefix: prefix, macAddress: macAddress })
+                });
+                syncIndicator.style.display = 'none';
+                localStorage.setItem('oraculo_last_master_uploaded_at', new Date().toISOString());
+                const syncBtn = document.getElementById('syncIconBtn');
+                if (syncBtn) syncBtn.classList.remove('sync-highlight');
+                await CustomDialog.alert("A aplicação já se encontrava totalmente atualizada. Nenhum fragmento trafegado.", "Sincronizado");
+                return;
+            }
+
+            // 4. Finalize and Download
+            syncIndicator.innerText = "A finalizar..." + authorSuffix;
+            const syncRes = await fetch('/api/backup', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'finalizeSync',
+                    prefix: prefix,
+                    macAddress: macAddress,
+                    toDownloadIds: toDownloadIds,
+                    uploadedPartUrls: uploadedPartUrls
+                })
+            });
+
+            if(!syncRes.ok) {
+                let errText = await syncRes.text();
+                try { errText = JSON.parse(errText).error; } catch(e){}
+                throw new Error(errText || "Falha ao finalizar sincronização com o servidor.");
+            }
+            const syncResText = await syncRes.text();
+            let downloadedData;
+            try {
+                downloadedData = JSON.parse(syncResText);
+            } catch (e) {
+                throw new Error("A resposta de finalização é inválida. A firewall pode estar a bloquear o tráfego.");
+            }
+
+            syncIndicator.innerText = "A guardar..." + authorSuffix;
+
+            await AppDB.transaction('rw', AppDB.entities, AppDB.logs, async () => {
+                if(downloadedData.entities && downloadedData.entities.length > 0) {
+                    await AppDB.entities.bulkPut(downloadedData.entities);
+                }
+                if(downloadedData.logs && downloadedData.logs.length > 0) {
+                    await AppDB.logs.bulkPut(downloadedData.logs);
+                }
+            });
+
+            syncIndicator.style.display = 'none';
+            if (downloadedData.uploadedAt) {
+                localStorage.setItem('oraculo_last_master_uploaded_at', downloadedData.uploadedAt);
+                const syncBtn = document.getElementById('syncIconBtn');
+                if (syncBtn) syncBtn.classList.remove('sync-highlight');
+            }
+
+            this.goHome();
+
+            let msg = `Sincronização otimizada concluída com sucesso!
+
+📋 Resumo de tráfego:
+`;
+            if (changesReceived > 0) msg += `⬇️ ${changesReceived} fragmentos baixados
+`;
+            if (changesSent > 0) msg += `⬆️ ${changesSent} fragmentos enviados`;
+
+            await CustomDialog.alert(msg.trim(), "Sincronizado");
+
+        } catch(e) {
+            if(syncIndicator) syncIndicator.style.display = 'none';
+
+            // Clean up lock file explicitly on failure
+            try {
+                await fetch('/api/backup', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'cleanup', prefix: prefix, macAddress: macAddress })
+                });
+            } catch (cleanupErr) {
+                console.error("Erro ao limpar trava após falha na sincronização", cleanupErr);
+            }
+
+            const rawErrorLog = `Name: ${e.name}
+Message: ${e.message}
+Stack: ${e.stack}`;
+            this.exportToLocal(true, e.message, rawErrorLog);
+        }
+    },
+
+
+
+    exportToLocal: async (isAutoBackup = false, errorMsg = "", rawErrorLog = "") => {
+        if (typeof JSZip === 'undefined') { await CustomDialog.alert("Aguarde a biblioteca carregar.", "Aviso"); return; }
+
+        let isCancelled = false;
+        document.getElementById('progressModal').classList.add('active');
+        document.getElementById('progressTitle').innerText = isAutoBackup ? "Falha na Nuvem" : "A Gerar Ficheiro Local...";
+        document.getElementById('progressText').innerText = isAutoBackup ? "A gerar backup de segurança..." : "0%";
+        document.getElementById('progressCancelBtn').style.display = isAutoBackup ? 'none' : 'block';
+        document.getElementById('progressCancelBtn').onclick = () => { isCancelled = true; document.getElementById('progressModal').classList.remove('active'); };
+
+        try {
+            const zip = new JSZip();
+            const dump = { entities: await AppDB.entities.toArray(), logs: await AppDB.logs.toArray() };
+            zip.file("dados_oraculo.json", JSON.stringify(dump));
+
+            const zipBlob = await zip.generateAsync({
+                type:"blob",
+                compression: "DEFLATE",
+                compressionOptions: { level: 9 }
+            }, function updateCallback(metadata) {
+                if(!isCancelled) document.getElementById('progressText').innerText = `A compactar: ${Math.round(metadata.percent)}%`;
+            });
+
+            document.getElementById('progressModal').classList.remove('active');
+            if(isCancelled) return;
+
+            const filename = `backup_oraculo_${Date.now()}.zip`;
+            const url = URL.createObjectURL(zipBlob); const a = document.createElement('a'); a.href = url; a.download = filename;
+            document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+
+            if (isAutoBackup) {
+                let failReason = errorMsg === "Failed to fetch" || errorMsg.includes("NetworkError") ? "Sem ligação ou bloqueio de firewall" : errorMsg;
+                await CustomDialog.alert(`Não foi possível sincronizar com a nuvem (${failReason}). Um ficheiro de backup local (${filename}) foi gerado e baixado automaticamente.\n\nCopie o log técnico abaixo caso precise de suporte:`, "Sincronização Falhou", rawErrorLog);
+            } else {
+                await CustomDialog.alert(`Backup gerado: ${filename}`, "Sucesso");
+            }
+        } catch(e) {
+            document.getElementById('progressModal').classList.remove('active');
+            if(!isCancelled) CustomDialog.alert("Erro ao exportar: " + e.message, "Erro");
+        }
+    },
+
+    openPrintModal: function() {
+        const modal = document.getElementById('printReportModal');
+        const startInput = document.getElementById('printStartDate');
+        const endInput = document.getElementById('printEndDate');
+
+        const today = new Date().toISOString().split('T')[0];
+        endInput.value = today;
+
+        const savedStartDate = localStorage.getItem('OraculoPrintStartDate');
+        if (savedStartDate) {
+            startInput.value = savedStartDate;
+        } else {
+            const fourteenDaysAgo = new Date(Date.now() - (14 * 24 * 60 * 60 * 1000));
+            startInput.value = fourteenDaysAgo.toISOString().split('T')[0];
+        }
+
+        modal.classList.add('active');
+    },
+
+    executePrint: async function() {
+        const startInput = document.getElementById('printStartDate').value;
+        const endInput = document.getElementById('printEndDate').value;
+
+        if (!startInput || !endInput) {
+            CustomDialog.alert("Preencha ambas as datas.", "Aviso");
+            return;
+        }
+
+        localStorage.setItem('OraculoPrintStartDate', startInput);
+        document.getElementById('printReportModal').classList.remove('active');
+
+        document.getElementById('progressModal').classList.add('active');
+        document.getElementById('progressTitle').innerText = "A Gerar Relatório...";
+        document.getElementById('progressText').innerText = "A compilar os dados...";
+        document.getElementById('progressCancelBtn').style.display = 'block';
+
+        setTimeout(async () => {
+            try {
+                const startTime = new Date(startInput + "T00:00:00").getTime();
+                const endTime = new Date(endInput + "T23:59:59").getTime();
+
+                const allEntities = (await AppDB.entities.toArray()).filter(e => !e.isDeleted);
+                const allLogsData = (await AppDB.logs.toArray()).filter(l => !l.isDeleted);
+                const allLogs = allLogsData.filter(l => l.createdAt >= startTime && l.createdAt <= endTime);
+
+                if (allLogs.length === 0) {
+                    document.getElementById('progressModal').classList.remove('active');
+                    CustomDialog.alert("Nenhum registo no período selecionado.", "Aviso");
+                    return;
+                }
+
+                const dataInicioStr = new Date(startTime).toLocaleDateString('pt-BR');
+                const dataFimStr = new Date(endTime).toLocaleDateString('pt-BR');
+
+                let printArea = document.getElementById('printArea');
+                printArea.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; align-items:flex-end; border-bottom:2px solid #000; padding-bottom:10px; margin-bottom:20px;">
+                        <h1 style="font-size:24px; margin:0; text-transform:uppercase;">Relatório P-31</h1>
+                        <div style="font-size:12px; font-weight:bold;">Período: de ${dataInicioStr} até ${dataFimStr}</div>
+                    </div>
+                `;
+
+                const categories = Object.keys(MODULE_MAPPING);
+
+                for (let catKey of categories) {
+                    let catName = MODULE_MAPPING[catKey][0];
+                    let entitiesInCat = allEntities.filter(e => e.type === catKey);
+
+                    let catHtml = '';
+                    let hasLogsInCat = false;
+
+                    for (let entity of entitiesInCat) {
+                        let logsOfEntity = allLogs.filter(l => l.relatedEntities.some(rel => rel.id === entity.id));
+
+                        if (logsOfEntity.length > 0) {
+                            hasLogsInCat = true;
+
+                            let logGroups = {};
+                            logsOfEntity.forEach(l => {
+                                let gId = l.groupId || l.id;
+                                if (!logGroups[gId]) logGroups[gId] = [];
+                                logGroups[gId].push(l);
+                            });
+
+                            let sortedGroups = Object.values(logGroups).sort((a, b) => {
+                                let maxA = Math.max(...a.map(l => l.createdAt));
+                                let maxB = Math.max(...b.map(l => l.createdAt));
+                                return maxB - maxA;
+                            });
+
+                            let logsHtml = '';
+                            for (let group of sortedGroups) {
+                                group.sort((a, b) => b.createdAt - a.createdAt);
+
+                                logsHtml += `<div class="print-log-group" style="border: 1px solid #dcdcdc; background: #ffffff; border-radius: 6px; margin-bottom: 16px; page-break-inside: avoid; box-shadow: 0 1px 3px rgba(0,0,0,0.1); overflow: hidden;">`;
+
+                                for (let i = 0; i < group.length; i++) {
+                                    let log = group[i];
+                                    let mediaHtml = '';
+                                    if (log.images && log.images.length > 0) {
+                                        mediaHtml = log.images.map(img => {
+                                            if((img.data.startsWith('data:application/pdf') || img.data.endsWith('.pdf'))) {
+                                                return `<div class="print-media-box"><div style="font-weight:bold; font-size:14px; color:#d32f2f;">PDF</div><div style="font-size:10px;word-break:break-all; text-align:center; margin-top:4px;">${AppUtils.getPdfName(img.data)}</div></div>`;
+                                            }
+                                            if(img.isVideo || (img.data.startsWith('data:video/') || img.data.endsWith('.webm') || img.data.endsWith('.mp4'))) {
+                                                let thumbSrc = img.thumbnail || 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=';
+                                                return `
+                                                <div class="print-media-box" style="position:relative; display:inline-block;">
+                                                    <img src="${thumbSrc}" class="print-media-img" style="display:block;">
+                                                    <div class="play-overlay"><span style="color:#fff; font-size:18px;">&#9654;</span></div>
+                                                </div>`;
+                                            }
+                                            return `<div class="print-media-box"><img src="${img.data}" class="print-media-img"></div>`;
+                                        }).join('');
+                                    }
+
+                                    let borderBottom = i < group.length - 1 ? 'border-bottom: 1px solid #eee;' : '';
+
+                                    let authorDispPrint = log.authorName || 'N/A';
+                                    if (authorDispPrint.length > 15) authorDispPrint = authorDispPrint.substring(0, 15) + '...';
+                                    authorDispPrint = authorDispPrint.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+
+                                    logsHtml += `
+                                        <div class="print-log-item" style="padding: 12px; ${borderBottom} page-break-inside: avoid; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
+                                            <div class="print-header" style="font-size: 12px; color: #555; margin-bottom: 8px; font-weight: bold;">${AppUtils.formatDate(log.createdAt)} por ${authorDispPrint}</div>
+                                            <div class="print-text" style="font-size: 14px; margin-bottom: 12px; white-space: pre-wrap; word-break: break-word; color: #222;">${log.text || ''}</div>
+                                            ${mediaHtml ? `<div style="margin-top:8px;">${mediaHtml}</div>` : ''}
+                                        </div>
+                                    `;
+                                }
+                                logsHtml += `</div>`;
+                            }
+
+                            catHtml += `
+                                <div class="print-card" style="border: 2px solid #062e6f; border-radius: 8px; margin-bottom: 24px; page-break-inside: avoid; overflow: hidden; font-family: sans-serif;">
+                                    <div class="print-entity" style="background-color: #062e6f; color: #ffffff; padding: 12px 16px; margin: 0; font-size: 16px; font-weight: bold; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
+                                        ${entity.name}
+                                    </div>
+                                    <div style="padding: 16px; background-color: #f8f9fa; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
+                                        ${logsHtml}
+                                    </div>
+                                </div>
+                            `;
+                        }
+                    }
+
+                    if (hasLogsInCat) {
+                        printArea.innerHTML += `
+                            <div style="margin-top: 24px;">
+                                <h2 style="font-size:18px; color:#333; border-bottom:1px solid #ccc; padding-bottom:4px; margin-bottom:8px; text-transform:uppercase; page-break-after: avoid;">${catName}</h2>
+                                ${catHtml}
+                            </div>
+                        `;
+                    }
+                }
+
+                let orphanLogs = allLogs.filter(l => !l.relatedEntities.some(rel => allEntities.some(e => e.id === rel.id)));
+                if (orphanLogs.length > 0) {
+
+                    let orphanLogGroups = {};
+                    orphanLogs.forEach(l => {
+                        let gId = l.groupId || l.id;
+                        if (!orphanLogGroups[gId]) orphanLogGroups[gId] = [];
+                        orphanLogGroups[gId].push(l);
+                    });
+
+                    let sortedOrphanGroups = Object.values(orphanLogGroups).sort((a, b) => {
+                        let maxA = Math.max(...a.map(l => l.createdAt));
+                        let maxB = Math.max(...b.map(l => l.createdAt));
+                        return maxB - maxA;
+                    });
+
+                    let orphanHtml = '';
+                    for (let group of sortedOrphanGroups) {
+                        group.sort((a, b) => b.createdAt - a.createdAt);
+
+                        orphanHtml += `<div class="print-log-group" style="border: 1px solid #dcdcdc; background: #ffffff; border-radius: 6px; margin-bottom: 16px; page-break-inside: avoid; box-shadow: 0 1px 3px rgba(0,0,0,0.1); overflow: hidden;">`;
+
+                        for (let i = 0; i < group.length; i++) {
+                            let log = group[i];
+                            let mediaHtml = '';
+                            if (log.images && log.images.length > 0) {
+                                mediaHtml = log.images.map(img => {
+                                    if((img.data.startsWith('data:application/pdf') || img.data.endsWith('.pdf'))) {
+                                        return `<div class="print-media-box"><div style="font-weight:bold; font-size:14px; color:#d32f2f;">PDF</div><div style="font-size:10px;word-break:break-all; text-align:center; margin-top:4px;">${AppUtils.getPdfName(img.data)}</div></div>`;
+                                    }
+                                    if(img.isVideo || (img.data.startsWith('data:video/') || img.data.endsWith('.webm') || img.data.endsWith('.mp4'))) {
+                                        let thumbSrc = img.thumbnail || 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=';
+                                        return `
+                                        <div class="print-media-box" style="position:relative; display:inline-block;">
+                                            <img src="${thumbSrc}" class="print-media-img" style="display:block;">
+                                            <div class="play-overlay"><span style="color:#fff; font-size:18px;">&#9654;</span></div>
+                                        </div>`;
+                                    }
+                                    return `<div class="print-media-box"><img src="${img.data}" class="print-media-img"></div>`;
+                                }).join('');
+                            }
+
+                            let borderBottom = i < group.length - 1 ? 'border-bottom: 1px solid #eee;' : '';
+
+                            let authorDispOrphanPrint = log.authorName || 'N/A';
+                            if (authorDispOrphanPrint.length > 15) authorDispOrphanPrint = authorDispOrphanPrint.substring(0, 15) + '...';
+                            authorDispOrphanPrint = authorDispOrphanPrint.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+
+                            orphanHtml += `
+                                <div class="print-log-item" style="padding: 12px; ${borderBottom} page-break-inside: avoid; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
+                                    <div class="print-header" style="font-size: 12px; color: #555; margin-bottom: 8px; font-weight: bold;">${AppUtils.formatDate(log.createdAt)} por ${authorDispOrphanPrint}</div>
+                                    <div class="print-text" style="font-size: 14px; margin-bottom: 12px; white-space: pre-wrap; word-break: break-word; color: #222;">${log.text || ''}</div>
+                                    ${mediaHtml ? `<div style="margin-top:8px;">${mediaHtml}</div>` : ''}
+                                </div>
+                            `;
+                        }
+                        orphanHtml += `</div>`;
+                    }
+
+                    printArea.innerHTML += `
+                        <div style="margin-top: 24px;">
+                            <h2 style="font-size:18px; color:#333; border-bottom:1px solid #ccc; padding-bottom:4px; margin-bottom:8px; text-transform:uppercase; page-break-after: avoid;">Entidades Excluídas</h2>
+                            <div class="print-card" style="border: 2px solid #062e6f; border-radius: 8px; margin-bottom: 24px; page-break-inside: avoid; overflow: hidden; font-family: sans-serif;">
+                                <div class="print-entity" style="background-color: #062e6f; color: #ffffff; padding: 12px 16px; margin: 0; font-size: 16px; font-weight: bold; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
+                                    Geral
+                                </div>
+                                <div style="padding: 16px; background-color: #f8f9fa; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
+                                    ${orphanHtml}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                document.getElementById('progressModal').classList.remove('active');
+                setTimeout(() => window.print(), 500);
+            } catch(e) {
+                document.getElementById('progressModal').classList.remove('active');
+                CustomDialog.alert("Erro: " + e.message, "Erro");
+            }
+        }, 100);
+    },
+
+    goHome: function(fromPopState = false) {
+        this.currentView = 'home';
+        document.getElementById('viewHome').classList.add('active'); document.getElementById('viewList').classList.remove('active');
+        document.getElementById('viewTimeline').classList.remove('active');
+        document.getElementById('headerIcon').innerText = 'oil_barrel'; document.getElementById('headerText').innerText = 'Oráculo P-31';
+        document.getElementById('btnBack').style.display = 'none'; document.getElementById('headerVersion').style.display = 'inline';
+        document.getElementById('mainFab').style.display = 'none';
+
+        document.getElementById('homeSearchInput').value = '';
+        this.renderHomeSearch();
+        history.replaceState({ view: 'home' }, '');
+        this.calculateStorage();
+    },
+
+    renderHomeSearch: async function() {
+        this.currentSearchId++;
+        const searchId = this.currentSearchId;
+        const term = document.getElementById('homeSearchInput').value.toLowerCase().trim();
+        const grid = document.getElementById('homeGrid');
+        const list = document.getElementById('homeSearchList');
+
+        if(!term) { grid.style.display = 'grid'; list.style.display = 'none'; return; }
+
+        grid.style.display = 'none';
+        list.style.display = 'flex';
+        list.innerHTML = '<div class="empty-state"><i class="material-icons" style="animation: spin 1s linear infinite;">sync</i><p>Aguarde...</p></div>';
+
+        let resultList = [];
+        let allEntities = (await AppDB.entities.toArray()).filter(e => !e.isDeleted);
+        for(let e of allEntities) {
+            let matchesName = e.name.toLowerCase().includes(term);
+            let relatedLogs = await AppDB.logs.filter(l => !l.isDeleted && l.relatedEntities.some(rel => rel.id === e.id) && l.text && l.text.toLowerCase().includes(term)).toArray();
+            if(matchesName || relatedLogs.length > 0) resultList.push({ entity: e, logsMatched: relatedLogs });
+        }
+
+        if (this.currentSearchId !== searchId) return;
+
+        grid.style.display = 'none';
+        list.style.display = 'flex';
+        list.innerHTML = '';
+
+        if (resultList.length === 0) { list.innerHTML = `<div class="empty-state"><i class="material-icons">search_off</i><p>Nenhum resultado encontrado.</p></div>`; return; }
+
+        resultList.sort((a, b) => b.entity.createdAt - a.entity.createdAt).forEach(item => {
+            let e = item.entity; let modInfo = MODULE_MAPPING[e.type] || ['Desconhecido', 'help'];
+            let snippetsHtml = '';
+            if(item.logsMatched.length > 0) {
+                snippetsHtml = `<div class="search-snippets">`;
+                item.logsMatched.forEach(l => {
+                    let text = l.text; let idx = text.toLowerCase().indexOf(term);
+                    let start = Math.max(0, idx - 25); let end = Math.min(text.length, idx + term.length + 25);
+                    let snippet = text.substring(start, end).replace(/\n/g, ' ');
+                    snippetsHtml += `<div class="snippet-item">...${AppUtils.highlight(snippet, term)}...</div>`;
+                });
+                snippetsHtml += `</div>`;
+            }
+
+            list.innerHTML += `
+                <li class="task-item" style="cursor:pointer;" onclick="App.focusEntity('${e.id}', '${term}')">
+                    <div class="task-header" style="margin-bottom:4px;">
+                        <span class="task-title" style="font-size:15px;">${AppUtils.highlight(e.name, term)}</span>
+                    </div>
+                    <span class="module-link-badge" style="align-self:flex-start; margin-left:0; display:block; clear:both; margin-top:4px;">${modInfo[0]}</span>
+                    ${snippetsHtml}
+                </li>
+            `;
+        });
+    },
+
+    openModule: function(type, name, icon, fromPopState = false) {
+        this.currentView = 'list'; this.moduleType = type; this.moduleName = name; this.moduleIcon = icon;
+        document.getElementById('viewHome').classList.remove('active'); document.getElementById('viewList').classList.add('active');
+        document.getElementById('viewTimeline').classList.remove('active');
+        document.getElementById('headerIcon').innerText = icon; document.getElementById('headerText').innerText = name;
+        document.getElementById('btnBack').style.display = 'inline-block'; document.getElementById('headerVersion').style.display = 'none';
+        document.getElementById('mainFab').style.display = 'none';
+        document.getElementById('searchInput').value = ''; this.renderList();
+        if(!fromPopState) history.pushState({ view: 'list', moduleType: type, moduleName: name, moduleIcon: icon }, '');
+    },
+
+    focusEntity: async function(id, focusTerm = '', focusLogId = null) {
+        if (id === 'global-timeline') {
+            this.openTimeline();
+            return;
+        }
+        const entity = await AppDB.entities.get(id); if(!entity || entity.isDeleted) return;
+        this.searchFocusTerm = focusTerm;
+
+        let targetModuleType = entity.type; let targetModuleName = MODULE_MAPPING[entity.type][0]; let targetModuleIcon = MODULE_MAPPING[entity.type][1];
+        if(entity.type === 'tarefa') {
+            const parent = await AppDB.entities.get(entity.parentId);
+            if(parent) { targetModuleType = 'servico'; targetModuleName = 'Serviços'; targetModuleIcon = 'handyman'; }
+        } else {
+            if(MODULE_MAPPING[entity.type]) { targetModuleType = entity.type; targetModuleName = MODULE_MAPPING[entity.type][0]; targetModuleIcon = MODULE_MAPPING[entity.type][1]; }
+        }
+
+        this.currentView = 'list'; this.moduleType = targetModuleType; this.moduleName = targetModuleName; this.moduleIcon = targetModuleIcon;
+        document.getElementById('viewHome').classList.remove('active'); document.getElementById('viewList').classList.add('active');
+        document.getElementById('viewTimeline').classList.remove('active');
+        document.getElementById('headerIcon').innerText = targetModuleIcon; document.getElementById('headerText').innerText = targetModuleName;
+        document.getElementById('btnBack').style.display = 'inline-block'; document.getElementById('headerVersion').style.display = 'none';
+        document.getElementById('mainFab').style.display = 'none';
+
+        document.getElementById('searchInput').value = focusTerm;
+        await this.renderList();
+        history.pushState({ view: 'list', moduleType: targetModuleType, moduleName: targetModuleName, moduleIcon: targetModuleIcon }, '');
+
+        setTimeout(() => {
+            const elId = focusLogId ? 'log-' + focusLogId : 'entity-' + id;
+            const el = document.getElementById(elId);
+            if (el) {
+                let groupEl = el.closest('.log-item-group');
+                if (groupEl && groupEl.classList.contains('collapsed')) {
+                    groupEl.classList.remove('collapsed');
+                    App.expandedGroups.add(groupEl.id);
+                    App.saveExpandedState();
+                    let icon = groupEl.querySelector('.group-toggle-icon');
+                    if (icon) icon.innerText = 'expand_less';
+                }
+
+                let parentList = el.closest('.log-list');
+                if(parentList && parentList.style.display === 'none') {
+                    parentList.style.display = 'flex';
+                    let taskId = parentList.id.replace('task-logs-', '');
+                    let iconEl = document.getElementById('task-icon-' + taskId);
+                    if(iconEl) iconEl.innerText = 'expand_less';
+                    App.expandedTasks.add(taskId);
+                    App.saveExpandedTasksState();
+                }
+
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                el.style.backgroundColor = 'rgba(255, 235, 59, 0.3)';
+                setTimeout(() => el.style.backgroundColor = '', 1500);
+            }
+        }, 300);
+    },
+
+    goBack: function(fromPopState = false) {
+        if (this.currentView === 'list' || this.currentView === 'timeline') {
+            if(!fromPopState) {
+                history.back();
+            } else {
+                this.goHome(true);
+            }
+        }
+    },
+
+    createEntityOnTheFly: async function(name, parentId = null) {
+        if(!name.trim()) return; const newType = parentId ? 'tarefa' : this.moduleType;
+        const now = Date.now();
+        const newEntity = { id: now.toString(), type: newType, name: name.trim(), createdAt: now, updatedAt: now, parentId: parentId };
+        await AppDB.entities.put(newEntity);
+        if(!parentId) { document.getElementById('searchInput').value = ''; }
+        if(parentId) {
+            App.expandedTasks.add(parentId);
+            App.saveExpandedTasksState();
+        }
+        await this.renderList(); this.focusEntity(newEntity.id);
+        this.calculateStorage();
+    },
+
+    toggleTaskLogs: function(taskId) {
+        const logsEl = document.getElementById('task-logs-' + taskId);
+        const iconEl = document.getElementById('task-icon-' + taskId);
+        if(logsEl) {
+            if(logsEl.style.display === 'none') {
+                logsEl.style.display = 'flex';
+                if(iconEl) iconEl.innerText = 'expand_less';
+                App.expandedTasks.add(taskId);
+            } else {
+                logsEl.style.display = 'none';
+                if(iconEl) iconEl.innerText = 'expand_more';
+                App.expandedTasks.delete(taskId);
+            }
+            App.saveExpandedTasksState();
+        }
+    },
+
+    buildLogsHTML: async function(logsArray, contextEntityId, searchTerm) {
+        if (!logsArray || logsArray.length === 0) return '';
+
+        let logGroups = {};
+        logsArray.forEach(l => {
+            let gId = l.groupId || l.id;
+            if (!logGroups[gId]) logGroups[gId] = [];
+            logGroups[gId].push(l);
+        });
+
+        let sortedGroups = Object.values(logGroups).sort((a, b) => {
+            let maxA = Math.max(...a.map(l => l.createdAt));
+            let maxB = Math.max(...b.map(l => l.createdAt));
+            return maxB - maxA;
+        });
+
+        let htmlParts = [];
+        for (let group of sortedGroups) {
+            group.sort((a, b) => b.createdAt - a.createdAt);
+            let gId = group[0].groupId || group[0].id;
+            htmlParts.push(await App.renderLogGroupHTML(group, contextEntityId, searchTerm, gId));
+        }
+        return htmlParts.join('');
+    },
+
+    renderLogGroupHTML: async function(group, contextEntityId, searchTerm = '', groupId) {
+        const domGroupId = 'log-group-' + groupId;
+        let isExpanded = searchTerm ? true : App.expandedGroups.has(domGroupId);
+        const isCollapsedClass = isExpanded ? '' : 'collapsed';
+
+        let groupHtml = `<div class="log-item-group ${isCollapsedClass}" id="${domGroupId}">`;
+
+        for (let i = 0; i < group.length; i++) {
+            let log = group[i];
+            let mediaHtml = log.images && log.images.length > 0 ? renderStackedDeckHTML(log.images, log.id) : '';
+            let isOrigin = log.originEntityId === contextEntityId;
+            let otherLinks = log.relatedEntities.filter(rel => rel.id !== log.originEntityId);
+
+            let linksBarHtml = '';
+            if(isOrigin) {
+                if (otherLinks.length > 0) {
+                    let pills = [];
+                    for(let rel of otherLinks) {
+                        let linkedE = await AppDB.entities.get(rel.id); if(!linkedE) continue;
+                        pills.push(`<div class="pill-dark" onclick="App.focusEntity('${linkedE.id}', '', '${log.id}')">${linkedE.name} <i class="material-icons" style="font-size:12px; margin-left:4px;" title="Ir para Destino">arrow_forward</i></div>`);
+                    }
+                    linksBarHtml = `<div class="log-links-bar"><div class="link-label">Vinculado a:</div><div class="pills-container">${pills.join('')}</div></div>`;
+                }
+            } else {
+                let originE = await AppDB.entities.get(log.originEntityId);
+                if (originE) {
+                    let originPill = `<div class="pill-dark origin" onclick="App.focusEntity('${originE.id}', '', '${log.id}')">${originE.name} <i class="material-icons" style="font-size:12px; margin-left:4px;" title="Ir para Origem">arrow_forward</i></div>`;
+                    linksBarHtml = `<div class="log-links-bar"><div class="link-label">Vinculado de:</div><div class="pills-container">${originPill}</div></div>`;
+                }
+            }
+
+            let displayedText = log.text || '';
+
+            displayedText = AppUtils.escapeHTML(displayedText);
+
+            // Format mentions as links before highlight to avoid messing up HTML
+            if (log.relatedEntities && log.relatedEntities.length > 0) {
+                for (let rel of log.relatedEntities) {
+                    if (rel.id !== log.originEntityId) {
+                        let eName = 'Entidade';
+                        let matchingItem = window.cachedEntitiesMap ? window.cachedEntitiesMap.get(rel.id) : null;
+                        if (!matchingItem) {
+                             AppDB.entities.get(rel.id).then(entity => {
+                                if (entity) {
+                                    if (!window.cachedEntitiesMap) window.cachedEntitiesMap = new Map();
+                                    window.cachedEntitiesMap.set(entity.id, entity.name);
+                                }
+                             });
+                        } else {
+                            eName = matchingItem;
+                        }
+
+                        const escapedName = AppUtils.escapeRegex(AppUtils.escapeHTML(eName));
+                        const mentionRegexOld = new RegExp(`@\\[${escapedName}\\]\\(${rel.id}\\)`, 'g');
+                        displayedText = displayedText.replace(mentionRegexOld, `<span class="mention-link" onclick="App.focusEntity('${rel.id}')">@${AppUtils.escapeHTML(eName)}</span>`);
+
+                        const mentionRegexNew = new RegExp(`@${escapedName}`, 'g');
+                        displayedText = displayedText.replace(mentionRegexNew, `<span class="mention-link" onclick="App.focusEntity('${rel.id}')">@${AppUtils.escapeHTML(eName)}</span>`);
+                    }
+                }
+            }
+
+            displayedText = displayedText.replace(/@\[(.*?)\]\((.*?)\)/g, (match, name, id) => {
+                const safeName = AppUtils.escapeHTML(name);
+                const safeId = AppUtils.escapeHTML(id);
+                return `<span class="mention-link" onclick="App.focusEntity('${safeId}')">@${safeName}</span>`;
+            });
+
+            if(searchTerm) displayedText = AppUtils.highlight(displayedText, searchTerm);
+
+            let toggleHtml = '';
+            let addIconHtml = '';
+
+            if (i === 0) {
+                let iconStr = isExpanded ? 'expand_less' : 'expand_more';
+                toggleHtml = `<i class="material-icons action-icon group-toggle-icon" style="font-size:18px; vertical-align:middle; margin-right:4px;" onclick="App.toggleLogGroup('${domGroupId}', event)">${iconStr}</i>`;
+                addIconHtml = `<i class="material-icons action-icon" style="font-size:14px; margin-right:8px;" title="Adicionar novo registo a este cartão" onclick="LogModal.open(null, '${contextEntityId}', '${groupId}')">add</i>`;
+            } else {
+                toggleHtml = `<i class="material-icons" style="font-size:18px; vertical-align:middle; margin-right:4px; opacity:0; pointer-events:none;">expand_more</i>`;
+                addIconHtml = ``;
+            }
+
+            let authorDisp = log.authorName || 'N/A';
+            if (authorDisp.length > 15) authorDisp = authorDisp.substring(0, 15) + '...';
+            authorDisp = authorDisp.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+
+            let actionText = (log.updatedAt && log.updatedAt > log.createdAt) ? 'Editado por ' : 'Incluído por ';
+
+            groupHtml += `
+                <div class="log-entry" id="log-${log.id}" onclick="App.toggleLogSelection('${log.id}', event)" onpointerdown="App.startLogLongPress(event, '${log.id}', '${contextEntityId}')" onpointerup="App.cancelLogLongPress()" onpointerleave="App.cancelLogLongPress()" onpointercancel="App.cancelLogLongPress()" oncontextmenu="App.handleLogContextMenu(event, '${log.id}', '${contextEntityId}')">
+                    <div class="log-header">
+                        <span style="display:flex; align-items:center;">
+                            ${toggleHtml}
+                            <i class="material-icons" style="font-size:12px; margin-right:4px;">schedule</i> ${AppUtils.formatDate(log.createdAt)}
+                        </span>
+                        <div class="log-actions">
+                            ${addIconHtml}
+                        </div>
+                    </div>
+                    ${log.text ? `<div class="log-text selectable-text">${displayedText}</div>` : ''}
+                    ${mediaHtml}
+                    ${linksBarHtml}
+                    <div class="timeline-meta" style="align-self: flex-end; justify-content: flex-end; width: 100%; font-size: 6.6px; margin-top: 4px;">
+                        <span>${actionText}${authorDisp}</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        groupHtml += `</div>`;
+        return groupHtml;
+    },
+
+    timelineSearchTimeout: null,
+    timelineCurrentMatches: [],
+    timelineMatchIndex: -1,
+
+    logLongPressTimeout: null,
+    logLongPressContext: null,
+
+    startLogLongPress: function(e, logId, contextEntityId) {
+        if (e.pointerType === 'mouse' && e.button !== 0) return; // Only left click for mouse
+        this.logLongPressContext = { logId, contextEntityId, x: e.clientX, y: e.clientY };
+        this.logLongPressTimeout = setTimeout(() => {
+            this.showLogContextMenu(this.logLongPressContext.x, this.logLongPressContext.y);
+            this.logLongPressContext.triggered = true;
+        }, 500); // 500ms for long press
+    },
+    cancelLogLongPress: function() {
+        if (this.logLongPressTimeout) {
+            clearTimeout(this.logLongPressTimeout);
+            this.logLongPressTimeout = null;
+        }
+    },
+    handleLogContextMenu: function(e, logId, contextEntityId) {
+        e.preventDefault();
+        this.logLongPressContext = { logId, contextEntityId, triggered: true };
+        this.showLogContextMenu(e.clientX, e.clientY);
+    },
+    showLogContextMenu: function(x, y) {
+        if ('vibrate' in navigator) navigator.vibrate(50);
+        const menu = document.getElementById('logContextMenu');
+        menu.style.display = 'flex';
+        // Basic bounds checking
+        let rx = x;
+        let ry = y;
+        if (x + 150 > window.innerWidth) rx = window.innerWidth - 150;
+        if (y + 100 > window.innerHeight) ry = window.innerHeight - 100;
+        menu.style.left = rx + 'px';
+        menu.style.top = ry + 'px';
+
+        // Close when clicking outside
+        const closeHandler = (e) => {
+            if (!menu.contains(e.target)) {
+                menu.style.display = 'none';
+                document.removeEventListener('pointerdown', closeHandler);
+            }
+        };
+        setTimeout(() => document.addEventListener('pointerdown', closeHandler), 10);
+    },
+    editLogFromContext: function() {
+        const menu = document.getElementById('logContextMenu');
+        menu.style.display = 'none';
+        if (this.logLongPressContext && this.logLongPressContext.logId) {
+            LogModal.open(this.logLongPressContext.logId, this.logLongPressContext.contextEntityId);
+        }
+    },
+
+    openTimeline: async function(fromPopState = false) {
+        this.currentView = 'timeline';
+        MenuModal.closeUI();
+        document.getElementById('viewHome').classList.remove('active');
+        document.getElementById('viewList').classList.remove('active');
+        document.getElementById('viewTimeline').classList.add('active');
+
+        document.getElementById('headerIcon').innerText = 'timeline';
+        document.getElementById('headerText').innerText = 'Linha do Tempo';
+        document.getElementById('btnBack').style.display = 'inline-block';
+        document.getElementById('headerVersion').style.display = 'none';
+
+        const fab = document.getElementById('mainFab');
+        fab.style.display = 'grid';
+        fab.onclick = () => LogModal.open(null, 'global-timeline');
+
+        // Garante que a entidade global-timeline existe silenciosamente
+        let globalEntity = await AppDB.entities.get('global-timeline');
+        if (!globalEntity) {
+            await AppDB.entities.put({ id: 'global-timeline', type: 'system', name: 'Timeline Global', createdAt: Date.now(), updatedAt: Date.now(), parentId: null });
+        }
+
+        document.getElementById('timelineSearchInput').value = '';
+        this.timelineCurrentMatches = [];
+        this.timelineMatchIndex = -1;
+        document.getElementById('timelineSearchCount').innerText = '0/0';
+
+        await this.renderTimeline();
+        if(!fromPopState) history.pushState({ view: 'timeline' }, '');
+    },
+
+    renderTimelineSearch: function() {
+        const term = document.getElementById('timelineSearchInput').value.toLowerCase().trim();
+        const container = document.getElementById('timelineContainer');
+
+        // Remove old highlights
+        const oldHighlights = container.querySelectorAll('.timeline-highlight-focus');
+        oldHighlights.forEach(el => el.classList.remove('timeline-highlight-focus'));
+
+        this.timelineCurrentMatches = [];
+        this.timelineMatchIndex = -1;
+
+        if (!term) {
+            document.getElementById('timelineSearchCount').innerText = '0/0';
+            this.renderTimeline(); // Re-render to clear mark tags
+            return;
+        }
+
+        // We need to re-render with highlight tags
+        this.renderTimeline(term).then(() => {
+            const marks = container.querySelectorAll('mark.highlight');
+            this.timelineCurrentMatches = Array.from(marks).filter(mark => mark.closest('.timeline-entry'));
+
+            if (this.timelineCurrentMatches.length > 0) {
+                this.timelineMatchIndex = 0;
+                this.updateTimelineSearchCount();
+                this.jumpTimelineSearch('current');
+            } else {
+                document.getElementById('timelineSearchCount').innerText = '0/0';
+            }
+        });
+    },
+
+    updateTimelineSearchCount: function() {
+        const countEl = document.getElementById('timelineSearchCount');
+        if (this.timelineCurrentMatches.length === 0) {
+            countEl.innerText = '0/0';
+        } else {
+            countEl.innerText = `${this.timelineMatchIndex + 1}/${this.timelineCurrentMatches.length}`;
+        }
+    },
+
+    jumpTimelineSearch: function(direction) {
+        if (this.timelineCurrentMatches.length === 0) return;
+
+        const oldMarks = document.querySelectorAll('.timeline-highlight-focus');
+        oldMarks.forEach(el => el.classList.remove('timeline-highlight-focus'));
+
+        if (direction === 'up') {
+            this.timelineMatchIndex = (this.timelineMatchIndex - 1 + this.timelineCurrentMatches.length) % this.timelineCurrentMatches.length;
+        } else if (direction === 'down') {
+            this.timelineMatchIndex = (this.timelineMatchIndex + 1) % this.timelineCurrentMatches.length;
+        }
+
+        const target = this.timelineCurrentMatches[this.timelineMatchIndex];
+        if (target) {
+            const entry = target.closest('.timeline-entry');
+            if (entry) {
+                entry.classList.add('timeline-highlight-focus');
+                entry.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                setTimeout(() => entry.classList.remove('timeline-highlight-focus'), 2000);
+            }
+        }
+        this.updateTimelineSearchCount();
+    },
+
+    renderTimeline: async function(highlightTerm = '') {
+        const container = document.getElementById('timelineContainer');
+        container.innerHTML = '<div class="empty-state"><i class="material-icons" style="animation: spin 1s linear infinite;">sync</i><p>Aguarde...</p></div>';
+
+        const allLogs = await AppDB.logs.filter(l => !l.isDeleted).toArray();
+        const timelineLogs = allLogs.filter(l => l.originEntityId === 'global-timeline' || l.relatedEntities.some(rel => rel.id === 'global-timeline'));
+
+        if (timelineLogs.length === 0) {
+            container.innerHTML = `<div class="empty-state"><i class="material-icons">timeline</i><p>Nenhum registro na linha do tempo.<br>Clique no + para adicionar.</p></div>`;
+            return;
+        }
+
+        timelineLogs.sort((a, b) => b.createdAt - a.createdAt);
+
+        let html = '';
+        let currentDayStr = '';
+
+        const daysOfWeek = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB'];
+
+        for (let log of timelineLogs) {
+            const dateObj = new Date(log.createdAt);
+            const dayNum = dateObj.getDate().toString().padStart(2, '0');
+            const monthNames = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+            const monthStr = monthNames[dateObj.getMonth()];
+            const yearStr = dateObj.getFullYear();
+            const dayName = daysOfWeek[dateObj.getDay()];
+            const timeStr = `${dateObj.getHours().toString().padStart(2, '0')}:${dateObj.getMinutes().toString().padStart(2, '0')}`;
+
+            const groupDateStr = `${monthStr} ${yearStr}`;
+
+            if (groupDateStr !== currentDayStr) {
+                if (currentDayStr !== '') html += `</div>`; // Close previous group
+                html += `<div class="timeline-day-group">
+                            <div class="timeline-date-header">${groupDateStr}</div>`;
+                currentDayStr = groupDateStr;
+            }
+
+            let textContent = log.text || '';
+
+            textContent = AppUtils.escapeHTML(textContent);
+
+            // Format mentions as links before highlight to avoid messing up HTML
+            if (log.relatedEntities && log.relatedEntities.length > 0) {
+                for (let rel of log.relatedEntities) {
+                    if (rel.id !== log.originEntityId) {
+                        let eName = 'Entidade';
+                        let matchingItem = window.cachedEntitiesMap ? window.cachedEntitiesMap.get(rel.id) : null;
+                        if (!matchingItem) {
+                             AppDB.entities.get(rel.id).then(entity => {
+                                if (entity) {
+                                    if (!window.cachedEntitiesMap) window.cachedEntitiesMap = new Map();
+                                    window.cachedEntitiesMap.set(entity.id, entity.name);
+                                }
+                             });
+                        } else {
+                            eName = matchingItem;
+                        }
+
+                        const escapedName = AppUtils.escapeRegex(AppUtils.escapeHTML(eName));
+                        const mentionRegexOld = new RegExp(`@\\[${escapedName}\\]\\(${rel.id}\\)`, 'g');
+                        textContent = textContent.replace(mentionRegexOld, `<span class="mention-link" onclick="App.focusEntity('${rel.id}')">@${AppUtils.escapeHTML(eName)}</span>`);
+
+                        const mentionRegexNew = new RegExp(`@${escapedName}`, 'g');
+                        textContent = textContent.replace(mentionRegexNew, `<span class="mention-link" onclick="App.focusEntity('${rel.id}')">@${AppUtils.escapeHTML(eName)}</span>`);
+                    }
+                }
+            }
+
+            textContent = textContent.replace(/@\[(.*?)\]\((.*?)\)/g, (match, name, id) => {
+                const safeName = AppUtils.escapeHTML(name);
+                const safeId = AppUtils.escapeHTML(id);
+                return `<span class="mention-link" onclick="App.focusEntity('${safeId}')">@${safeName}</span>`;
+            });
+
+            if (highlightTerm) {
+                textContent = AppUtils.highlight(textContent, highlightTerm);
+            }
+
+            let mediaHtml = '';
+            if (log.images && log.images.length > 0) {
+                let img = log.images[0];
+                let clickHandler = `CarouselModal.open('${log.id}')`;
+                let thumbSrc = img.data;
+
+                if (img.isVideo || (img.data.startsWith('data:video/') || img.data.endsWith('.webm') || img.data.endsWith('.mp4'))) {
+                    thumbSrc = img.thumbnail || '';
+                    mediaHtml = `<div class="timeline-media-wrapper" onclick="${clickHandler}" style="background: url('${thumbSrc}') center/cover;"><div style="background:rgba(0,0,0,0.5); width:100%; height:100%; display:flex; align-items:center; justify-content:center;"><i class="material-icons" style="color:white;">play_circle_outline</i></div>`;
+                } else if ((img.data.startsWith('data:application/pdf') || img.data.endsWith('.pdf'))) {
+                    mediaHtml = `<div class="timeline-media-wrapper" onclick="${clickHandler}" style="background: var(--surface-variant); display:flex; align-items:center; justify-content:center; flex-direction:column;"><i class="material-icons" style="color:var(--danger); font-size: 32px;">picture_as_pdf</i><span style="font-size:9px; margin-top:4px; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; padding:0 4px;">PDF</span>`;
+                } else {
+                    mediaHtml = `<div class="timeline-media-wrapper" onclick="${clickHandler}"><img src="${thumbSrc}" style="width:100%; height:100%; object-fit:cover;">`;
+                }
+
+                if (log.images.length > 1) {
+                    mediaHtml += `<div style="position:absolute; bottom:4px; right:4px; background:rgba(0,0,0,0.7); color:white; font-size:10px; font-weight:bold; padding:2px 6px; border-radius:8px;">+${log.images.length - 1}</div>`;
+                }
+                mediaHtml += `</div>`;
+            }
+
+            html += `
+                <div class="timeline-entry" id="timeline-log-${log.id}" onclick="App.toggleLogSelection('${log.id}', event)" onpointerdown="App.startLogLongPress(event, '${log.id}', 'global-timeline')" onpointerup="App.cancelLogLongPress()" onpointerleave="App.cancelLogLongPress()" onpointercancel="App.cancelLogLongPress()" oncontextmenu="App.handleLogContextMenu(event, '${log.id}', 'global-timeline')">
+                    <div class="timeline-left">
+                        <div class="timeline-day-name">${dayName}</div>
+                        <div class="timeline-day-num">${dayNum}</div>
+                        <div class="timeline-time">${timeStr}</div>
+                    </div>
+                    <div class="timeline-right">
+                        <div class="timeline-content-row">
+                            <div style="flex-grow:1; display:flex; flex-direction:column;">
+                                <div class="timeline-text">${textContent}</div>
+                            </div>
+                            ${mediaHtml}
+                        </div>
+                        <div class="timeline-meta" style="align-self: flex-end; justify-content: flex-end; width: 100%; font-size: 7.2px;">
+                            <span>${(log.updatedAt && log.updatedAt > log.createdAt) ? 'Editado por ' : 'Incluído por '}${log.authorName || 'N/A'}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        if (currentDayStr !== '') html += `</div>`; // Close last group
+
+        container.innerHTML = html;
+    },
+
+    renderList: async function() {
+        this.currentSearchId++;
+        const searchId = this.currentSearchId;
+        const rawSearchTerm = document.getElementById('searchInput').value;
+        const searchTerm = rawSearchTerm.toLowerCase().trim();
+
+        const viewListEl = document.getElementById('viewList');
+        let currentScroll = viewListEl.scrollTop;
+
+        const listEl = document.getElementById('entityList');
+        if (searchTerm) {
+            listEl.innerHTML = '<div class="empty-state"><i class="material-icons" style="animation: spin 1s linear infinite;">sync</i><p>Aguarde...</p></div>';
+        }
+
+        let allEntities = await AppDB.entities.where('type').equals(this.moduleType).toArray();
+        let filtered = allEntities.filter(e => e.parentId === null && !e.isDeleted); let hasExactMatch = false;
+
+        if (searchTerm) {
+            let resultList = [];
+            for(let e of filtered) {
+                if(e.name.toLowerCase() === searchTerm) hasExactMatch = true;
+                let matchesName = e.name.toLowerCase().includes(searchTerm);
+                let relatedLogs = await AppDB.logs.filter(l => !l.isDeleted && l.relatedEntities.some(rel => rel.id === e.id) && l.text && l.text.toLowerCase().includes(searchTerm)).toArray();
+
+                let tasksMatched = [];
+                if(e.type === 'servico') {
+                    const servTasks = await AppDB.entities.filter(t => !t.isDeleted && t.parentId === e.id && t.type === 'tarefa').toArray();
+                    for(let t of servTasks) {
+                        let matchesTaskName = t.name.toLowerCase().includes(searchTerm);
+                        let taskRelatedLogs = await AppDB.logs.filter(l => !l.isDeleted && l.relatedEntities.some(rel => rel.id === t.id) && l.text && l.text.toLowerCase().includes(searchTerm)).toArray();
+                        if(matchesTaskName || taskRelatedLogs.length > 0) tasksMatched.push({ task: t, logsMatched: taskRelatedLogs });
+                    }
+                }
+
+                if(matchesName || relatedLogs.length > 0 || tasksMatched.length > 0) {
+                    resultList.push({ entity: e, logsMatched: relatedLogs, tasksMatched: tasksMatched });
+                }
+            }
+            filtered = resultList;
+        }
+
+        if (this.currentSearchId !== searchId) return;
+
+        listEl.innerHTML = '';
+
+        if (searchTerm && !hasExactMatch) {
+            listEl.innerHTML += `<div class="create-btn-dynamic" onclick="App.createEntityOnTheFly('${rawSearchTerm.replace(/'/g, "\\'")}')"><i class="material-icons">add_circle_outline</i><span>Criar: <strong>${rawSearchTerm}</strong></span></div>`;
+        }
+
+        if (filtered.length === 0 && !searchTerm) {
+            listEl.innerHTML = `<div class="empty-state"><i class="material-icons">${this.moduleIcon}</i><p>Nenhum registo.<br>Busque para criar.</p></div>`;
+            viewListEl.scrollTop = 0;
+            return;
+        }
+
+        let iterator = searchTerm ? filtered.sort((a, b) => b.entity.createdAt - a.entity.createdAt) : filtered.sort((a, b) => b.createdAt - a.createdAt).map(e => ({entity: e, tasksMatched: []}));
+
+        for(let item of iterator) {
+            let e = item.entity;
+
+            let cardHtml = `
+            <li class="task-item" id="entity-${e.id}">
+                <div class="task-header">
+                    <div class="task-actions">
+                        <i class="material-icons action-icon" title="Expandir/Colapsar Todos" onclick="App.toggleAllLogGroups('${e.id}')">unfold_more</i>
+                        <i class="material-icons action-icon" title="Criar Novo Cartão de Evento" onclick="LogModal.open(null, '${e.id}')">post_add</i>
+                        ${e.type === 'servico' ? `<i class="material-icons action-icon" title="Adicionar Tarefa" onclick="EntityModal.openTaskPrompt('${e.id}')">add_task</i>` : ''}
+                        <i class="material-icons action-icon" title="Editar Nome/Excluir" onclick="EntityModal.open('${e.id}')">edit</i>
+                    </div>
+                    <span class="task-title">${AppUtils.highlight(e.name, searchTerm)}</span>
+                </div>
+            `;
+
+            let entityLogs = await AppDB.logs.filter(log => !log.isDeleted && log.relatedEntities.some(rel => rel.id === e.id)).toArray();
+            if (entityLogs.length > 0) {
+                cardHtml += `<div class="log-list">`;
+                cardHtml += await App.buildLogsHTML(entityLogs, e.id, searchTerm);
+                cardHtml += `</div>`;
+            }
+
+            if (e.type === 'servico') {
+                let tasks = await AppDB.entities.filter(t => !t.isDeleted && t.parentId === e.id && t.type === 'tarefa').toArray();
+                if (tasks.length > 0) {
+                    cardHtml += `<div style="font-size:12px; font-weight:bold; color:var(--on-surface-variant); margin-top:20px; margin-bottom: 8px; text-transform:uppercase; clear:both;">Tarefas do Serviço</div><ul class="subtask-list">`;
+
+                    let matchedTaskIds = item.tasksMatched ? item.tasksMatched.map(tm => tm.task.id) : [];
+
+                    for(let t of tasks.sort((a, b) => b.createdAt - a.createdAt)) {
+
+                        let isTaskExpanded = (searchTerm && matchedTaskIds.includes(t.id)) || App.expandedTasks.has(t.id) ? true : false;
+                        let taskIcon = isTaskExpanded ? 'expand_less' : 'expand_more';
+                        let taskLogsDisplay = isTaskExpanded ? 'flex' : 'none';
+
+                        cardHtml += `
+                        <li class="subtask-item" id="entity-${t.id}">
+                            <div class="subtask-row">
+                                <div class="subtask-text-wrapper" onclick="App.toggleTaskLogs('${t.id}')">
+                                    <i class="material-icons action-icon" style="font-size:24px;" id="task-icon-${t.id}">${taskIcon}</i>
+                                    <span class="subtask-text selectable-text">${AppUtils.highlight(t.name, searchTerm)}</span>
+                                </div>
+                                <div class="task-actions" style="gap:8px; float:none; margin:0; padding:0;">
+                                    <i class="material-icons action-icon" style="font-size:16px;" title="Expandir/Colapsar Todos na Tarefa" onclick="App.toggleAllLogGroups('${t.id}')">unfold_more</i>
+                                    <i class="material-icons action-icon" style="font-size:16px;" title="Criar Novo Cartão de Evento na Tarefa" onclick="LogModal.open(null, '${t.id}')">post_add</i>
+                                    <i class="material-icons action-icon" style="font-size:16px;" onclick="EntityModal.open('${t.id}')">edit</i>
+                                </div>
+                            </div>
+                        `;
+                        let taskLogs = await AppDB.logs.filter(log => !log.isDeleted && log.relatedEntities.some(rel => rel.id === t.id)).toArray();
+                        if (taskLogs.length > 0) {
+                            cardHtml += `<div class="log-list" id="task-logs-${t.id}" style="margin-left: 26px; display:${taskLogsDisplay};">`;
+                            cardHtml += await App.buildLogsHTML(taskLogs, t.id, searchTerm);
+                            cardHtml += `</div>`;
+                        } else {
+                            cardHtml += `<div class="log-list" id="task-logs-${t.id}" style="display:none;"></div>`;
+                        }
+                        cardHtml += `</li>`;
+                    }
+                    cardHtml += `</ul>`;
+                }
+            }
+            cardHtml += `</li>`;
+            listEl.innerHTML += cardHtml;
+        }
+
+        requestAnimationFrame(() => {
+            viewListEl.scrollTop = currentScroll;
+        });
+    },
+
+    openPDF: function(base64) {
+        try {
+            if (base64.startsWith('/files/')) {
+                window.open(base64, '_blank');
+                return;
+            }
+            const arr = base64.split(','); const mimePart = arr[0]; const mime = mimePart.match(/:(.*?);/)[1];
+            let fileName = "documento.pdf"; const nameMatch = mimePart.match(/name=([^;]+)/); if (nameMatch) fileName = decodeURIComponent(nameMatch[1]);
+            const bstr = atob(arr[1]); let n = bstr.length; const u8arr = new Uint8Array(n); while(n--) u8arr[n] = bstr.charCodeAt(n);
+            const blob = new Blob([u8arr], {type: mime}); const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url; a.target = "_blank"; a.download = fileName;
+            document.body.appendChild(a); a.click(); setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 100);
+        } catch(e) { CustomDialog.alert("Não foi possível abrir o PDF.", "Erro"); }
+    },
+
+    restoreFromLocal: async function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        MenuModal.closeUI();
+
+        setTimeout(async () => {
+            if(!await CustomDialog.confirm("Isto unificará os dados do backup com os seus dados atuais (mesclagem inteligente). Dados mais recentes prevalecem. Continuar?", "Sincronização Local via Arquivo")) {
+                e.target.value = '';
+                return;
+            }
+
+            document.getElementById('progressModal').classList.add('active');
+            document.getElementById('progressTitle').innerText = "A Restaurar Backup...";
+            document.getElementById('progressText').innerText = "A processar ficheiro...";
+            document.getElementById('progressCancelBtn').style.display = 'none';
+
+            try {
+                let parsedData;
+                if (file.name.endsWith('.zip')) {
+                    if (typeof JSZip === 'undefined') throw new Error("Biblioteca ZIP não carregada.");
+                    const zip = new JSZip();
+                    const contents = await zip.loadAsync(file);
+                    if (contents.files["dados_oraculo.json"]) {
+                        const dataStr = await contents.files["dados_oraculo.json"].async("string");
+                        parsedData = JSON.parse(dataStr);
+                    } else {
+                        throw new Error("Arquivo dados_oraculo.json não encontrado no ZIP.");
+                    }
+                } else if (file.name.endsWith('.json')) {
+                    const text = await file.text();
+                    parsedData = JSON.parse(text);
+                } else {
+                    throw new Error("Formato não suportado. Use .zip ou .json.");
+                }
+
+                if (parsedData && parsedData.entities && parsedData.logs) {
+                    const localEntities = await AppDB.entities.toArray();
+                    const localLogs = await AppDB.logs.toArray();
+
+                    let changesReceived = 0;
+                    let changesSent = 0;
+
+                    const mergeArrays = (localArr, remoteArr) => {
+                        const map = new Map();
+                        const remoteMap = new Map();
+                        remoteArr.forEach(r => remoteMap.set(r.id, r));
+
+                        localArr.forEach(lItem => {
+                            map.set(lItem.id, lItem);
+                            const rItem = remoteMap.get(lItem.id);
+                            if (!rItem) {
+                                changesSent++;
+                            } else {
+                                const lTime = lItem.updatedAt || lItem.createdAt || 0;
+                                const rTime = rItem.updatedAt || rItem.createdAt || 0;
+                                if (lTime > rTime) changesSent++;
+                            }
+                        });
+
+                        remoteArr.forEach(rItem => {
+                            const lItem = map.get(rItem.id);
+                            if(lItem) {
+                                const lTime = lItem.updatedAt || lItem.createdAt || 0;
+                                const rTime = rItem.updatedAt || rItem.createdAt || 0;
+                                if(rTime > lTime) {
+                                    map.set(rItem.id, rItem);
+                                    changesReceived++;
+                                }
+                            } else {
+                                map.set(rItem.id, rItem);
+                                changesReceived++;
+                            }
+                        });
+                        return Array.from(map.values());
+                    };
+
+                    const mergedEntities = mergeArrays(localEntities, parsedData.entities || []);
+                    const mergedLogs = mergeArrays(localLogs, parsedData.logs || []);
+
+                    document.getElementById('progressText').innerText = "A guardar unificação na base local...";
+
+                    await AppDB.transaction('rw', AppDB.entities, AppDB.logs, async () => {
+                        await AppDB.entities.clear(); await AppDB.logs.clear();
+                        await AppDB.entities.bulkPut(mergedEntities); await AppDB.logs.bulkPut(mergedLogs);
+                    });
+
+                    document.getElementById('progressModal').classList.remove('active');
+                    App.goHome();
+
+                    let msg = "";
+                    if (changesReceived === 0 && changesSent === 0) {
+                        msg = "Os dados locais já estavam idênticos ao backup selecionado. Nenhuma alteração foi necessária.";
+                    } else {
+                        msg = `Dados mesclados e restaurados com sucesso!\n\n📋 Resumo:\n`;
+                        if (changesReceived > 0) msg += `⬇️ ${changesReceived} registos atualizados usando o backup\n`;
+                        if (changesSent > 0) msg += `⬆️ ${changesSent} registos locais mantidos (mais recentes que o backup)`;
+                    }
+                    await CustomDialog.alert(msg.trim(), "Sucesso");
+                } else {
+                    throw new Error("Estrutura de dados inválida.");
+                }
+            } catch(error) {
+                document.getElementById('progressModal').classList.remove('active');
+                await CustomDialog.alert("Erro ao restaurar: " + error.message, "Erro");
+            } finally {
+                e.target.value = '';
+                document.getElementById('progressCancelBtn').style.display = 'block';
+            }
+        }, 300);
+    }
+};
+
+var EntityModal = {
+    el: document.getElementById('entityModal'), currentTargetId: null,
+    open: async function(id) {
+        this.currentTargetId = id; const entity = await AppDB.entities.get(id);
+        if(entity) {
+            document.getElementById('entityModalTitle').innerText = entity.type === 'tarefa' ? 'Editar Tarefa' : 'Editar Entidade';
+            document.getElementById('entityNameEditInput').value = entity.name; AppState.openModal(this);
+        }
+    },
+    openTaskPrompt: async function(parentId) {
+        const name = await CustomDialog.prompt("Nome da Tarefa (Ex: Desmontagem)", "", "Nova Tarefa de Serviço");
+        if(name) { App.createEntityOnTheFly(name, parentId); }
+    },
+    closeUI: function() { AppState.closeModalUI(); },
+    save: async function() {
+        const val = document.getElementById('entityNameEditInput').value.trim(); if(!val) return;
+        const entity = await AppDB.entities.get(this.currentTargetId);
+        if(entity) {
+            entity.name = val; entity.updatedAt = Date.now();
+            if(entity.parentId) {
+                App.expandedTasks.add(entity.parentId);
+                App.saveExpandedTasksState();
+            }
+            await AppDB.entities.put(entity); App.renderList();
+        }
+        this.closeUI();
+    },
+    delete: async function() {
+        if(await CustomDialog.confirm("Excluir esta entidade? TODOS os registos gerados nela e sub-tarefas serão apagados.", "Atenção (Cascata)")) {
+            const id = this.currentTargetId;
+            const now = Date.now();
+            await AppDB.transaction('rw', AppDB.entities, AppDB.logs, async () => {
+                let children = await AppDB.entities.where('parentId').equals(id).toArray();
+                for(let child of children) { child.isDeleted = true; child.updatedAt = now; await AppDB.entities.put(child); }
+
+                let mainEntity = await AppDB.entities.get(id);
+                if (mainEntity) { mainEntity.isDeleted = true; mainEntity.updatedAt = now; await AppDB.entities.put(mainEntity); }
+
+                let originLogs = await AppDB.logs.where('originEntityId').equals(id).toArray();
+                for(let log of originLogs) { log.isDeleted = true; log.updatedAt = now; await AppDB.logs.put(log); }
+
+                let affectedLogs = await AppDB.logs.filter(l => l.relatedEntities.some(rel => rel.id === id)).toArray();
+                for(let log of affectedLogs) {
+                    log.relatedEntities = log.relatedEntities.filter(rel => rel.id !== id);
+                    log.updatedAt = now;
+                    await AppDB.logs.put(log);
+                }
+            });
+            this.closeUI(); App.renderList(); App.calculateStorage();
+        }
+    }
+};
+
+var LogModal = {
+    el: document.getElementById('logModal'), editLogId: null, tempMedia: [], tempRelations: [], originId: null, groupId: null,
+    open: async function(logId = null, targetEntityId = null, groupId = null) {
+        this.editLogId = logId;
+        this.tempMedia = [];
+        this.groupId = groupId || null;
+        const textInput = document.getElementById('logText');
+
+        if (logId) {
+            const log = await AppDB.logs.get(logId);
+            this.originId = log.originEntityId;
+            this.groupId = log.groupId || log.id;
+            textInput.value = log.text;
+            this.tempMedia = [...(log.images || [])];
+            let rels = log.relatedEntities || [];
+            this.tempRelations = rels.filter(rel => rel.id !== this.originId).map(rel => ({ id: rel.id, type: rel.type }));
+            document.getElementById('logModalTitle').innerText = 'Editar Registo';
+            document.getElementById('logModalDeleteBtn').style.display = 'block';
+        } else {
+            this.originId = targetEntityId;
+            textInput.value = '';
+            this.tempRelations = [];
+            document.getElementById('logModalTitle').innerText = 'Registar Evento';
+            document.getElementById('logModalDeleteBtn').style.display = 'none';
+        }
+
+        document.getElementById('logLinkInput').value = '';
+        document.getElementById('logLinkAutocomplete').style.display = 'none';
+        document.getElementById('logMentionAutocomplete').style.display = 'none';
+
+        if (this.originId === 'global-timeline') {
+            document.getElementById('logLinkContainer').style.display = 'none';
+        } else {
+            document.getElementById('logLinkContainer').style.display = 'block';
+        }
+
+        await this.renderLinks();
+        this.updateUI(); AppState.openModal(this);
+    },
+    closeUI: function() { AppState.closeModalUI(); },
+
+    handleTextareaInput: async function(e) {
+        const text = e.target.value;
+        const cursor = e.target.selectionStart;
+        const textBeforeCursor = text.substring(0, cursor);
+        const lastAtSignIndex = textBeforeCursor.lastIndexOf('@');
+
+        const dropdown = document.getElementById('logMentionAutocomplete');
+
+        if (lastAtSignIndex !== -1) {
+            // Check if it's a valid mention start (either start of string or preceded by space)
+            if (lastAtSignIndex === 0 || textBeforeCursor[lastAtSignIndex - 1].match(/\s/)) {
+                const term = textBeforeCursor.substring(lastAtSignIndex + 1).toLowerCase();
+
+                let resolvedNames = [];
+                for (let rel of LogModal.tempRelations) {
+                    if (rel.isNew && rel.name) {
+                        resolvedNames.push(rel.name.toLowerCase());
+                    } else if (rel.id) {
+                        let cached = window.cachedEntitiesMap ? window.cachedEntitiesMap.get(rel.id) : null;
+                        if (cached) {
+                            resolvedNames.push(cached.toLowerCase());
+                        } else {
+                            let entity = await AppDB.entities.get(rel.id);
+                            if (entity) {
+                                if (!window.cachedEntitiesMap) window.cachedEntitiesMap = new Map();
+                                window.cachedEntitiesMap.set(entity.id, entity.name);
+                                resolvedNames.push(entity.name.toLowerCase());
+                            }
+                        }
+                    }
+                }
+
+                if (resolvedNames.some(name => term.startsWith(name + ' '))) {
+                    dropdown.style.display = 'none';
+                    return;
+                }
+
+                const coords = AppUtils.getCaretCoordinates(e.target, lastAtSignIndex);
+                dropdown.style.top = (coords.top + coords.height + e.target.offsetTop - e.target.scrollTop) + 'px';
+                dropdown.style.left = (coords.left + e.target.offsetLeft) + 'px';
+                dropdown.style.width = 'max-content';
+                dropdown.style.position = 'absolute';
+                dropdown.style.margin = '0';
+                dropdown.style.zIndex = '3000';
+
+                let allEntities = await AppDB.entities.where('type').equals('equipamento').toArray();
+                let available = allEntities.filter(e => !e.isDeleted);
+
+                let hasExactMatch = false;
+                if (term) {
+                    available = available.filter(e => {
+                        if (e.name.toLowerCase() === term) hasExactMatch = true;
+                        return e.name.toLowerCase().includes(term);
+                    });
+                }
+
+                if (available.length === 0 && !term) { dropdown.style.display = 'none'; return; }
+
+                let html = available.slice(0, 5).map(e => `<div class="autocomplete-item" onclick="LogModal.insertMention('${e.id}', '${e.name.replace(/'/g, "\\'")}')"><i class="material-icons" style="font-size:16px; opacity:0.6;">precision_manufacturing</i> ${e.name}</div>`).join('');
+
+                if (term && !hasExactMatch) {
+                    html += `<div class="autocomplete-item" onclick="LogModal.insertMention('new-eq-${term.replace(/'/g, "\\'")}', '${term.replace(/'/g, "\\'")}')"><i class="material-icons" style="font-size:16px; opacity:0.6;">add</i> Criar equipamento "${term}"</div>`;
+                }
+
+                dropdown.innerHTML = html;
+                dropdown.style.display = 'flex';
+                return;
+            }
+        }
+        dropdown.style.display = 'none';
+    },
+
+    insertMention: function(id, name) {
+        const textarea = document.getElementById('logText');
+        const text = textarea.value;
+        const cursor = textarea.selectionStart;
+        const textBeforeCursor = text.substring(0, cursor);
+        const textAfterCursor = text.substring(cursor);
+
+        const lastAtSignIndex = textBeforeCursor.lastIndexOf('@');
+
+        if (lastAtSignIndex !== -1) {
+            const beforeMention = text.substring(0, lastAtSignIndex);
+            const mentionText = `@${name} `;
+
+            textarea.value = beforeMention + mentionText + textAfterCursor;
+
+            // Add to related entities if not already there
+            if (!this.tempRelations.some(rel => rel.id === id)) {
+                let relData = { type: 'equipamento', id: id };
+                if (id.startsWith('new-eq-')) {
+                    relData.isNew = true;
+                    relData.name = name;
+                }
+                this.tempRelations.push(relData);
+                this.renderLinks();
+            }
+
+            // Move cursor after the inserted mention
+            const newCursorPos = beforeMention.length + mentionText.length;
+            textarea.setSelectionRange(newCursorPos, newCursorPos);
+            textarea.focus();
+        }
+
+        document.getElementById('logMentionAutocomplete').style.display = 'none';
+    },
+
+    searchLinks: async function() {
+        const term = document.getElementById('logLinkInput').value.toLowerCase().trim();
+        const dropdown = document.getElementById('logLinkAutocomplete');
+
+        let allEntities = await AppDB.entities.toArray();
+        let available = allEntities.filter(e => !e.isDeleted && e.type !== 'tarefa' && e.id !== this.originId && !this.tempRelations.some(rel => rel.id === e.id));
+        if (term) available = available.filter(e => e.name.toLowerCase().includes(term));
+
+        if (available.length === 0) { dropdown.style.display = 'none'; return; }
+
+        dropdown.innerHTML = available.slice(0, 5).map(e => `<div class="autocomplete-item" onclick="LogModal.addLink('${e.id}')"><i class="material-icons" style="font-size:16px; opacity:0.6;">link</i> ${e.name} <span style="font-size:10px; opacity:0.5; margin-left:auto;">${MODULE_MAPPING[e.type][0]}</span></div>`).join('');
+        dropdown.style.display = 'flex';
+    },
+    addLink: async function(id) {
+        const e = await AppDB.entities.get(id);
+        if(e) this.tempRelations.push({ type: e.type, id: e.id });
+        document.getElementById('logLinkInput').value = '';
+        document.getElementById('logLinkAutocomplete').style.display = 'none';
+        await this.renderLinks();
+    },
+    removeLink: async function(id) {
+        this.tempRelations = this.tempRelations.filter(rel => rel.id !== id);
+        await this.renderLinks();
+    },
+    renderLinks: async function() {
+        const container = document.getElementById('logLinkPills');
+        let html = [];
+        for(let rel of this.tempRelations) {
+            let e = rel.isNew ? rel : (await AppDB.entities.get(rel.id) || rel);
+            html.push(`<div class="pill-dark">${e.name} <i class="material-icons" onclick="LogModal.removeLink('${rel.id}')">close</i></div>`);
+        }
+        container.innerHTML = html.join('');
+    },
+    delete: async function() {
+        if(this.editLogId) {
+            if(await CustomDialog.confirm("Excluir permanentemente este registo? Os demais registos deste grupo não serão afetados.", "Excluir Log")) {
+                const log = await AppDB.logs.get(this.editLogId);
+                if (log) {
+                    log.isDeleted = true;
+                    log.updatedAt = Date.now();
+                    await AppDB.logs.put(log);
+                }
+                App.renderList(); this.closeUI(); App.calculateStorage();
+            }
+        }
+    },
+    save: async function() {
+        const text = document.getElementById('logText').value.trim();
+        this.tempMedia = this.tempMedia.filter(m => !m.isPlaceholder);
+
+        if(!text && this.tempMedia.length === 0) { await CustomDialog.alert('Insira um texto ou anexe uma imagem/documento/vídeo.', 'Aviso'); return; }
+
+        try {
+            const now = Date.now();
+
+            for (let i = 0; i < this.tempRelations.length; i++) {
+                if (this.tempRelations[i].isNew) {
+                    const realId = now.toString() + Math.random().toString(36).substring(2, 7);
+                    await AppDB.entities.put({
+                        id: realId,
+                        type: 'equipamento',
+                        name: this.tempRelations[i].name,
+                        createdAt: now,
+                        updatedAt: now,
+                        parentId: null
+                    });
+
+                    const oldId = this.tempRelations[i].id;
+                    const escapedOldId = AppUtils.escapeRegex(oldId);
+                    document.getElementById('logText').value = document.getElementById('logText').value.replace(new RegExp(`@\\[${AppUtils.escapeRegex(this.tempRelations[i].name)}\\]\\(${escapedOldId}\\)`, 'g'), `@[${this.tempRelations[i].name}](${realId})`);
+
+                    this.tempRelations[i].id = realId;
+                    delete this.tempRelations[i].isNew;
+                    delete this.tempRelations[i].name;
+                }
+            }
+
+            const originEntity = await AppDB.entities.get(this.originId);
+            const coreRelation = { type: originEntity.type, id: originEntity.id };
+            const finalRelations = [coreRelation, ...this.tempRelations.map(rel => ({ type: rel.type, id: rel.id }))];
+
+            let savedLogId = null;
+            if (this.editLogId) {
+                const log = await AppDB.logs.get(this.editLogId);
+                log.text = text;
+                log.images = [...this.tempMedia];
+                log.relatedEntities = finalRelations;
+                log.updatedAt = now;
+                log.groupId = this.groupId || log.id;
+                log.authorName = App.currentAuthor || 'N/A';
+                await AppDB.logs.put(log);
+                savedLogId = log.id;
+            } else {
+                const newId = now.toString();
+                const newLog = {
+                    id: newId, text: text, images: [...this.tempMedia], createdAt: now, updatedAt: now,
+                    originEntityId: this.originId, relatedEntities: finalRelations,
+                    groupId: this.groupId || newId,
+                    authorName: App.currentAuthor || 'N/A'
+                };
+                await AppDB.logs.put(newLog);
+                savedLogId = newId;
+            }
+
+            if(originEntity && originEntity.type === 'tarefa' && originEntity.parentId) {
+                App.expandedTasks.add(originEntity.id);
+                App.saveExpandedTasksState();
+            } else if (originEntity && originEntity.type === 'tarefa' && !originEntity.parentId) {
+                App.expandedTasks.add(originEntity.id);
+                App.saveExpandedTasksState();
+            } else {
+                App.expandedTasks.add(this.originId);
+                App.saveExpandedTasksState();
+            }
+
+            if (this.groupId || !this.editLogId) {
+                App.expandedGroups.add('log-group-' + (this.groupId || now.toString()));
+                App.saveExpandedState();
+            }
+
+            if (App.currentView === 'timeline') {
+                App.renderTimeline('', savedLogId);
+            } else {
+                App.renderList(savedLogId);
+            }
+            this.closeUI(); App.calculateStorage();
+        } catch (e) {
+            console.error("Erro no IndexedDB:", e);
+            await CustomDialog.alert("Erro ao guardar o registo. A sua base de dados não foi danificada, mas o anexo pode ser demasiado grande.", "Erro de Memória");
+        }
+    },
+    updateUI: function() {
+        const container = document.getElementById('logPreviewContainer'); const wrapper = document.getElementById('logMediaWrapper');
+        if (this.tempMedia && this.tempMedia.length > 0) { wrapper.innerHTML = renderStackedDeckHTML(this.tempMedia, 'temp'); container.style.display = 'block'; }
+        else { container.style.display = 'none'; wrapper.innerHTML = ''; }
+
+        const saveBtn = document.getElementById('logSaveBtn');
+        const hasPlaceholder = this.tempMedia.some(m => m.isPlaceholder);
+        if (saveBtn) {
+            saveBtn.disabled = hasPlaceholder;
+            saveBtn.style.opacity = hasPlaceholder ? '0.5' : '1';
+            saveBtn.innerText = hasPlaceholder ? 'A processar...' : 'Guardar Registo';
+        }
+    }
+};
+
+const handleLogMedia = async (e) => {
+    const files = Array.from(e.target.files);
+    e.target.value = ''; // Clear early to prevent duplicate change events on some mobile browsers
+    if(files.length === 0) return;
+
+    let hasVideo = files.some(f => f.type.startsWith('video/'));
+    if(hasVideo) { LogModal.tempMedia.push({ isPlaceholder: true, progress: 0 }); LogModal.updateUI(); }
+
+    try {
+        await processMultipleMedia(files, (pct) => {
+            const progressText = document.getElementById('video-progress-text');
+            if(progressText) progressText.innerText = `A processar: ${pct}%`;
+        }, (newMedia) => {
+            if(hasVideo) LogModal.tempMedia = LogModal.tempMedia.filter(m => !m.isPlaceholder);
+            LogModal.tempMedia.push(...newMedia); LogModal.updateUI();
+        });
+    } catch(err) {
+        if(hasVideo) LogModal.tempMedia = LogModal.tempMedia.filter(m => !m.isPlaceholder);
+        LogModal.updateUI(); CustomDialog.alert("Erro ao processar ficheiros: " + err.message, "Erro");
+    }
+};
+document.getElementById('logCam').addEventListener('change', handleLogMedia);
+document.getElementById('logGal').addEventListener('change', handleLogMedia);
 
 var CarouselModal = {
     el: document.getElementById('carouselModal'), container: document.getElementById('carouselContainer'), currentLogId: null, imagesArray: [], currentIndex: 0, originalTitle: '',
@@ -562,7 +3182,7 @@ var CarouselModal = {
     updateGlobalActions: function() {
         const img = this.imagesArray[this.currentIndex];
         const editBtn = document.getElementById('carouselEditBtn');
-        if (img && (img.data.startsWith('data:application/pdf') || img.data.startsWith('data:video/') || img.isVideo || img.isPlaceholder)) editBtn.style.display = 'none'; else editBtn.style.display = 'grid';
+        if (img && ((img.data.startsWith('data:application/pdf') || img.data.endsWith('.pdf')) || (img.data.startsWith('data:video/') || img.data.endsWith('.webm') || img.data.endsWith('.mp4')) || img.isVideo || img.isPlaceholder)) editBtn.style.display = 'none'; else editBtn.style.display = 'grid';
 
         let sizeIndicator = document.getElementById('carouselSizeIndicator');
         if(img && img.size) sizeIndicator.innerText = (img.size / 1024 / 1024).toFixed(2) + ' MB';
@@ -572,8 +3192,8 @@ var CarouselModal = {
         this.container.innerHTML = this.imagesArray.map((img, idx) => {
             let media = '';
             if (img.isPlaceholder) { media = `<div class="carousel-pdf" style="background:#111;"><i class="material-icons" style="font-size:48px; color:var(--primary); animation: spin 1s linear infinite;">sync</i><span style="color:var(--primary); font-size:14px; margin-top:12px; text-align:center;">A processar...</span></div>`; }
-            else if (img.data.startsWith('data:application/pdf')) { media = `<div class="carousel-pdf" onclick="App.openPDF('${img.data}')"><i class="material-icons" style="font-size:48px; color:var(--danger)">picture_as_pdf</i><span style="color:#fff; font-size:14px; margin-top:12px; text-align:center;">${AppUtils.getPdfName(img.data)}</span></div>`; }
-            else if (img.isVideo || img.data.startsWith('data:video/')) { media = `<div class="carousel-img-wrapper" style="pointer-events: auto;"><video src="${img.data}" class="carousel-img" controls playsinline style="pointer-events: auto; z-index: 20; position: relative; max-width: 100%; max-height: 80vh"></video></div>`; }
+            else if ((img.data.startsWith('data:application/pdf') || img.data.endsWith('.pdf'))) { media = `<div class="carousel-pdf" onclick="App.openPDF('${img.data}')"><i class="material-icons" style="font-size:48px; color:var(--danger)">picture_as_pdf</i><span style="color:#fff; font-size:14px; margin-top:12px; text-align:center;">${AppUtils.getPdfName(img.data)}</span></div>`; }
+            else if (img.isVideo || (img.data.startsWith('data:video/') || img.data.endsWith('.webm') || img.data.endsWith('.mp4'))) { media = `<div class="carousel-img-wrapper" style="pointer-events: auto;"><video src="${img.data}" class="carousel-img" controls playsinline style="pointer-events: auto; z-index: 20; position: relative; max-width: 100%; max-height: 80vh"></video></div>`; }
             else { media = `<div class="carousel-img-wrapper"><img src="${img.data}" class="carousel-img"><div class="carousel-touch-layer"></div></div>`; }
             return `<div class="carousel-item">${media}</div>`;
         }).join('');
@@ -621,7 +3241,6 @@ var CarouselModal = {
         });
     }
 };
-
 
 var Editor = {
     overlay: document.getElementById('editorOverlay'), canvas: document.getElementById('mainCanvas'), ctx: document.getElementById('mainCanvas').getContext('2d'), sizeInput: document.getElementById('editorSize'), activeColor: '#ff3333', activeTool: 'pen', activeText: null, isDrawing: false, lastPos: {x: 0, y: 0}, undoStack: [], isDraggingText: false, dragStartX: 0, dragStartY: 0, dragStartLeft: 0, dragStartTop: 0, targetMode: null, logId: null, dbIdx: null, el: document.getElementById('editorOverlay'),
@@ -709,446 +3328,7 @@ Editor.sizeInput.addEventListener('input', (e) => { if(Editor.activeTool === 'te
 Editor.canvas.addEventListener('mousedown', (e) => Editor.startDraw(e)); Editor.canvas.addEventListener('mousemove', (e) => Editor.draw(e)); Editor.canvas.addEventListener('mouseup', (e) => Editor.stopDraw(e)); Editor.canvas.addEventListener('mouseleave', (e) => Editor.stopDraw(e));
 Editor.canvas.addEventListener('touchstart', (e) => Editor.startDraw(e), {passive: false}); Editor.canvas.addEventListener('touchmove', (e) => Editor.draw(e), {passive: false}); Editor.canvas.addEventListener('touchend', (e) => Editor.stopDraw(e), {passive: false});
 
-
-
+App.init();
 </script>
-<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-</head>
-<body>
-    <!-- Navbar -->
-    <nav class="navbar">
-        <div class="hamburger-menu">☰</div>
-        <div class="app-name">FirstApp v1.1.0</div>
-    </nav>
-
-    <!-- Main Content -->
-    <div class="container">
-        <h1>FirstApp - PWA</h1>
-
-        <!-- Auth Form -->
-        <div id="auth-container" class="form-container">
-            <h2 style="margin-top: 0;">Login (Para Gerenciar Cards)</h2>
-            <form id="auth-form">
-                <input type="text" id="auth-name" placeholder="Nome (Autor)" required>
-                <input type="email" id="auth-email" placeholder="E-mail" required>
-                <input type="password" id="auth-password" placeholder="Senha" required>
-                <button type="submit" class="btn">Entrar / Registrar</button>
-                <p id="auth-message" style="color: #a0aec0; font-size: 0.875rem; margin-top: 0.5rem;"></p>
-            </form>
-        </div>
-
-        <!-- Add/Edit Form -->
-        <div class="form-container" id="card-form-container" style="display: none;">
-            <h2 id="form-title" style="margin-top: 0;">Novo Card</h2>
-            <form id="card-form">
-                <input type="hidden" id="card-id">
-                <input type="hidden" id="card-image-path">
-                <input type="text" id="card-title-input" placeholder="Título do Card" required>
-                <textarea id="card-content-input" placeholder="Conteúdo do Card" rows="3" required></textarea>
-                <input type="file" id="card-image-input" accept="image/*,application/pdf,video/*" multiple style="margin-bottom: 1rem; color: #e2e8f0;">
-                <button type="submit" class="btn">Salvar</button>
-                <button type="button" class="btn" id="btn-cancel" style="display: none; background-color: #718096;">Cancelar</button>
-                <button type="button" class="btn" id="btn-logout" style="background-color: #e53e3e; float: right;">Sair</button>
-            </form>
-        </div>
-
-        <!-- Dynamic Cards -->
-        <div class="cards-grid" id="cards-container" style="display: none;">
-            <!-- Cards will be injected here by JS -->
-            <p>Carregando...</p>
-        </div>
-    </div>
-
-    <!-- Application Logic (CRUD & Service Worker) -->
-    <script>
-        // --- Service Worker ---
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js')
-                    .then(registration => console.log('ServiceWorker registrado:', registration.scope))
-                    .catch(error => console.log('Falha ao registrar o ServiceWorker:', error));
-            });
-        }
-
-        // --- Supabase CRUD ---
-        let supabaseClient;
-        const form = document.getElementById('card-form');
-        const container = document.getElementById('cards-container');
-        const titleInput = document.getElementById('card-title-input');
-        const contentInput = document.getElementById('card-content-input');
-        const idInput = document.getElementById('card-id');
-        const imagePathInput = document.getElementById('card-image-path');
-        const imageInput = document.getElementById('card-image-input');
-        const formTitle = document.getElementById('form-title');
-
-        imageInput.addEventListener('change', () => {
-            imageChanged = true;
-        });
-        const btnCancel = document.getElementById('btn-cancel');
-
-        let session = null;
-        let supabaseUrlGlobal = null;
-        let imageChanged = false;
-
-        async function init() {
-            try {
-                const response = await fetch('/api/env');
-                if (!response.ok) throw new Error('Não foi possível obter credenciais do env');
-                const { supabaseUrl, supabaseKey } = await response.json();
-                supabaseUrlGlobal = supabaseUrl;
-
-                if (!supabaseUrl || !supabaseKey) {
-                    container.innerHTML = '<p style="color:red;">Credenciais do Supabase não configuradas no Cloudflare (SUPABASE_URL e SUPABASE_PUBLISHABLE_KEY).</p>';
-                    return;
-                }
-
-                supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
-
-                supabaseClient.auth.onAuthStateChange((_event, currentSession) => {
-                    session = currentSession;
-                    if (session) {
-                        document.getElementById('auth-container').style.display = 'none';
-                        document.getElementById('card-form-container').style.display = 'block';
-                    } else {
-                        document.getElementById('auth-container').style.display = 'block';
-                        document.getElementById('card-form-container').style.display = 'none';
-                    }
-                    loadCards(); // Reload cards to show/hide edit buttons based on session
-                });
-
-            } catch (err) {
-                container.innerHTML = `<p style="color:red;">Erro na inicialização: ${err.message}</p>`;
-            }
-        }
-        document.getElementById('btn-logout').addEventListener('click', async () => {
-            await supabaseClient.auth.signOut();
-        });
-
-        function renderCardsList(cards) {
-            if (!cards || cards.length === 0) {
-                container.innerHTML = '<p>Nenhum card encontrado.</p>';
-                return;
-            }
-
-            container.innerHTML = '';
-            let totalBytes = 0;
-
-            for (const card of cards) {
-                totalBytes += parseInt(card.size_bytes || 0, 10);
-
-                const li = document.createElement('li');
-                li.className = 'task-item card';
-                li.id = 'entity-' + card.id;
-                li.style.color = 'var(--on-surface)';
-
-                let actionsHTML = '';
-                if (session) {
-                    actionsHTML = `
-                        <div class="task-actions card-actions" style="float: right;">
-                            <i class="material-icons action-icon btn-edit" title="Editar" style="font-size: 20px;">edit</i>
-                            <i class="material-icons action-icon danger btn-delete" title="Deletar" style="font-size: 20px;">delete</i>
-                        </div>
-                    `;
-                }
-
-                let mediaHtml = '';
-                if (card.media && card.media.length > 0 && typeof renderStackedDeckHTML === 'function') {
-                    const publicMedia = card.media.map(m => {
-                        if (m.data && m.data.startsWith('data:')) return m;
-                        const pubData = supabaseClient.storage.from('firstappfiles').getPublicUrl(m.path).data;
-                        return { ...m, data: pubData.publicUrl };
-                    });
-                    mediaHtml = renderStackedDeckHTML(publicMedia, card.id);
-                } else if (card.image_path) {
-                    const { data } = supabaseClient.storage.from('firstappfiles').getPublicUrl(card.image_path);
-                    if (data && data.publicUrl) {
-                        mediaHtml = `<img src="${data.publicUrl}" alt="Imagem do card" class="image-preview" style="max-width: 100%; border-radius: 4px; margin-bottom: 1rem;">`;
-                    }
-                }
-
-                let authorDisp = card.author_name || 'Desconhecido';
-                let dateDisp = typeof AppUtils !== 'undefined' ? AppUtils.formatDate(card.created_at) : new Date(card.created_at).toLocaleString('pt-BR');
-
-                li.innerHTML = `
-                    <div class="task-header" style="display: block; margin-bottom: 12px; clear: both;">
-                        ${actionsHTML}
-                        <span class="task-title" style="font-size: 18px; font-weight: 500; color: #fff;">${escapeHTML(card.title)}</span>
-                    </div>
-                    <div class="log-entry" style="margin-top: 8px;">
-                        <div class="log-header" style="font-size: 11px; opacity: 0.8; margin-bottom: 4px;">
-                            <span style="display:flex; align-items:center;">
-                                <i class="material-icons" style="font-size:12px; margin-right:4px;">schedule</i> ${dateDisp} por ${escapeHTML(authorDisp)}
-                            </span>
-                        </div>
-                        <div class="log-text selectable-text" style="font-size: 14px; line-height: 1.4;">${escapeHTML(card.content)}</div>
-                        ${mediaHtml}
-                    </div>
-                `;
-
-                if (session) {
-                    li.querySelector('.btn-edit').addEventListener('click', () => {
-                        editCard(card.id, card.title, card.content, card.image_path);
-                    });
-                    li.querySelector('.btn-delete').addEventListener('click', () => {
-                        deleteCard(card.id);
-                    });
-                }
-                container.appendChild(li);
-            }
-
-            const storageFooter = document.querySelector('.storage-footer');
-            const storageText = document.getElementById('storageFooterText');
-            if(storageFooter && storageText) {
-                storageFooter.style.display = 'flex';
-                storageFooter.style.position = 'fixed';
-                storageFooter.style.bottom = '0';
-                const mb = (totalBytes / 1024 / 1024).toFixed(2);
-                storageText.innerText = `${mb} MB utilizados no banco de dados`;
-            }
-        }
-
-        async function loadCards() {
-            if (!session) {
-                container.style.display = 'none';
-                return;
-            } else {
-                container.style.display = 'flex';
-                container.style.flexDirection = 'column';
-                container.style.gap = '16px';
-            }
-
-            const cachedCardsRaw = localStorage.getItem('firstapp_cards');
-            if (cachedCardsRaw) {
-                try {
-                    const cachedCards = JSON.parse(cachedCardsRaw);
-                    renderCardsList(cachedCards);
-                } catch(e) {}
-            } else {
-                container.innerHTML = '<p>Carregando...</p>';
-            }
-
-            const { data: cards, error } = await supabaseClient.from('cards').select('*').order('created_at', { ascending: false });
-
-            if (error) {
-                if(!cachedCardsRaw) container.innerHTML = `<p style="color:red;">Erro ao buscar cards: ${error.message}</p>`;
-                return;
-            }
-
-            localStorage.setItem('firstapp_cards', JSON.stringify(cards));
-            renderCardsList(cards);
-        }
-
-        form.addEventListener
-('submit', async (e) => {
-            e.preventDefault();
-            const title = titleInput.value.trim();
-            const content = contentInput.value.trim();
-            const id = idInput.value;
-            let imagePath = imagePathInput.value;
-
-
-            const file = imageInput.files[0];
-
-
-            if (file && imageChanged) {
-                const fileExt = file.name.split('.').pop();
-                const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
-
-                try {
-                    const chunkSize = 1024 * 1024; // 1MB
-                    const totalChunks = Math.ceil(file.size / chunkSize);
-                    const uploadId = `${Date.now()}-${Math.random().toString(36).substring(2)}`;
-
-                    const submitBtn = form.querySelector('button[type="submit"]');
-                    const originalBtnText = submitBtn.innerText;
-                    submitBtn.disabled = true;
-
-                    for (let i = 0; i < totalChunks; i++) {
-                        const start = i * chunkSize;
-                        const end = Math.min(start + chunkSize, file.size);
-                        const chunk = file.slice(start, end);
-
-                        submitBtn.innerText = `Salvando imagem... ${Math.round(((i) / totalChunks) * 100)}%`;
-
-                        const uploadResponse = await fetch('/api/upload', {
-                            method: 'PUT', // Bypass firewall
-                            headers: {
-                                'Authorization': `Bearer ${session.access_token}`,
-                                'X-Upload-Id': uploadId,
-                                'X-Chunk-Index': i.toString(),
-                                'X-Total-Chunks': totalChunks.toString(),
-                                'X-File-Name': fileName,
-                                'X-Content-Type': file.type
-                            },
-                            body: chunk
-                        });
-
-                        if (!uploadResponse.ok) {
-                            submitBtn.innerText = originalBtnText;
-                            submitBtn.disabled = false;
-                            throw new Error('Falha no upload do chunk ' + i);
-                        }
-
-                        const responseData = await uploadResponse.json();
-                        if (responseData.error) {
-                             submitBtn.innerText = originalBtnText;
-                             submitBtn.disabled = false;
-                             throw new Error(responseData.error);
-                        }
-
-                        if (responseData.final) {
-                             imagePath = responseData.path;
-                             if (imagePath.startsWith('firstappfiles/')) {
-                                 imagePath = imagePath.replace('firstappfiles/', '');
-                             }
-                        }
-                    }
-
-                    submitBtn.innerText = originalBtnText;
-                    submitBtn.disabled = false;
-
-                } catch (error) {
-                    alert('Erro no upload da imagem: ' + error.message);
-                    return;
-                }
-            }
-
-            if (id) {
-                // Update
-                const { error } = await supabaseClient
-                    .from('cards')
-                    .update({ title, content, image_path: imagePath })
-                    .eq('id', id);
-                if (error) alert('Erro ao atualizar: ' + error.message);
-            } else {
-                // Insert
-                const { error } = await supabaseClient
-                    .from('cards')
-                    .insert([{ title, content, image_path: imagePath }]);
-                if (error) alert('Erro ao criar: ' + error.message);
-            }
-
-            resetForm();
-            loadCards();
-        });
-
-        window.deleteCard = async function(id) {
-            if (!confirm('Deseja realmente excluir este card?')) return;
-            const { error } = await supabaseClient.from('cards').delete().eq('id', id);
-            if (error) alert('Erro ao excluir: ' + error.message);
-            else loadCards();
-        };
-
-
-        window.editCard = async function(id, title, content, imagePath) {
-            const { data, error } = await supabaseClient
-                .from('cards')
-                .update({ locked_by: session.user.id, locked_at: new Date() })
-                .eq('id', id)
-                .is('locked_by', null)
-                .select();
-
-            if (error || !data || data.length === 0) {
-                alert('Este card está bloqueado por outro usuário (ou ocorreu um erro).');
-                return;
-            }
-
-            idInput.value = id;
-            titleInput.value = title;
-            contentInput.value = content;
-            imagePathInput.value = imagePath || '';
-            imageInput.value = '';
-            imageChanged = false;
-            formTitle.innerText = 'Editar Card';
-            btnCancel.style.display = 'inline-block';
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        };
-
-
-
-        btnCancel.addEventListener('click', async () => {
-            const id = idInput.value;
-            if(id) await supabaseClient.from('cards').update({ locked_by: null, locked_at: null }).eq('id', id);
-            resetForm();
-        });
-
-
-        function resetForm() {
-            idInput.value = '';
-            titleInput.value = '';
-            contentInput.value = '';
-            imagePathInput.value = '';
-            imageInput.value = '';
-            formTitle.innerText = 'Novo Card';
-            btnCancel.style.display = 'none';
-        }
-
-        function escapeHTML(str) {
-            if (!str) return '';
-            return str.replace(/[&<>'"]/g, tag => ({
-                '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
-            }[tag] || tag));
-        }
-
-        // Initialize App
-        init();
-    </script>
-
-<div class="carousel-overlay" id="carouselModal" style="display: none;">
-    <div class="carousel-header">
-        <div style="color: white; font-size: 13px; font-weight:bold; margin-top: 8px; text-shadow: 1px 1px 2px black;" id="carouselSizeIndicator"></div>
-        <div class="carousel-actions-global">
-            <div class="carousel-btn edit" id="carouselEditBtn" onclick="CarouselModal.editCurrent()"><i class="material-icons">edit</i></div>
-            <div class="carousel-btn delete" id="carouselDeleteBtn" onclick="CarouselModal.deleteCurrent()"><i class="material-icons" style="color:var(--danger)">delete</i></div>
-        </div>
-        <i class="material-icons action-icon" style="color:white; font-size:32px;" onclick="CarouselModal.closeUI()">close</i>
-    </div>
-    <div class="carousel-nav-btn left" id="carouselNavLeft" onclick="CarouselModal.prev()"><i class="material-icons">chevron_left</i></div>
-    <div class="carousel-nav-btn right" id="carouselNavRight" onclick="CarouselModal.next()"><i class="material-icons">chevron_right</i></div>
-    <div class="carousel-container" id="carouselContainer"></div>
-</div>
-
-
-<div class="editor-overlay" id="editorOverlay" onclick="document.getElementById('colorPopup').classList.remove('show')" style="display: none;">
-    <div class="canvas-container" id="canvasContainer">
-        <div class="editor-hint" id="editorHint">Desenhe livremente na imagem</div>
-        <div class="canvas-wrapper">
-            <canvas id="mainCanvas"></canvas>
-            <div id="textOverlay"></div>
-        </div>
-    </div>
-
-    <div id="colorPopup" class="color-popup">
-        <div class="color-dot" style="background-color: #ff3333" onclick="event.stopPropagation(); Editor.setColor('#ff3333')"></div>
-        <div class="color-dot" style="background-color: #33cc33" onclick="event.stopPropagation(); Editor.setColor('#33cc33')"></div>
-        <div class="color-dot" style="background-color: #3366ff" onclick="event.stopPropagation(); Editor.setColor('#3366ff')"></div>
-        <div class="color-dot" style="background-color: #ffff33" onclick="event.stopPropagation(); Editor.setColor('#ffff33')"></div>
-        <div class="color-dot" style="background-color: #ffffff" onclick="event.stopPropagation(); Editor.setColor('#ffffff')"></div>
-        <div class="color-dot" style="background-color: #000000" onclick="event.stopPropagation(); Editor.setColor('#000000')"></div>
-    </div>
-
-    <div class="editor-toolbar" onclick="event.stopPropagation()">
-        <button class="tool-btn" onclick="Editor.closeUI()"><i class="material-icons">close</i></button>
-        <div class="editor-sep"></div>
-        <button class="tool-btn active" id="btnPen" onclick="Editor.setTool('pen')"><i class="material-icons">edit</i></button>
-        <button class="tool-btn" id="btnText" onclick="Editor.setTool('text')"><i class="material-icons">text_fields</i></button>
-        <div class="editor-sep"></div>
-
-        <div class="color-palette-container">
-            <div id="activeColorBtn" class="active-color-dot" style="background-color: #ff3333;" onclick="event.preventDefault(); event.stopPropagation(); document.getElementById('colorPopup').classList.toggle('show');"></div>
-        </div>
-
-        <div class="editor-sep"></div>
-        <input type="range" id="editorSize" class="size-slider" min="2" max="9" step="0.5" value="3">
-        <div class="editor-sep"></div>
-        <button class="tool-btn" onclick="Editor.undo()"><i class="material-icons">undo</i></button>
-        <button class="tool-btn" onclick="Editor.save()" style="background: var(--primary); color: var(--on-primary); margin-left: auto;"><i class="material-icons">check</i></button>
-    </div>
-</div>
-
-    <div class="storage-footer" style="display: none; cursor: pointer; position: fixed; bottom: 0;">
-        <i class="material-icons" style="font-size: 14px;">storage</i> <span id="storageFooterText">A calcular memória...</span>
-    </div>
-
 </body>
 </html>
