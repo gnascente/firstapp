@@ -1224,13 +1224,7 @@ var App = {
                                     });
                                 };
 
-                                let imageText = eName;
-                                if (eName === 'Linha do Tempo') {
-                                    imageText = plainText.substring(0, 30) + (plainText.length > 30 ? '...' : '');
-                                    if (!imageText) imageText = 'Registro';
-                                }
-
-                                blob = await addTextToImage(blob, imageText);
+                                blob = await addTextToImage(blob, filename);
                             }
 
                             let cleanMime = mime.includes('name=') ? mime.split(';')[0] : mime;
@@ -1255,8 +1249,16 @@ var App = {
 
         try {
             if (navigator.canShare && navigator.canShare({ files: shareFiles })) {
-                const proceed = await CustomDialog.confirm("Imagens e arquivos processados! Deseja compartilhar agora?", "Pronto");
+                const hasPdf = shareFiles.some(f => f.type === 'application/pdf');
+                let confirmMsg = "Imagens e arquivos processados! Deseja compartilhar agora?";
+                if (hasPdf) {
+                    confirmMsg = "Como há ficheiros PDF selecionados, o WhatsApp pode descartar o texto. O texto será copiado para a área de transferência para que possa colar. Deseja compartilhar agora?";
+                }
+                const proceed = await CustomDialog.confirm(confirmMsg, "Pronto");
                 if (proceed) {
+                    if (hasPdf) {
+                        try { await navigator.clipboard.writeText(shareText); } catch(e) {}
+                    }
                     await navigator.share({
                         text: shareText,
                         files: shareFiles
