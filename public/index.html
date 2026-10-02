@@ -304,9 +304,9 @@
         }
 
     @keyframes flashHighlight {
-        0% { background-color: var(--surface); }
-        50% { background-color: var(--primary-container); }
-        100% { background-color: var(--surface); }
+        0% { background-color: transparent; }
+        50% { background-color: rgba(255, 235, 59, 0.4); }
+        100% { background-color: transparent; }
     }
     .flash-highlight { animation: flashHighlight 1.5s ease-out; }
 </style>
@@ -1126,29 +1126,6 @@ var App = {
             return;
         }
 
-        // Before adding, check if there's a conflict between PDFs and Images
-        const currentLog = await AppDB.logs.get(logId);
-        if (currentLog && currentLog.images && currentLog.images.length > 0) {
-            const currentHasPdf = currentLog.images.some(img => img.data.includes('application/pdf'));
-            const currentHasImg = currentLog.images.some(img => !img.data.includes('application/pdf'));
-
-            // Check existing selected logs
-            let existingHasPdf = false;
-            let existingHasImg = false;
-            for (let selId of this.selectedLogs) {
-                const selLog = await AppDB.logs.get(selId);
-                if (selLog && selLog.images) {
-                    if (selLog.images.some(img => img.data.includes('application/pdf'))) existingHasPdf = true;
-                    if (selLog.images.some(img => !img.data.includes('application/pdf'))) existingHasImg = true;
-                }
-            }
-
-            if ((currentHasPdf && existingHasImg) || (currentHasImg && existingHasPdf) || (currentHasPdf && currentHasImg)) {
-                await CustomDialog.alert("Devido a limitações do WhatsApp, não é possível compartilhar ficheiros PDF e imagens ao mesmo tempo em lote. Por favor, partilhe os registos com PDF separadamente.", "Aviso de Compartilhamento");
-                return;
-            }
-        }
-
         this.selectedLogs.add(logId);
         document.getElementById('log-' + logId)?.classList.add('selected');
         document.getElementById('timeline-log-' + logId)?.classList.add('selected');
@@ -1283,10 +1260,15 @@ var App = {
         try {
             if (navigator.canShare && navigator.canShare({ files: shareFiles })) {
                 const hasPdf = shareFiles.some(f => f.type === 'application/pdf');
+                const hasImg = shareFiles.some(f => f.type !== 'application/pdf');
                 let confirmMsg = "Imagens e arquivos processados! Deseja compartilhar agora?";
-                if (hasPdf) {
+
+                if (hasPdf && hasImg) {
+                    confirmMsg = "Você selecionou PDFs e imagens. O WhatsApp pode descartar alguns arquivos ao enviar juntos, mas outros apps suportam normalmente. O texto será copiado para a área de transferência. Deseja continuar?";
+                } else if (hasPdf) {
                     confirmMsg = "Como há ficheiros PDF selecionados, o WhatsApp pode descartar o texto. O texto será copiado para a área de transferência para que possa colar. Deseja compartilhar agora?";
                 }
+
                 const proceed = await CustomDialog.confirm(confirmMsg, "Pronto");
                 if (proceed) {
                     if (hasPdf) {
@@ -2567,6 +2549,21 @@ Stack: ${e.stack}`;
         if (currentDayStr !== '') html += `</div>`; // Close last group
 
         container.innerHTML = html;
+
+        requestAnimationFrame(() => {
+            if (scrollToLogId) {
+                const targetEl = document.getElementById('timeline-log-' + scrollToLogId);
+                if (targetEl) {
+                    targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    targetEl.classList.add('flash-highlight');
+                    setTimeout(() => targetEl.classList.remove('flash-highlight'), 1500);
+                    return;
+                }
+            }
+            if (viewEl && currentScroll > 0) {
+                viewEl.scrollTop = currentScroll;
+            }
+        });
     },
 
     renderList: async function(scrollToLogId = null) {
@@ -2694,6 +2691,15 @@ Stack: ${e.stack}`;
         }
 
         requestAnimationFrame(() => {
+            if (scrollToLogId) {
+                const targetEl = document.getElementById('log-' + scrollToLogId);
+                if (targetEl) {
+                    targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    targetEl.classList.add('flash-highlight');
+                    setTimeout(() => targetEl.classList.remove('flash-highlight'), 1500);
+                    return;
+                }
+            }
             viewListEl.scrollTop = currentScroll;
         });
     },
@@ -3241,7 +3247,13 @@ var CarouselModal = {
             this.imagesArray.splice(this.currentIndex, 1);
             if (this.currentLogId === 'temp') { LogModal.updateUI(); }
             else {
-                const log = await AppDB.logs.get(this.currentLogId); log.images = this.imagesArray; log.updatedAt = Date.now(); await AppDB.logs.put(log); App.renderList(); App.calculateStorage();
+                const log = await AppDB.logs.get(this.currentLogId); log.images = this.imagesArray; log.updatedAt = Date.now(); await AppDB.logs.put(log);
+                if (App.currentView === 'timeline') {
+                    App.renderTimeline('', this.currentLogId);
+                } else {
+                    App.renderList(this.currentLogId);
+                }
+                App.calculateStorage();
             }
             if(this.imagesArray.length === 0) { this.closeUI(); } else {
                 this.render(); this.bindZoom();
@@ -3324,7 +3336,21 @@ var Editor = {
                 }
             }
             const dataUrl = this.canvas.toDataURL('image/jpeg', 0.8);
-            if (this.targetMode === 'db') { const log = await AppDB.logs.get(this.logId); if(log && log.images[this.dbIdx]) { log.images[this.dbIdx].data = dataUrl; log.images[this.dbIdx].size = dataUrl.length * 0.75; log.updatedAt = Date.now(); } await AppDB.logs.put(log); App.renderList(); App.calculateStorage(); }
+            if (this.targetMode === 'db') {
+                const log = await AppDB.logs.get(this.logId);
+                if(log && log.images[this.dbIdx]) {
+                    log.images[this.dbIdx].data = dataUrl;
+                    log.images[this.dbIdx].size = dataUrl.length * 0.75;
+                    log.updatedAt = Date.now();
+                }
+                await AppDB.logs.put(log);
+                if (App.currentView === 'timeline') {
+                    App.renderTimeline('', this.logId);
+                } else {
+                    App.renderList(this.logId);
+                }
+                App.calculateStorage();
+            }
             else if (this.targetMode === 'temp') { if(LogModal.tempMedia[this.dbIdx]) { LogModal.tempMedia[this.dbIdx].data = dataUrl; LogModal.tempMedia[this.dbIdx].size = dataUrl.length * 0.75; } LogModal.updateUI(); }
             if (CarouselModal.el.classList.contains('active') && CarouselModal.imagesArray[this.dbIdx]) { CarouselModal.imagesArray[this.dbIdx].data = dataUrl; CarouselModal.imagesArray[this.dbIdx].size = CarouselModal.imagesArray[this.dbIdx].data.length * 0.75; CarouselModal.render(); CarouselModal.bindZoom(); CarouselModal.updateGlobalActions(); }
             this.closeUI();
