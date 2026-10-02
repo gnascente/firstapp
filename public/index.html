@@ -302,7 +302,14 @@
 
             .play-overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.6); border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         }
-    </style>
+
+    @keyframes flashHighlight {
+        0% { background-color: var(--surface); }
+        50% { background-color: var(--primary-container); }
+        100% { background-color: var(--surface); }
+    }
+    .flash-highlight { animation: flashHighlight 1.5s ease-out; }
+</style>
 </head>
 <body>
 
@@ -1104,21 +1111,47 @@ var App = {
         this.updateSelectionUI();
     },
 
-    toggleLogSelection: function(logId, e) {
+    toggleLogSelection: async function(logId, e) {
         if (!this.isSelectionMode) return;
         if (e) {
             e.preventDefault();
             e.stopPropagation();
         }
+
         if (this.selectedLogs.has(logId)) {
             this.selectedLogs.delete(logId);
             document.getElementById('log-' + logId)?.classList.remove('selected');
             document.getElementById('timeline-log-' + logId)?.classList.remove('selected');
-        } else {
-            this.selectedLogs.add(logId);
-            document.getElementById('log-' + logId)?.classList.add('selected');
-            document.getElementById('timeline-log-' + logId)?.classList.add('selected');
+            this.updateSelectionUI();
+            return;
         }
+
+        // Before adding, check if there's a conflict between PDFs and Images
+        const currentLog = await AppDB.logs.get(logId);
+        if (currentLog && currentLog.images && currentLog.images.length > 0) {
+            const currentHasPdf = currentLog.images.some(img => img.data.includes('application/pdf'));
+            const currentHasImg = currentLog.images.some(img => !img.data.includes('application/pdf'));
+
+            // Check existing selected logs
+            let existingHasPdf = false;
+            let existingHasImg = false;
+            for (let selId of this.selectedLogs) {
+                const selLog = await AppDB.logs.get(selId);
+                if (selLog && selLog.images) {
+                    if (selLog.images.some(img => img.data.includes('application/pdf'))) existingHasPdf = true;
+                    if (selLog.images.some(img => !img.data.includes('application/pdf'))) existingHasImg = true;
+                }
+            }
+
+            if ((currentHasPdf && existingHasImg) || (currentHasImg && existingHasPdf) || (currentHasPdf && currentHasImg)) {
+                await CustomDialog.alert("Devido a limitações do WhatsApp, não é possível compartilhar ficheiros PDF e imagens ao mesmo tempo em lote. Por favor, partilhe os registos com PDF separadamente.", "Aviso de Compartilhamento");
+                return;
+            }
+        }
+
+        this.selectedLogs.add(logId);
+        document.getElementById('log-' + logId)?.classList.add('selected');
+        document.getElementById('timeline-log-' + logId)?.classList.add('selected');
         this.updateSelectionUI();
     },
 
@@ -2409,7 +2442,9 @@ Stack: ${e.stack}`;
         this.updateTimelineSearchCount();
     },
 
-    renderTimeline: async function(highlightTerm = '') {
+    renderTimeline: async function(highlightTerm = '', scrollToLogId = null) {
+        const viewEl = document.getElementById('viewTimeline');
+        let currentScroll = viewEl ? viewEl.scrollTop : 0;
         const container = document.getElementById('timelineContainer');
         container.innerHTML = '<div class="empty-state"><i class="material-icons" style="animation: spin 1s linear infinite;">sync</i><p>Aguarde...</p></div>';
 
@@ -2534,7 +2569,7 @@ Stack: ${e.stack}`;
         container.innerHTML = html;
     },
 
-    renderList: async function() {
+    renderList: async function(scrollToLogId = null) {
         this.currentSearchId++;
         const searchId = this.currentSearchId;
         const rawSearchTerm = document.getElementById('searchInput').value;
