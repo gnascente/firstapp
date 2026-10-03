@@ -180,7 +180,7 @@
         .stacked-deck:not(.single) .deck-photo:nth-child(2) { transform: rotate(1deg) translate(5px, 3px); z-index: 2; filter: grayscale(40%) brightness(0.8); }
         .stacked-deck:not(.single) .deck-photo:nth-child(3) { transform: rotate(4deg) translate(10px, 6px); z-index: 1; filter: grayscale(70%) brightness(0.6); }
         .image-preview { width: 100%; max-height: 200px; object-fit: cover; border-radius: 12px; border: 1px solid var(--border); cursor: pointer; margin-top: 8px; margin-bottom: 8px; display: block; }
-        .pdf-preview { display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(0,0,0,0.2); border: 1px solid var(--border); border-radius: 12px; color: var(--danger); cursor: pointer; }
+        .pdf-preview { display: flex; flex-direction: column; align-items: center; justify-content: center; background: var(--surface-variant); border: 1px solid var(--border); border-radius: 12px; color: var(--danger); cursor: pointer; }
 
         .fab { position: fixed; bottom: 54px; right: 24px; left: auto; transform: none; background-color: var(--primary); color: var(--on-primary); border: none; width: 56px; height: 56px; border-radius: 16px; box-shadow: var(--shadow); cursor: pointer; display: grid; place-content: center; z-index: 99; transition: transform 0.2s; }
         .fab:active { transform: scale(0.9); }
@@ -322,7 +322,7 @@
             <i class="material-icons" style="color:var(--primary);" id="headerIcon">timeline</i>
             <div style="display:flex; flex-direction:column; line-height:1; min-width: 0;">
                 <span id="headerText">Linha do Tempo</span>
-                <span id="headerVersion" style="font-size: 10px; color: var(--on-surface-variant); font-weight: normal; margin-top:2px;">v 4.8.15</span>
+                <span id="headerVersion" style="font-size: 10px; color: var(--on-surface-variant); font-weight: normal; margin-top:2px;">v 4.8.16</span>
             </div>
         </h1>
         <div class="header-actions">
@@ -333,7 +333,7 @@
             <div style="position: relative;" id="menuWrapper">
                 <i class="material-icons action-icon" onclick="App.toggleMenu(event)">more_vert</i>
                 <div id="mainMenu" class="dropdown-menu">
-                <div class="menu-item" onclick="App.openModule('equipamento', 'Equipamentos', 'precision_manufacturing')"><i class="material-icons">precision_manufacturing</i> Equipamentos</div>
+                <div class="menu-item" onclick="MenuModal.closeUI(); App.openModule('equipamento', 'Equipamentos', 'precision_manufacturing')"><i class="material-icons">precision_manufacturing</i> Equipamentos</div>
                     <input type="file" id="restoreLocalFile" accept=".zip,.json" style="display:none" onchange="App.restoreFromLocal(event)">
                     <div class="menu-item" onclick="document.getElementById('restoreLocalFile').click()"><i class="material-icons">folder_zip</i> Restaurar (Local)</div>
                     <div class="menu-item" onclick="App.exportToLocal()"><i class="material-icons">download</i> Exportar (Local)</div>
@@ -819,7 +819,7 @@ function renderStackedDeckHTML(images, logId, searchTerm = '') {
                 let pdfName = AppUtils.getPdfName(img.data).toLowerCase();
                 let highlightClass = (searchTerm && pdfName.includes(searchTerm.toLowerCase())) ? ' pdf-highlight-focus' : '';
                 let highlightStyle = (searchTerm && pdfName.includes(searchTerm.toLowerCase())) ? 'border: 2px solid yellow; box-sizing: border-box;' : '';
-                return `<div class="pdf-preview deck-photo${highlightClass}" style="${highlightStyle}"><i class="material-icons" style="font-size:24px;">picture_as_pdf</i><span style="font-size:9px; margin-top:4px;">PDF</span></div>`;
+                return `<div class="pdf-preview deck-photo${highlightClass}" style="${highlightStyle}"><i class="material-icons" style="font-size:24px;">picture_as_pdf</i><span style="font-size:9px; margin-top:4px; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; padding:0 4px; display:block; text-align:center; width:100%; box-sizing:border-box;">${AppUtils.getPdfName(img.data)}</span></div>`;
             }
             else if (img.isVideo || (img.data.startsWith('data:video/') || img.data.endsWith('.webm') || img.data.endsWith('.mp4'))) return `<div class="pdf-preview deck-photo" style="background: url('${img.thumbnail || ''}') center/cover;"><div style="background:rgba(0,0,0,0.5); width:100%; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center;"><i class="material-icons" style="font-size:24px; color:#fff;">play_circle_outline</i></div></div>`;
             return `<img src="${img.data}" class="deck-photo">`;
@@ -2241,8 +2241,8 @@ Stack: ${e.stack}`;
 
         document.getElementById('headerIcon').innerText = 'timeline';
         document.getElementById('headerText').innerText = 'Linha do Tempo';
-        document.getElementById('btnBack').style.display = 'inline-block';
-        document.getElementById('headerVersion').style.display = 'none';
+        document.getElementById('btnBack').style.display = 'none';
+        document.getElementById('headerVersion').style.display = 'block';
 
         const fab = document.getElementById('mainFab');
         fab.style.display = 'grid';
@@ -2866,6 +2866,9 @@ var LogModal = {
         } else {
             document.getElementById('logLinkContainer').style.display = 'block';
         }
+
+        document.getElementById('logCam').value = '';
+        document.getElementById('logGal').value = '';
 
         await this.renderLinks();
         this.updateUI(); AppState.openModal(this);
