@@ -1,0 +1,65 @@
+--- public/index.html
++++ public/index.html
+@@ -1156,7 +1156,8 @@
+
+         let shareText = '';
+         let shareFiles = [];
+-        let fileCounter = 1;
++        let photoCounter = 1;
++        let videoCounter = 1;
+
+         for (let [eName, logs] of Object.entries(grouped)) {
+             shareText += `*${eName}*\n`;
+@@ -1183,16 +1184,33 @@
+                             else if (mime.includes('pdf')) ext = 'pdf';
+                             else if (mime.includes('mp4') || mime.includes('video')) ext = 'mp4';
+
+-                            let filename = `foto${fileCounter}.${ext}`;
+-                            attachmentsText.push(filename);
++                            let filename = '';
++                            let displayFilename = '';
++
++                            if (ext === 'pdf') {
++                                let nameMatch = mimePart.match(/name=([^;]+)/);
++                                if (nameMatch) {
++                                    filename = decodeURIComponent(nameMatch[1]);
++                                    if (!filename.toLowerCase().endsWith('.pdf')) filename += '.pdf';
++                                } else {
++                                    filename = 'documento.pdf';
++                                }
++                                displayFilename = filename;
++                                if (displayFilename.length > 13) {
++                                    displayFilename = displayFilename.substring(0, 13) + '...pdf';
++                                }
++                            } else if (ext === 'mp4') {
++                                filename = `video ${String(videoCounter).padStart(2, '0')}.mp4`;
++                                displayFilename = filename;
++                                videoCounter++;
++                            } else {
++                                filename = `foto ${String(photoCounter).padStart(2, '0')}.${ext}`;
++                                displayFilename = filename;
++                                photoCounter++;
++                            }
++
++                            attachmentsText.push(displayFilename);
+
+                             let blob = new Blob([u8arr], {type: mime});
+
+-                            // Extract PDF name if present
+-                            let nameMatch = mimePart.match(/name=([^;]+)/);
+-                            if (ext === 'pdf' && nameMatch) {
+-                                filename = decodeURIComponent(nameMatch[1]);
+-                                if (!filename.toLowerCase().endsWith('.pdf')) filename += '.pdf';
+-                            }
+-
+                             // If it's an image, draw text on it
+                             if (ext === 'jpg' || ext === 'png') {
+                                 const addTextToImage = async (imgBlob, text) => {
+@@ -1240,7 +1258,6 @@
+                             let cleanMime = mime.includes('name=') ? mime.split(';')[0] : mime;
+                             let file = new File([blob], filename, {type: cleanMime});
+                             shareFiles.push(file);
+-                            fileCounter++;
+                         } catch(e) {
+                             console.error("Error converting file for share:", e);
+                         }

@@ -1,0 +1,27 @@
+--- public/index.html
++++ public/index.html
+@@ -1189,14 +1189,18 @@
+
+                             if (ext === 'pdf') {
+                                 let nameMatch = mimePart.match(/name=([^;]+)/);
++                                let baseName = '';
+                                 if (nameMatch) {
+                                     filename = decodeURIComponent(nameMatch[1]);
+-                                    if (!filename.toLowerCase().endsWith('.pdf')) filename += '.pdf';
++                                    baseName = filename.toLowerCase().endsWith('.pdf') ? filename.slice(0, -4) : filename;
++                                    if (!filename.toLowerCase().endsWith('.pdf')) {
++                                        filename += '.pdf';
++                                    }
+                                 } else {
+                                     filename = 'documento.pdf';
++                                    baseName = 'documento';
+                                 }
+-                                displayFilename = filename;
+-                                if (displayFilename.length > 13) {
+-                                    displayFilename = displayFilename.substring(0, 13) + '...pdf';
++                                if (baseName.length > 13) {
++                                    displayFilename = baseName.substring(0, 13) + '...pdf';
++                                } else {
++                                    displayFilename = filename;
+                                 }
+                             } else if (ext === 'mp4') {
