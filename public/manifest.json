@@ -1,6 +1,6 @@
 {
-  "name": "FirstApp Cloudflare",
-  "short_name": "FirstApp",
+  "name": "Linha do Tempo",
+  "short_name": "Linha do Tempo",
   "description": "Um app Hello World em PWA e Cloudflare Pages",
   "start_url": "/index.html",
   "display": "standalone",

@@ -21,12 +21,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
     <meta name="google" content="notranslate">
-    <title>Oráculo P-31</title>
+    <title>Linha do Tempo</title>
 
     <meta name="theme-color" content="#000000">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Oráculo P-31">
+    <meta name="apple-mobile-web-app-title" content="Linha do Tempo">
 
     <!-- Version updated to reflect sync fixes -->
 
@@ -100,7 +100,7 @@
 
         .search-container { padding: 16px; background: var(--surface); position: sticky; top: 0; z-index: 15; border-bottom: 1px solid var(--surface-variant); flex-shrink: 0; display: none; }
         .search-container.show-search { display: flex; }
-        .search-box { position: relative; display: flex; align-items: center; }
+        .search-box { position: relative; display: flex; align-items: center; flex-grow: 1; }
         .search-box input {
             flex-grow: 1; background: var(--background); border: 1px solid var(--border); color: var(--on-surface); padding: 12px 16px 12px 44px; border-radius: 24px;
             font-size: 15px; outline: none; width: 100%; transition: border-color 0.2s;
@@ -319,10 +319,10 @@
     <header id="mainHeader">
         <i class="material-icons action-icon" id="btnBack" style="display:none; margin-right: 12px;" onclick="App.goBack()">arrow_back</i>
         <h1 id="headerTitle">
-            <i class="material-icons" style="color:var(--primary);" id="headerIcon">oil_barrel</i>
+            <i class="material-icons" style="color:var(--primary);" id="headerIcon">timeline</i>
             <div style="display:flex; flex-direction:column; line-height:1; min-width: 0;">
-                <span id="headerText">Oráculo P-31</span>
-                <span id="headerVersion" style="font-size: 10px; color: var(--on-surface-variant); font-weight: normal; margin-top:2px;">v 4.8.14</span>
+                <span id="headerText">Linha do Tempo</span>
+                <span id="headerVersion" style="font-size: 10px; color: var(--on-surface-variant); font-weight: normal; margin-top:2px;">v 4.8.15</span>
             </div>
         </h1>
         <div class="header-actions">
@@ -333,7 +333,7 @@
             <div style="position: relative;" id="menuWrapper">
                 <i class="material-icons action-icon" onclick="App.toggleMenu(event)">more_vert</i>
                 <div id="mainMenu" class="dropdown-menu">
-                <div class="menu-item" onclick="App.openTimeline()"><i class="material-icons">timeline</i> Linha do Tempo</div>
+                <div class="menu-item" onclick="App.openModule('equipamento', 'Equipamentos', 'precision_manufacturing')"><i class="material-icons">precision_manufacturing</i> Equipamentos</div>
                     <input type="file" id="restoreLocalFile" accept=".zip,.json" style="display:none" onchange="App.restoreFromLocal(event)">
                     <div class="menu-item" onclick="document.getElementById('restoreLocalFile').click()"><i class="material-icons">folder_zip</i> Restaurar (Local)</div>
                     <div class="menu-item" onclick="App.exportToLocal()"><i class="material-icons">download</i> Exportar (Local)</div>
@@ -343,35 +343,6 @@
         </div>
     </header>
 
-    <div id="viewHome" class="view-section active">
-        <div class="home-search-container">
-            <div class="search-box">
-                <i class="material-icons search-icon">search</i>
-                <input type="text" id="homeSearchInput" name="q_search_home" placeholder="Busca global em tudo..." autocomplete="new-password" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" oninput="clearTimeout(App.searchTimeout); App.searchTimeout = setTimeout(() => App.renderHomeSearch(), 200);">
-            </div>
-        </div>
-        <div class="home-grid" id="homeGrid">
-            <div class="module-card" onclick="App.openModule('servico', 'Serviços', 'handyman')">
-                <i class="material-icons">handyman</i><span>Serviços</span>
-            </div>
-            <div class="module-card" onclick="App.openModule('equipamento', 'Equipamentos', 'precision_manufacturing')">
-                <i class="material-icons">precision_manufacturing</i><span>Equipamentos</span>
-            </div>
-            <div class="module-card" onclick="App.openModule('pessoa', 'Pessoas', 'people')">
-                <i class="material-icons">people</i><span>Pessoas</span>
-            </div>
-            <div class="module-card" onclick="App.openModule('documento', 'Documentos', 'description')">
-                <i class="material-icons">description</i><span>Documentos</span>
-            </div>
-            <div class="module-card" onclick="App.openModule('auditoria', 'Auditorias', 'verified_user')">
-                <i class="material-icons">verified_user</i><span>Auditorias</span>
-            </div>
-            <div class="module-card" onclick="App.openModule('material', 'Materiais', 'inventory_2')">
-                <i class="material-icons">inventory_2</i><span>Materiais</span>
-            </div>
-        </div>
-        <ul class="task-list" id="homeSearchList" style="display:none;"></ul>
-    </div>
 
     <div id="viewList" class="view-section">
         <div class="search-container">
@@ -1142,25 +1113,29 @@ var App = {
             if (log) logsToShare.push(log);
         }
 
-        // Group by entity
-        let grouped = {};
-        for (let log of logsToShare) {
-            let eName = 'Linha do Tempo';
-            if (log.originEntityId !== 'global-timeline') {
-                let e = await AppDB.entities.get(log.originEntityId);
-                if (e) eName = e.name;
-            }
-            if (!grouped[eName]) grouped[eName] = [];
-            grouped[eName].push(log);
-        }
-
         let shareText = '';
         let shareFiles = [];
         let photoCounter = 1;
         let videoCounter = 1;
 
+        let grouped = {};
+        if (this.currentView === 'timeline') {
+            grouped['Linha do tempo'] = logsToShare;
+        } else {
+            // Group by entity
+            for (let log of logsToShare) {
+                let eName = 'Linha do tempo';
+                if (log.originEntityId !== 'global-timeline') {
+                    let e = await AppDB.entities.get(log.originEntityId);
+                    if (e) eName = e.name;
+                }
+                if (!grouped[eName]) grouped[eName] = [];
+                grouped[eName].push(log);
+            }
+        }
+
         for (let [eName, logs] of Object.entries(grouped)) {
-            shareText += `*${eName}*\n`;
+            shareText += `*${eName}*\n\n`;
             for (let log of logs.sort((a, b) => a.createdAt - b.createdAt)) {
                 let plainText = log.text || '';
                 // Remove specific markdown wrappers but keep names
@@ -1270,7 +1245,14 @@ var App = {
                     }
                 }
 
-                shareText += `- ${plainText}`;
+                const logDate = new Date(log.createdAt);
+                const day = logDate.getDate().toString().padStart(2, '0');
+                const month = (logDate.getMonth() + 1).toString().padStart(2, '0');
+                const year = logDate.getFullYear().toString().slice(-2);
+                const dateStr = `${day}/${month}/${year}`;
+                const authorDisp = log.authorName || 'N/A';
+
+                shareText += `Em ${dateStr} (${authorDisp}): ${plainText}`;
                 if (attachmentsText.length > 0) {
                     shareText += ` (anexos: ${attachmentsText.join(', ')})`;
                 }
@@ -1803,122 +1785,24 @@ Stack: ${e.stack}`;
                     </div>
                 `;
 
-                const categories = Object.keys(MODULE_MAPPING);
-
-                for (let catKey of categories) {
-                    let catName = MODULE_MAPPING[catKey][0];
-                    let entitiesInCat = allEntities.filter(e => e.type === catKey);
-
-                    let catHtml = '';
-                    let hasLogsInCat = false;
-
-                    for (let entity of entitiesInCat) {
-                        let logsOfEntity = allLogs.filter(l => l.relatedEntities.some(rel => rel.id === entity.id));
-
-                        if (logsOfEntity.length > 0) {
-                            hasLogsInCat = true;
-
-                            let logGroups = {};
-                            logsOfEntity.forEach(l => {
-                                let gId = l.groupId || l.id;
-                                if (!logGroups[gId]) logGroups[gId] = [];
-                                logGroups[gId].push(l);
-                            });
-
-                            let sortedGroups = Object.values(logGroups).sort((a, b) => {
-                                let maxA = Math.max(...a.map(l => l.createdAt));
-                                let maxB = Math.max(...b.map(l => l.createdAt));
-                                return maxB - maxA;
-                            });
-
-                            let logsHtml = '';
-                            for (let group of sortedGroups) {
-                                group.sort((a, b) => b.createdAt - a.createdAt);
-
-                                logsHtml += `<div class="print-log-group" style="border: 1px solid #dcdcdc; background: #ffffff; border-radius: 6px; margin-bottom: 16px; page-break-inside: avoid; box-shadow: 0 1px 3px rgba(0,0,0,0.1); overflow: hidden;">`;
-
-                                for (let i = 0; i < group.length; i++) {
-                                    let log = group[i];
-                                    let mediaHtml = '';
-                                    if (log.images && log.images.length > 0) {
-                                        mediaHtml = log.images.map(img => {
-                                            if((img.data.startsWith('data:application/pdf') || img.data.endsWith('.pdf'))) {
-                                                return `<div class="print-media-box"><div style="font-weight:bold; font-size:14px; color:#d32f2f;">PDF</div><div style="font-size:10px;word-break:break-all; text-align:center; margin-top:4px;">${AppUtils.getPdfName(img.data)}</div></div>`;
-                                            }
-                                            if(img.isVideo || (img.data.startsWith('data:video/') || img.data.endsWith('.webm') || img.data.endsWith('.mp4'))) {
-                                                let thumbSrc = img.thumbnail || 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=';
-                                                return `
-                                                <div class="print-media-box" style="position:relative; display:inline-block;">
-                                                    <img src="${thumbSrc}" class="print-media-img" style="display:block;">
-                                                    <div class="play-overlay"><span style="color:#fff; font-size:18px;">&#9654;</span></div>
-                                                </div>`;
-                                            }
-                                            return `<div class="print-media-box"><img src="${img.data}" class="print-media-img"></div>`;
-                                        }).join('');
-                                    }
-
-                                    let borderBottom = i < group.length - 1 ? 'border-bottom: 1px solid #eee;' : '';
-
-                                    let authorDispPrint = log.authorName || 'N/A';
-                                    if (authorDispPrint.length > 15) authorDispPrint = authorDispPrint.substring(0, 15) + '...';
-                                    authorDispPrint = authorDispPrint.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
-
-                                    logsHtml += `
-                                        <div class="print-log-item" style="padding: 12px; ${borderBottom} page-break-inside: avoid; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
-                                            <div class="print-header" style="font-size: 12px; color: #555; margin-bottom: 8px; font-weight: bold;">${AppUtils.formatDate(log.createdAt)} por ${authorDispPrint}</div>
-                                            <div class="print-text" style="font-size: 14px; margin-bottom: 12px; white-space: pre-wrap; word-break: break-word; color: #222;">${log.text || ''}</div>
-                                            ${mediaHtml ? `<div style="margin-top:8px;">${mediaHtml}</div>` : ''}
-                                        </div>
-                                    `;
-                                }
-                                logsHtml += `</div>`;
-                            }
-
-                            catHtml += `
-                                <div class="print-card" style="border: 2px solid #062e6f; border-radius: 8px; margin-bottom: 24px; page-break-inside: avoid; overflow: hidden; font-family: sans-serif;">
-                                    <div class="print-entity" style="background-color: #062e6f; color: #ffffff; padding: 12px 16px; margin: 0; font-size: 16px; font-weight: bold; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
-                                        ${entity.name}
-                                    </div>
-                                    <div style="padding: 16px; background-color: #f8f9fa; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
-                                        ${logsHtml}
-                                    </div>
-                                </div>
-                            `;
-                        }
-                    }
-
-                    if (hasLogsInCat) {
-                        printArea.innerHTML += `
-                            <div style="margin-top: 24px;">
-                                <h2 style="font-size:18px; color:#333; border-bottom:1px solid #ccc; padding-bottom:4px; margin-bottom:8px; text-transform:uppercase; page-break-after: avoid;">${catName}</h2>
-                                ${catHtml}
-                            </div>
-                        `;
-                    }
-                }
-
-                let orphanLogs = allLogs.filter(l => !l.relatedEntities.some(rel => allEntities.some(e => e.id === rel.id)));
-                if (orphanLogs.length > 0) {
-
-                    let orphanLogGroups = {};
-                    orphanLogs.forEach(l => {
+                const generateGroupHTML = (logs) => {
+                    let logGroups = {};
+                    logs.forEach(l => {
                         let gId = l.groupId || l.id;
-                        if (!orphanLogGroups[gId]) orphanLogGroups[gId] = [];
-                        orphanLogGroups[gId].push(l);
+                        if (!logGroups[gId]) logGroups[gId] = [];
+                        logGroups[gId].push(l);
                     });
 
-                    let sortedOrphanGroups = Object.values(orphanLogGroups).sort((a, b) => {
+                    let sortedGroups = Object.values(logGroups).sort((a, b) => {
                         let maxA = Math.max(...a.map(l => l.createdAt));
                         let maxB = Math.max(...b.map(l => l.createdAt));
                         return maxB - maxA;
                     });
 
-                    let orphanHtml = '';
-                    for (let group of sortedOrphanGroups) {
+                    let html = '';
+                    for (let group of sortedGroups) {
                         group.sort((a, b) => b.createdAt - a.createdAt);
-
-                        orphanHtml += `<div class="print-log-group" style="border: 1px solid #dcdcdc; background: #ffffff; border-radius: 6px; margin-bottom: 16px; page-break-inside: avoid; box-shadow: 0 1px 3px rgba(0,0,0,0.1); overflow: hidden;">`;
-
+                        html += `<div class="print-log-group" style="border: 1px solid #dcdcdc; background: #ffffff; border-radius: 6px; margin-bottom: 16px; page-break-inside: avoid; box-shadow: 0 1px 3px rgba(0,0,0,0.1); overflow: hidden;">`;
                         for (let i = 0; i < group.length; i++) {
                             let log = group[i];
                             let mediaHtml = '';
@@ -1929,46 +1813,78 @@ Stack: ${e.stack}`;
                                     }
                                     if(img.isVideo || (img.data.startsWith('data:video/') || img.data.endsWith('.webm') || img.data.endsWith('.mp4'))) {
                                         let thumbSrc = img.thumbnail || 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=';
-                                        return `
-                                        <div class="print-media-box" style="position:relative; display:inline-block;">
-                                            <img src="${thumbSrc}" class="print-media-img" style="display:block;">
-                                            <div class="play-overlay"><span style="color:#fff; font-size:18px;">&#9654;</span></div>
-                                        </div>`;
+                                        return `<div class="print-media-box" style="position:relative; display:inline-block;"><img src="${thumbSrc}" class="print-media-img" style="display:block;"><div class="play-overlay"><span style="color:#fff; font-size:18px;">&#9654;</span></div></div>`;
                                     }
                                     return `<div class="print-media-box"><img src="${img.data}" class="print-media-img"></div>`;
                                 }).join('');
                             }
 
                             let borderBottom = i < group.length - 1 ? 'border-bottom: 1px solid #eee;' : '';
+                            let authorDispPrint = log.authorName || 'N/A';
+                            if (authorDispPrint.length > 15) authorDispPrint = authorDispPrint.substring(0, 15) + '...';
+                            authorDispPrint = authorDispPrint.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
 
-                            let authorDispOrphanPrint = log.authorName || 'N/A';
-                            if (authorDispOrphanPrint.length > 15) authorDispOrphanPrint = authorDispOrphanPrint.substring(0, 15) + '...';
-                            authorDispOrphanPrint = authorDispOrphanPrint.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
-
-                            orphanHtml += `
+                            html += `
                                 <div class="print-log-item" style="padding: 12px; ${borderBottom} page-break-inside: avoid; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
-                                    <div class="print-header" style="font-size: 12px; color: #555; margin-bottom: 8px; font-weight: bold;">${AppUtils.formatDate(log.createdAt)} por ${authorDispOrphanPrint}</div>
+                                    <div class="print-header" style="font-size: 12px; color: #555; margin-bottom: 8px; font-weight: bold;">${AppUtils.formatDate(log.createdAt)} por ${authorDispPrint}</div>
                                     <div class="print-text" style="font-size: 14px; margin-bottom: 12px; white-space: pre-wrap; word-break: break-word; color: #222;">${log.text || ''}</div>
                                     ${mediaHtml ? `<div style="margin-top:8px;">${mediaHtml}</div>` : ''}
                                 </div>
                             `;
                         }
-                        orphanHtml += `</div>`;
+                        html += `</div>`;
                     }
+                    return html;
+                };
 
+                // Split into Timeline vs Equipments
+                const timelineLogs = allLogs.filter(l => l.originEntityId === 'global-timeline' || l.relatedEntities.some(rel => rel.id === 'global-timeline'));
+
+                // For equipments, we only include logs whose originEntityId is an equipment, AND it's not already in timelineLogs
+                const equipmentEntities = allEntities.filter(e => e.type === 'equipamento');
+                const equipmentIds = equipmentEntities.map(e => e.id);
+                const equipmentLogs = allLogs.filter(l =>
+                    equipmentIds.includes(l.originEntityId) && !timelineLogs.includes(l)
+                );
+
+                if (timelineLogs.length > 0) {
                     printArea.innerHTML += `
                         <div style="margin-top: 24px;">
-                            <h2 style="font-size:18px; color:#333; border-bottom:1px solid #ccc; padding-bottom:4px; margin-bottom:8px; text-transform:uppercase; page-break-after: avoid;">Entidades Excluídas</h2>
-                            <div class="print-card" style="border: 2px solid #062e6f; border-radius: 8px; margin-bottom: 24px; page-break-inside: avoid; overflow: hidden; font-family: sans-serif;">
-                                <div class="print-entity" style="background-color: #062e6f; color: #ffffff; padding: 12px 16px; margin: 0; font-size: 16px; font-weight: bold; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
-                                    Geral
-                                </div>
-                                <div style="padding: 16px; background-color: #f8f9fa; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
-                                    ${orphanHtml}
-                                </div>
+                            <h2 style="font-size:18px; color:#333; border-bottom:1px solid #ccc; padding-bottom:4px; margin-bottom:8px; text-transform:uppercase; page-break-after: avoid;">Linha do Tempo</h2>
+                            <div style="padding: 16px; background-color: #f8f9fa; border: 1px solid #ddd; border-radius: 8px; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
+                                ${generateGroupHTML(timelineLogs)}
                             </div>
                         </div>
                     `;
+                }
+
+                if (equipmentLogs.length > 0) {
+                    let catHtml = '';
+
+                    for (let entity of equipmentEntities) {
+                        let logsOfEntity = equipmentLogs.filter(l => l.originEntityId === entity.id);
+                        if (logsOfEntity.length > 0) {
+                            catHtml += `
+                                <div class="print-card" style="border: 2px solid #062e6f; border-radius: 8px; margin-bottom: 24px; page-break-inside: avoid; overflow: hidden; font-family: sans-serif;">
+                                    <div class="print-entity" style="background-color: #062e6f; color: #ffffff; padding: 12px 16px; margin: 0; font-size: 16px; font-weight: bold; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
+                                        ${entity.name}
+                                    </div>
+                                    <div style="padding: 16px; background-color: #f8f9fa; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
+                                        ${generateGroupHTML(logsOfEntity)}
+                                    </div>
+                                </div>
+                            `;
+                        }
+                    }
+
+                    if (catHtml) {
+                        printArea.innerHTML += `
+                            <div style="margin-top: 24px;">
+                                <h2 style="font-size:18px; color:#333; border-bottom:1px solid #ccc; padding-bottom:4px; margin-bottom:8px; text-transform:uppercase; page-break-after: avoid;">Equipamentos</h2>
+                                ${catHtml}
+                            </div>
+                        `;
+                    }
                 }
 
                 document.getElementById('progressModal').classList.remove('active');
@@ -1981,73 +1897,10 @@ Stack: ${e.stack}`;
     },
 
     goHome: function(fromPopState = false) {
-        this.currentView = 'home';
-        document.getElementById('viewHome').classList.add('active'); document.getElementById('viewList').classList.remove('active');
-        document.getElementById('viewTimeline').classList.remove('active');
-        document.getElementById('headerIcon').innerText = 'oil_barrel'; document.getElementById('headerText').innerText = 'Oráculo P-31';
-        document.getElementById('btnBack').style.display = 'none'; document.getElementById('headerVersion').style.display = 'inline';
-        document.getElementById('mainFab').style.display = 'none';
-
-        document.getElementById('homeSearchInput').value = '';
-        this.renderHomeSearch();
-        history.replaceState({ view: 'home' }, '');
+        this.openTimeline(fromPopState);
         this.calculateStorage();
     },
 
-    renderHomeSearch: async function() {
-        this.currentSearchId++;
-        const searchId = this.currentSearchId;
-        const term = document.getElementById('homeSearchInput').value.toLowerCase().trim();
-        const grid = document.getElementById('homeGrid');
-        const list = document.getElementById('homeSearchList');
-
-        if(!term) { grid.style.display = 'grid'; list.style.display = 'none'; return; }
-
-        grid.style.display = 'none';
-        list.style.display = 'flex';
-        list.innerHTML = '<div class="empty-state"><i class="material-icons" style="animation: spin 1s linear infinite;">sync</i><p>Aguarde...</p></div>';
-
-        let resultList = [];
-        let allEntities = (await AppDB.entities.toArray()).filter(e => !e.isDeleted);
-        for(let e of allEntities) {
-            let matchesName = e.name.toLowerCase().includes(term);
-            let relatedLogs = await AppDB.logs.filter(l => !l.isDeleted && l.relatedEntities.some(rel => rel.id === e.id) && l.text && l.text.toLowerCase().includes(term)).toArray();
-            if(matchesName || relatedLogs.length > 0) resultList.push({ entity: e, logsMatched: relatedLogs });
-        }
-
-        if (this.currentSearchId !== searchId) return;
-
-        grid.style.display = 'none';
-        list.style.display = 'flex';
-        list.innerHTML = '';
-
-        if (resultList.length === 0) { list.innerHTML = `<div class="empty-state"><i class="material-icons">search_off</i><p>Nenhum resultado encontrado.</p></div>`; return; }
-
-        resultList.sort((a, b) => b.entity.createdAt - a.entity.createdAt).forEach(item => {
-            let e = item.entity; let modInfo = MODULE_MAPPING[e.type] || ['Desconhecido', 'help'];
-            let snippetsHtml = '';
-            if(item.logsMatched.length > 0) {
-                snippetsHtml = `<div class="search-snippets">`;
-                item.logsMatched.forEach(l => {
-                    let text = l.text; let idx = text.toLowerCase().indexOf(term);
-                    let start = Math.max(0, idx - 25); let end = Math.min(text.length, idx + term.length + 25);
-                    let snippet = text.substring(start, end).replace(/\n/g, ' ');
-                    snippetsHtml += `<div class="snippet-item">...${AppUtils.highlight(snippet, term)}...</div>`;
-                });
-                snippetsHtml += `</div>`;
-            }
-
-            list.innerHTML += `
-                <li class="task-item" style="cursor:pointer;" onclick="App.focusEntity('${e.id}', '${term}')">
-                    <div class="task-header" style="margin-bottom:4px;">
-                        <span class="task-title" style="font-size:15px;">${AppUtils.highlight(e.name, term)}</span>
-                    </div>
-                    <span class="module-link-badge" style="align-self:flex-start; margin-left:0; display:block; clear:both; margin-top:4px;">${modInfo[0]}</span>
-                    ${snippetsHtml}
-                </li>
-            `;
-        });
-    },
 
     openModule: function(type, name, icon, fromPopState = false) {
         this.currentView = 'list'; this.moduleType = type; this.moduleName = name; this.moduleIcon = icon;
@@ -2084,6 +1937,17 @@ Stack: ${e.stack}`;
         document.getElementById('mainFab').style.display = 'none';
 
         document.getElementById('searchInput').value = focusTerm;
+
+        // Before rendering, ensure the target log's group is expanded if we have a focusLogId
+        if (focusLogId) {
+            const logToFocus = await AppDB.logs.get(focusLogId);
+            if (logToFocus) {
+                const gId = logToFocus.groupId || logToFocus.id;
+                App.expandedGroups.add('log-group-' + gId);
+                App.saveExpandedState();
+            }
+        }
+
         await this.renderList();
         history.pushState({ view: 'list', moduleType: targetModuleType, moduleName: targetModuleName, moduleIcon: targetModuleIcon }, '');
 
@@ -2111,8 +1975,8 @@ Stack: ${e.stack}`;
                 }
 
                 el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                el.style.backgroundColor = 'rgba(255, 235, 59, 0.3)';
-                setTimeout(() => el.style.backgroundColor = '', 1500);
+                el.classList.add('flash-highlight');
+                setTimeout(() => el.classList.remove('flash-highlight'), 1500);
             }
         }, 300);
     },
@@ -2218,38 +2082,46 @@ Stack: ${e.stack}`;
 
             displayedText = AppUtils.escapeHTML(displayedText);
 
-            // Format mentions as links before highlight to avoid messing up HTML
-            if (log.relatedEntities && log.relatedEntities.length > 0) {
-                for (let rel of log.relatedEntities) {
-                    if (rel.id !== log.originEntityId) {
-                        let eName = 'Entidade';
-                        let matchingItem = window.cachedEntitiesMap ? window.cachedEntitiesMap.get(rel.id) : null;
-                        if (!matchingItem) {
-                             AppDB.entities.get(rel.id).then(entity => {
-                                if (entity) {
-                                    if (!window.cachedEntitiesMap) window.cachedEntitiesMap = new Map();
-                                    window.cachedEntitiesMap.set(entity.id, entity.name);
-                                }
-                             });
-                        } else {
-                            eName = matchingItem;
-                        }
-
-                        const escapedName = AppUtils.escapeRegex(AppUtils.escapeHTML(eName));
-                        const mentionRegexOld = new RegExp(`@\\[${escapedName}\\]\\(${rel.id}\\)`, 'g');
-                        displayedText = displayedText.replace(mentionRegexOld, `<span class="mention-link" onclick="App.focusEntity('${rel.id}')">@${AppUtils.escapeHTML(eName)}</span>`);
-
-                        const mentionRegexNew = new RegExp(`@${escapedName}`, 'g');
-                        displayedText = displayedText.replace(mentionRegexNew, `<span class="mention-link" onclick="App.focusEntity('${rel.id}')">@${AppUtils.escapeHTML(eName)}</span>`);
-                    }
-                }
-            }
-
+            // Fallback general replacement for standard format @[name](id)
             displayedText = displayedText.replace(/@\[(.*?)\]\((.*?)\)/g, (match, name, id) => {
                 const safeName = AppUtils.escapeHTML(name);
                 const safeId = AppUtils.escapeHTML(id);
-                return `<span class="mention-link" onclick="App.focusEntity('${safeId}')">@${safeName}</span>`;
+                return `<span class="mention-link" onclick="App.focusEntity('${safeId}', '', '${log.id}')">@${safeName}</span>`;
             });
+
+            // Format mentions as links before highlight to avoid messing up HTML
+            if (log.relatedEntities && log.relatedEntities.length > 0) {
+                // Pre-sort relations by name length descending to avoid partial matches replacing parts of larger names
+                let sortedRels = [...log.relatedEntities].filter(r => r.id !== log.originEntityId).sort((a, b) => {
+                    let aName = window.cachedEntitiesMap ? (window.cachedEntitiesMap.get(a.id) || "") : "";
+                    let bName = window.cachedEntitiesMap ? (window.cachedEntitiesMap.get(b.id) || "") : "";
+                    return bName.length - aName.length;
+                });
+
+                for (let rel of sortedRels) {
+                    let eName = 'Entidade';
+                    let matchingItem = window.cachedEntitiesMap ? window.cachedEntitiesMap.get(rel.id) : null;
+                    if (!matchingItem) {
+                        // Will not block execution, map will be ready next time
+                        AppDB.entities.get(rel.id).then(entity => {
+                            if (entity) {
+                                if (!window.cachedEntitiesMap) window.cachedEntitiesMap = new Map();
+                                window.cachedEntitiesMap.set(entity.id, entity.name);
+                            }
+                        });
+                        continue; // Skip plain text replacement if name not known, rely on @[...](...) fallback above
+                    } else {
+                        eName = matchingItem;
+                    }
+
+                    const escapedName = AppUtils.escapeRegex(AppUtils.escapeHTML(eName));
+                    // Replace plain @EntityName
+                    // Regex ensures we match @EntityName only if it is not already inside an HTML tag
+                    // (which happens if it was previously converted, or part of a fallback)
+                    const mentionRegexNew = new RegExp(`(^|[^\\w>])@${escapedName}(?=[\\s\\.,;:]|$)`, 'g');
+                    displayedText = displayedText.replace(mentionRegexNew, `$1<span class="mention-link" onclick="App.focusEntity('${rel.id}', '', '${log.id}')">@${AppUtils.escapeHTML(eName)}</span>`);
+                }
+            }
 
             if(searchTerm) displayedText = AppUtils.highlight(displayedText, searchTerm);
 
@@ -2475,7 +2347,7 @@ Stack: ${e.stack}`;
             const monthStr = monthNames[dateObj.getMonth()];
             const yearStr = dateObj.getFullYear();
             const dayName = daysOfWeek[dateObj.getDay()];
-            const timeStr = `${dateObj.getHours().toString().padStart(2, '0')}:${dateObj.getMinutes().toString().padStart(2, '0')}`;
+            const timeStr = `${dateObj.getHours().toString().padStart(2, '0')}:${dateObj.getMinutes().toString().padStart(2, '0')}h`;
 
             const groupDateStr = `${monthStr} ${yearStr}`;
 
@@ -2490,38 +2362,42 @@ Stack: ${e.stack}`;
 
             textContent = AppUtils.escapeHTML(textContent);
 
-            // Format mentions as links before highlight to avoid messing up HTML
-            if (log.relatedEntities && log.relatedEntities.length > 0) {
-                for (let rel of log.relatedEntities) {
-                    if (rel.id !== log.originEntityId) {
-                        let eName = 'Entidade';
-                        let matchingItem = window.cachedEntitiesMap ? window.cachedEntitiesMap.get(rel.id) : null;
-                        if (!matchingItem) {
-                             AppDB.entities.get(rel.id).then(entity => {
-                                if (entity) {
-                                    if (!window.cachedEntitiesMap) window.cachedEntitiesMap = new Map();
-                                    window.cachedEntitiesMap.set(entity.id, entity.name);
-                                }
-                             });
-                        } else {
-                            eName = matchingItem;
-                        }
-
-                        const escapedName = AppUtils.escapeRegex(AppUtils.escapeHTML(eName));
-                        const mentionRegexOld = new RegExp(`@\\[${escapedName}\\]\\(${rel.id}\\)`, 'g');
-                        textContent = textContent.replace(mentionRegexOld, `<span class="mention-link" onclick="App.focusEntity('${rel.id}')">@${AppUtils.escapeHTML(eName)}</span>`);
-
-                        const mentionRegexNew = new RegExp(`@${escapedName}`, 'g');
-                        textContent = textContent.replace(mentionRegexNew, `<span class="mention-link" onclick="App.focusEntity('${rel.id}')">@${AppUtils.escapeHTML(eName)}</span>`);
-                    }
-                }
-            }
-
+            // Fallback general replacement for standard format @[name](id)
             textContent = textContent.replace(/@\[(.*?)\]\((.*?)\)/g, (match, name, id) => {
                 const safeName = AppUtils.escapeHTML(name);
                 const safeId = AppUtils.escapeHTML(id);
-                return `<span class="mention-link" onclick="App.focusEntity('${safeId}')">@${safeName}</span>`;
+                return `<span class="mention-link" onclick="App.focusEntity('${safeId}', '', '${log.id}')">@${safeName}</span>`;
             });
+
+            // Format mentions as links before highlight to avoid messing up HTML
+            if (log.relatedEntities && log.relatedEntities.length > 0) {
+                // Pre-sort relations by name length descending to avoid partial matches replacing parts of larger names
+                let sortedRels = [...log.relatedEntities].filter(r => r.id !== log.originEntityId).sort((a, b) => {
+                    let aName = window.cachedEntitiesMap ? (window.cachedEntitiesMap.get(a.id) || "") : "";
+                    let bName = window.cachedEntitiesMap ? (window.cachedEntitiesMap.get(b.id) || "") : "";
+                    return bName.length - aName.length;
+                });
+
+                for (let rel of sortedRels) {
+                    let eName = 'Entidade';
+                    let matchingItem = window.cachedEntitiesMap ? window.cachedEntitiesMap.get(rel.id) : null;
+                    if (!matchingItem) {
+                        AppDB.entities.get(rel.id).then(entity => {
+                            if (entity) {
+                                if (!window.cachedEntitiesMap) window.cachedEntitiesMap = new Map();
+                                window.cachedEntitiesMap.set(entity.id, entity.name);
+                            }
+                        });
+                        continue;
+                    } else {
+                        eName = matchingItem;
+                    }
+
+                    const escapedName = AppUtils.escapeRegex(AppUtils.escapeHTML(eName));
+                    const mentionRegexNew = new RegExp(`(^|[^\\w>])@${escapedName}(?=[\\s\\.,;:]|$)`, 'g');
+                    textContent = textContent.replace(mentionRegexNew, `$1<span class="mention-link" onclick="App.focusEntity('${rel.id}', '', '${log.id}')">@${AppUtils.escapeHTML(eName)}</span>`);
+                }
+            }
 
             if (highlightTerm) {
                 textContent = AppUtils.highlight(textContent, highlightTerm);
@@ -2529,22 +2405,39 @@ Stack: ${e.stack}`;
 
             let mediaHtml = '';
             if (log.images && log.images.length > 0) {
-                let img = log.images[0];
-                let clickHandler = `CarouselModal.open('${log.id}')`;
-                let thumbSrc = img.data;
+                // Approximate available vertical space based on text length
+                // Very rough estimation: 1 thumbnail per 120 characters, minimum 1
+                let maxThumbs = Math.max(1, Math.floor((textContent.length || 0) / 120));
 
-                if (img.isVideo || (img.data.startsWith('data:video/') || img.data.endsWith('.webm') || img.data.endsWith('.mp4'))) {
-                    thumbSrc = img.thumbnail || '';
-                    mediaHtml = `<div class="timeline-media-wrapper" onclick="${clickHandler}" style="background: url('${thumbSrc}') center/cover;"><div style="background:rgba(0,0,0,0.5); width:100%; height:100%; display:flex; align-items:center; justify-content:center;"><i class="material-icons" style="color:white;">play_circle_outline</i></div>`;
-                } else if ((img.data.startsWith('data:application/pdf') || img.data.endsWith('.pdf'))) {
-                    mediaHtml = `<div class="timeline-media-wrapper" onclick="${clickHandler}" style="background: var(--surface-variant); display:flex; align-items:center; justify-content:center; flex-direction:column;"><i class="material-icons" style="color:var(--danger); font-size: 32px;">picture_as_pdf</i><span style="font-size:9px; margin-top:4px; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; padding:0 4px;">PDF</span>`;
-                } else {
-                    mediaHtml = `<div class="timeline-media-wrapper" onclick="${clickHandler}"><img src="${thumbSrc}" style="width:100%; height:100%; object-fit:cover;">`;
+                // Don't show more thumbnails than we actually have
+                let numThumbsToShow = Math.min(maxThumbs, log.images.length);
+                let remainingImgs = log.images.length - numThumbsToShow;
+
+                mediaHtml += `<div style="display:flex; flex-direction:column; gap:8px;">`;
+
+                for (let i = 0; i < numThumbsToShow; i++) {
+                    let img = log.images[i];
+                    let clickHandler = `CarouselModal.open('${log.id}', ${i})`;
+                    let thumbSrc = img.data;
+
+                    let thumbHtml = '';
+                    if (img.isVideo || (img.data.startsWith('data:video/') || img.data.endsWith('.webm') || img.data.endsWith('.mp4'))) {
+                        thumbSrc = img.thumbnail || '';
+                        thumbHtml = `<div class="timeline-media-wrapper" onclick="${clickHandler}" style="background: url('${thumbSrc}') center/cover; margin-left: 12px; margin-bottom: 0;"><div style="background:rgba(0,0,0,0.5); width:100%; height:100%; display:flex; align-items:center; justify-content:center;"><i class="material-icons" style="color:white;">play_circle_outline</i></div>`;
+                    } else if ((img.data.startsWith('data:application/pdf') || img.data.endsWith('.pdf'))) {
+                        thumbHtml = `<div class="timeline-media-wrapper" onclick="${clickHandler}" style="background: var(--surface-variant); display:flex; align-items:center; justify-content:center; flex-direction:column; margin-left: 12px; margin-bottom: 0;"><i class="material-icons" style="color:var(--danger); font-size: 32px;">picture_as_pdf</i><span style="font-size:9px; margin-top:4px; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; padding:0 4px;">PDF</span>`;
+                    } else {
+                        thumbHtml = `<div class="timeline-media-wrapper" onclick="${clickHandler}" style="margin-left: 12px; margin-bottom: 0;"><img src="${thumbSrc}" style="width:100%; height:100%; object-fit:cover;">`;
+                    }
+
+                    if (i === numThumbsToShow - 1 && remainingImgs > 0) {
+                        thumbHtml += `<div style="position:absolute; bottom:4px; right:4px; background:rgba(0,0,0,0.7); color:white; font-size:10px; font-weight:bold; padding:2px 6px; border-radius:8px;">+${remainingImgs}</div>`;
+                    }
+                    thumbHtml += `</div>`;
+
+                    mediaHtml += thumbHtml;
                 }
 
-                if (log.images.length > 1) {
-                    mediaHtml += `<div style="position:absolute; bottom:4px; right:4px; background:rgba(0,0,0,0.7); color:white; font-size:10px; font-weight:bold; padding:2px 6px; border-radius:8px;">+${log.images.length - 1}</div>`;
-                }
                 mediaHtml += `</div>`;
             }
 
@@ -2634,9 +2527,6 @@ Stack: ${e.stack}`;
 
         listEl.innerHTML = '';
 
-        if (searchTerm && !hasExactMatch) {
-            listEl.innerHTML += `<div class="create-btn-dynamic" onclick="App.createEntityOnTheFly('${rawSearchTerm.replace(/'/g, "\\'")}')"><i class="material-icons">add_circle_outline</i><span>Criar: <strong>${rawSearchTerm}</strong></span></div>`;
-        }
 
         if (filtered.length === 0 && !searchTerm) {
             listEl.innerHTML = `<div class="empty-state"><i class="material-icons">${this.moduleIcon}</i><p>Nenhum registo.<br>Busque para criar.</p></div>`;
@@ -3242,7 +3132,7 @@ var CarouselModal = {
         this.container.addEventListener('scroll', () => { const itemW = window.innerWidth * 0.85 + 16; this.currentIndex = Math.round(this.container.scrollLeft / itemW); this.updateGlobalActions(); }, {passive: true});
         setTimeout(() => { const itemW = window.innerWidth * 0.85 + 16; this.container.scrollLeft = this.currentIndex * itemW; }, 50);
     },
-    closeUI: function() { document.title = this.originalTitle || "Oráculo P-31"; AppState.closeModalUI(); },
+    closeUI: function() { document.title = this.originalTitle || "Linha do Tempo"; AppState.closeModalUI(); },
     next: function() { const itemW = window.innerWidth * 0.85 + 16; this.container.scrollBy({ left: itemW, behavior: 'smooth' }); },
     prev: function() { const itemW = window.innerWidth * 0.85 + 16; this.container.scrollBy({ left: -itemW, behavior: 'smooth' }); },
     updateGlobalActions: function() {
