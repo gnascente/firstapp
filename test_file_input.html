@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+<body>
+<input type="file" id="file" onchange="test(event)">
+<script>
+function test(e) {
+  const files = Array.from(e.target.files);
+  e.target.value = '';
+  console.log(files.length);
+  document.body.innerHTML += files.length + '<br>';
+}
+</script>
+</body>
+</html>
