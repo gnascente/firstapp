@@ -571,7 +571,7 @@ var AppState = {
             if (e.state.view === 'home') App.goHome(true);
             else if (e.state.view === 'list') {
                 App.moduleType = e.state.moduleType; App.moduleName = e.state.moduleName; App.moduleIcon = e.state.moduleIcon; App.currentView = 'list';
-                document.getElementById('viewHome').classList.remove('active'); document.getElementById('viewList').classList.add('active'); document.getElementById('viewTimeline').classList.remove('active');
+                document.getElementById('viewList').classList.add('active'); document.getElementById('viewTimeline').classList.remove('active');
                 document.getElementById('headerIcon').innerText = App.moduleIcon; document.getElementById('headerText').innerText = App.moduleName;
                 document.getElementById('btnBack').style.display = 'inline-block'; document.getElementById('headerVersion').style.display = 'none'; document.getElementById('mainFab').style.display = 'none';
                 App.renderList();
@@ -795,7 +795,7 @@ async function processMultipleMedia(files, onProgress, callback) {
     callback(processedArray);
 }
 
-function renderStackedDeckHTML(images, logId) {
+function renderStackedDeckHTML(images, logId, searchTerm = '') {
     if (!images || images.length === 0) return '';
     let clickHandler = `CarouselModal.open('${logId}')`;
     let pdfCount = images.filter(img => img.data && (img.data.startsWith('data:application/pdf') || img.data.endsWith('.pdf'))).length;
@@ -804,13 +804,23 @@ function renderStackedDeckHTML(images, logId) {
     if (images.length === 1) {
         let img = images[0];
         if (img.isPlaceholder) return `<div class="pdf-preview deck-photo" style="position:relative; left:0; width:100%; height:auto; min-height:140px; background:#111;"><i class="material-icons" style="font-size:48px; color:var(--primary); animation: spin 1s linear infinite;">sync</i><span id="video-progress-text" style="font-size: 13px; margin-top: 8px; color:var(--primary); font-weight:bold;">A processar: 0%</span></div>`;
-        if ((img.data.startsWith('data:application/pdf') || img.data.endsWith('.pdf'))) return `<div class="pdf-preview deck-photo" style="position:relative; left:0; width:100%; height:auto; min-height:140px; padding:12px;" onclick="${clickHandler}"><i class="material-icons" style="font-size:32px;">picture_as_pdf</i><span style="font-size: 13px; margin-top: 8px; text-align:center;">${AppUtils.getPdfName(img.data)}</span></div>`;
+        if ((img.data.startsWith('data:application/pdf') || img.data.endsWith('.pdf'))) {
+            let pdfName = AppUtils.getPdfName(img.data).toLowerCase();
+            let highlightClass = (searchTerm && pdfName.includes(searchTerm.toLowerCase())) ? ' pdf-highlight-focus' : '';
+            let highlightStyle = (searchTerm && pdfName.includes(searchTerm.toLowerCase())) ? 'border: 2px solid yellow; box-sizing: border-box;' : '';
+            return `<div class="pdf-preview deck-photo${highlightClass}" style="position:relative; left:0; width:100%; height:auto; min-height:140px; padding:12px; ${highlightStyle}" onclick="${clickHandler}"><i class="material-icons" style="font-size:32px;">picture_as_pdf</i><span style="font-size: 13px; margin-top: 8px; text-align:center;">${AppUtils.getPdfName(img.data)}</span></div>`;
+        }
         else if (img.isVideo || (img.data.startsWith('data:video/') || img.data.endsWith('.webm') || img.data.endsWith('.mp4'))) return `<div class="pdf-preview deck-photo" style="position:relative; left:0; width:100%; height:auto; min-height:140px; background: url('${img.thumbnail || ''}') center/cover;" onclick="${clickHandler}"><div style="background:rgba(0,0,0,0.5); width:100%; height:100%; min-height:140px; display:flex; flex-direction:column; align-items:center; justify-content:center;"><i class="material-icons" style="font-size:48px; color:#fff;">play_circle_outline</i></div></div>`;
         else return `<img src="${img.data}" class="image-preview" onclick="${clickHandler}" style="margin:0;">`;
     } else {
         const photosHtml = images.slice(0, 3).map(img => {
             if (img.isPlaceholder) return `<div class="pdf-preview deck-photo" style="background:#111;"><i class="material-icons" style="font-size:24px; color:var(--primary); animation: spin 1s linear infinite;">sync</i></div>`;
-            if ((img.data.startsWith('data:application/pdf') || img.data.endsWith('.pdf'))) return `<div class="pdf-preview deck-photo"><i class="material-icons" style="font-size:24px;">picture_as_pdf</i><span style="font-size:9px; margin-top:4px;">PDF</span></div>`;
+            if ((img.data.startsWith('data:application/pdf') || img.data.endsWith('.pdf'))) {
+                let pdfName = AppUtils.getPdfName(img.data).toLowerCase();
+                let highlightClass = (searchTerm && pdfName.includes(searchTerm.toLowerCase())) ? ' pdf-highlight-focus' : '';
+                let highlightStyle = (searchTerm && pdfName.includes(searchTerm.toLowerCase())) ? 'border: 2px solid yellow; box-sizing: border-box;' : '';
+                return `<div class="pdf-preview deck-photo${highlightClass}" style="${highlightStyle}"><i class="material-icons" style="font-size:24px;">picture_as_pdf</i><span style="font-size:9px; margin-top:4px;">PDF</span></div>`;
+            }
             else if (img.isVideo || (img.data.startsWith('data:video/') || img.data.endsWith('.webm') || img.data.endsWith('.mp4'))) return `<div class="pdf-preview deck-photo" style="background: url('${img.thumbnail || ''}') center/cover;"><div style="background:rgba(0,0,0,0.5); width:100%; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center;"><i class="material-icons" style="font-size:24px; color:#fff;">play_circle_outline</i></div></div>`;
             return `<img src="${img.data}" class="deck-photo">`;
         }).join('');
@@ -1904,7 +1914,7 @@ Stack: ${e.stack}`;
 
     openModule: function(type, name, icon, fromPopState = false) {
         this.currentView = 'list'; this.moduleType = type; this.moduleName = name; this.moduleIcon = icon;
-        document.getElementById('viewHome').classList.remove('active'); document.getElementById('viewList').classList.add('active');
+        document.getElementById('viewList').classList.add('active');
         document.getElementById('viewTimeline').classList.remove('active');
         document.getElementById('headerIcon').innerText = icon; document.getElementById('headerText').innerText = name;
         document.getElementById('btnBack').style.display = 'inline-block'; document.getElementById('headerVersion').style.display = 'none';
@@ -1930,7 +1940,7 @@ Stack: ${e.stack}`;
         }
 
         this.currentView = 'list'; this.moduleType = targetModuleType; this.moduleName = targetModuleName; this.moduleIcon = targetModuleIcon;
-        document.getElementById('viewHome').classList.remove('active'); document.getElementById('viewList').classList.add('active');
+        document.getElementById('viewList').classList.add('active');
         document.getElementById('viewTimeline').classList.remove('active');
         document.getElementById('headerIcon').innerText = targetModuleIcon; document.getElementById('headerText').innerText = targetModuleName;
         document.getElementById('btnBack').style.display = 'inline-block'; document.getElementById('headerVersion').style.display = 'none';
@@ -2056,7 +2066,7 @@ Stack: ${e.stack}`;
 
         for (let i = 0; i < group.length; i++) {
             let log = group[i];
-            let mediaHtml = log.images && log.images.length > 0 ? renderStackedDeckHTML(log.images, log.id) : '';
+            let mediaHtml = log.images && log.images.length > 0 ? renderStackedDeckHTML(log.images, log.id, searchTerm) : '';
             let isOrigin = log.originEntityId === contextEntityId;
             let otherLinks = log.relatedEntities.filter(rel => rel.id !== log.originEntityId);
 
@@ -2226,7 +2236,6 @@ Stack: ${e.stack}`;
     openTimeline: async function(fromPopState = false) {
         this.currentView = 'timeline';
         MenuModal.closeUI();
-        document.getElementById('viewHome').classList.remove('active');
         document.getElementById('viewList').classList.remove('active');
         document.getElementById('viewTimeline').classList.add('active');
 
@@ -2273,7 +2282,7 @@ Stack: ${e.stack}`;
 
         // We need to re-render with highlight tags
         this.renderTimeline(term).then(() => {
-            const marks = container.querySelectorAll('mark.highlight');
+            const marks = container.querySelectorAll('mark.highlight, .pdf-highlight-focus');
             this.timelineCurrentMatches = Array.from(marks).filter(mark => mark.closest('.timeline-entry'));
 
             if (this.timelineCurrentMatches.length > 0) {
@@ -2425,7 +2434,10 @@ Stack: ${e.stack}`;
                         thumbSrc = img.thumbnail || '';
                         thumbHtml = `<div class="timeline-media-wrapper" onclick="${clickHandler}" style="background: url('${thumbSrc}') center/cover; margin-left: 12px; margin-bottom: 0;"><div style="background:rgba(0,0,0,0.5); width:100%; height:100%; display:flex; align-items:center; justify-content:center;"><i class="material-icons" style="color:white;">play_circle_outline</i></div>`;
                     } else if ((img.data.startsWith('data:application/pdf') || img.data.endsWith('.pdf'))) {
-                        thumbHtml = `<div class="timeline-media-wrapper" onclick="${clickHandler}" style="background: var(--surface-variant); display:flex; align-items:center; justify-content:center; flex-direction:column; margin-left: 12px; margin-bottom: 0;"><i class="material-icons" style="color:var(--danger); font-size: 32px;">picture_as_pdf</i><span style="font-size:9px; margin-top:4px; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; padding:0 4px;">PDF</span>`;
+                        let pdfName = AppUtils.getPdfName(img.data).toLowerCase();
+                        let highlightClass = (highlightTerm && pdfName.includes(highlightTerm.toLowerCase())) ? 'pdf-highlight-focus' : '';
+                        let highlightStyle = (highlightTerm && pdfName.includes(highlightTerm.toLowerCase())) ? 'border: 2px solid yellow; box-sizing: border-box;' : '';
+                        thumbHtml = `<div class="timeline-media-wrapper ${highlightClass}" onclick="${clickHandler}" style="background: var(--surface-variant); display:flex; align-items:center; justify-content:center; flex-direction:column; margin-left: 12px; margin-bottom: 0; ${highlightStyle}"><i class="material-icons" style="color:var(--danger); font-size: 32px;">picture_as_pdf</i><span style="font-size:9px; margin-top:4px; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; padding:0 4px;">PDF</span>`;
                     } else {
                         thumbHtml = `<div class="timeline-media-wrapper" onclick="${clickHandler}" style="margin-left: 12px; margin-bottom: 0;"><img src="${thumbSrc}" style="width:100%; height:100%; object-fit:cover;">`;
                     }
@@ -2504,14 +2516,36 @@ Stack: ${e.stack}`;
             for(let e of filtered) {
                 if(e.name.toLowerCase() === searchTerm) hasExactMatch = true;
                 let matchesName = e.name.toLowerCase().includes(searchTerm);
-                let relatedLogs = await AppDB.logs.filter(l => !l.isDeleted && l.relatedEntities.some(rel => rel.id === e.id) && l.text && l.text.toLowerCase().includes(searchTerm)).toArray();
+                let relatedLogs = await AppDB.logs.filter(l => {
+                    if (l.isDeleted || !l.relatedEntities.some(rel => rel.id === e.id)) return false;
+                    if (l.text && l.text.toLowerCase().includes(searchTerm)) return true;
+                    if (l.images) {
+                        for (let img of l.images) {
+                            if ((img.data.startsWith('data:application/pdf') || img.data.endsWith('.pdf'))) {
+                                if (AppUtils.getPdfName(img.data).toLowerCase().includes(searchTerm)) return true;
+                            }
+                        }
+                    }
+                    return false;
+                }).toArray();
 
                 let tasksMatched = [];
                 if(e.type === 'servico') {
                     const servTasks = await AppDB.entities.filter(t => !t.isDeleted && t.parentId === e.id && t.type === 'tarefa').toArray();
                     for(let t of servTasks) {
                         let matchesTaskName = t.name.toLowerCase().includes(searchTerm);
-                        let taskRelatedLogs = await AppDB.logs.filter(l => !l.isDeleted && l.relatedEntities.some(rel => rel.id === t.id) && l.text && l.text.toLowerCase().includes(searchTerm)).toArray();
+                        let taskRelatedLogs = await AppDB.logs.filter(l => {
+                            if (l.isDeleted || !l.relatedEntities.some(rel => rel.id === t.id)) return false;
+                            if (l.text && l.text.toLowerCase().includes(searchTerm)) return true;
+                            if (l.images) {
+                                for (let img of l.images) {
+                                    if ((img.data.startsWith('data:application/pdf') || img.data.endsWith('.pdf'))) {
+                                        if (AppUtils.getPdfName(img.data).toLowerCase().includes(searchTerm)) return true;
+                                    }
+                                }
+                            }
+                            return false;
+                        }).toArray();
                         if(matchesTaskName || taskRelatedLogs.length > 0) tasksMatched.push({ task: t, logsMatched: taskRelatedLogs });
                     }
                 }
