@@ -322,7 +322,7 @@
             <i class="material-icons" style="color:var(--primary);" id="headerIcon">timeline</i>
             <div style="display:flex; flex-direction:column; line-height:1; min-width: 0;">
                 <span id="headerText">Linha do Tempo</span>
-                <span id="headerVersion" style="font-size: 10px; color: var(--on-surface-variant); font-weight: normal; margin-top:2px;">v 4.8.18</span>
+                <span id="headerVersion" style="font-size: 10px; color: var(--on-surface-variant); font-weight: normal; margin-top:2px;">v 4.8.19</span>
             </div>
         </h1>
         <div class="header-actions">
@@ -1394,7 +1394,7 @@ var App = {
 
         let mainIcon = entityEl.querySelector('.task-actions .action-icon[onclick*="toggleAllLogGroups"]');
         if (mainIcon) {
-            mainIcon.innerText = allAreCollapsed ? 'unfold_less' : 'unfold_more';
+            mainIcon.innerText = allAreCollapsed ? 'unfold_more' : 'unfold_less';
         }
     },
     syncCloud: async function() {
@@ -2454,7 +2454,9 @@ Stack: ${e.stack}`;
             if (log.images && log.images.length > 0) {
                 // Approximate available vertical space based on text length
                 // Very rough estimation: 1 thumbnail per 120 characters, minimum 1
-                let maxThumbs = Math.max(1, Math.floor((textContent.length || 0) / 120));
+                let newlines = (textContent.match(/\n/g) || []).length;
+                let estimatedLines = newlines + ((textContent.length || 0) / 40);
+                let maxThumbs = Math.max(1, Math.floor(estimatedLines / 4));
 
                 // Don't show more thumbnails than we actually have
                 let numThumbsToShow = Math.min(maxThumbs, log.images.length);
