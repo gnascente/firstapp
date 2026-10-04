@@ -219,7 +219,7 @@
         .timeline-day-num { font-size: 24px; font-weight: bold; color: var(--on-surface); line-height: 1; margin-top: 4px; }
         .timeline-time { font-size: 10px; color: var(--on-surface-variant); margin-top: 6px; }
         .timeline-right { flex-grow: 1; display: flex; flex-direction: column; padding-bottom: 8px; border-bottom: 1px solid var(--surface-variant); }
-        .timeline-text { font-size: 15px; line-height: 1.4; color: #fff; word-break: break-word; white-space: pre-wrap; font-weight: 500; }
+        .timeline-text { font-size: 15px; line-height: 1.4; color: #fff; word-break: break-word; white-space: pre-wrap; font-weight: 500; text-align: justify; }
         .timeline-meta { font-size: 12px; color: var(--on-surface-variant); margin-top: 8px; display: flex; align-items: center; gap: 4px; }
         .timeline-media-wrapper { width: 80px; height: 80px; flex-shrink: 0; border-radius: 8px; overflow: hidden; margin-left: 12px; position: relative; border: 1px solid #555; cursor: pointer; }
         .timeline-content-row { display: flex; justify-content: space-between; align-items: flex-start; }
@@ -1391,6 +1391,11 @@ var App = {
             }
         });
         App.saveExpandedState();
+
+        let mainIcon = entityEl.querySelector('.task-actions .action-icon[onclick*="toggleAllLogGroups"]');
+        if (mainIcon) {
+            mainIcon.innerText = allAreCollapsed ? 'unfold_less' : 'unfold_more';
+        }
     },
     syncCloud: async function() {
         if(!navigator.onLine) {
@@ -1937,11 +1942,11 @@ Stack: ${e.stack}`;
             this.openTimeline(false);
             if (focusLogId) {
                 setTimeout(() => {
-                    const logEl = document.getElementById('log-' + focusLogId);
+                    const logEl = document.getElementById('timeline-log-' + focusLogId);
                     if (logEl) {
                         logEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        logEl.classList.add('highlight-log');
-                        setTimeout(() => logEl.classList.remove('highlight-log'), 2000);
+                        logEl.classList.add('flash-highlight');
+                        setTimeout(() => logEl.classList.remove('flash-highlight'), 1500);
                     }
                 }, 300);
             }
@@ -2098,14 +2103,16 @@ Stack: ${e.stack}`;
                     let pills = [];
                     for(let rel of otherLinks) {
                         let linkedE = await AppDB.entities.get(rel.id); if(!linkedE) continue;
-                        pills.push(`<div class="pill-dark" onclick="App.focusEntity('${linkedE.id}', '', '${log.id}')">${linkedE.name} <i class="material-icons" style="font-size:12px; margin-left:4px;" title="Ir para Destino">arrow_forward</i></div>`);
+                        let displayName = linkedE.id === 'global-timeline' ? 'Linha do Tempo' : linkedE.name;
+                        pills.push(`<div class="pill-dark" onclick="App.focusEntity('${linkedE.id}', '', '${log.id}')">${displayName} <i class="material-icons" style="font-size:12px; margin-left:4px;" title="Ir para Destino">arrow_forward</i></div>`);
                     }
                     linksBarHtml = `<div class="log-links-bar"><div class="link-label">Vinculado a:</div><div class="pills-container">${pills.join('')}</div></div>`;
                 }
             } else {
                 let originE = await AppDB.entities.get(log.originEntityId);
                 if (originE) {
-                    let originPill = `<div class="pill-dark origin" onclick="App.focusEntity('${originE.id}', '', '${log.id}')">${originE.name} <i class="material-icons" style="font-size:12px; margin-left:4px;" title="Ir para Origem">arrow_forward</i></div>`;
+                    let originDisplayName = originE.id === 'global-timeline' ? 'Linha do Tempo' : originE.name;
+                    let originPill = `<div class="pill-dark origin" onclick="App.focusEntity('${originE.id}', '', '${log.id}')">${originDisplayName} <i class="material-icons" style="font-size:12px; margin-left:4px;" title="Ir para Origem">arrow_forward</i></div>`;
                     linksBarHtml = `<div class="log-links-bar"><div class="link-label">Vinculado de:</div><div class="pills-container">${originPill}</div></div>`;
                 }
             }
@@ -2116,7 +2123,8 @@ Stack: ${e.stack}`;
 
             // Fallback general replacement for standard format @[name](id)
             displayedText = displayedText.replace(/@\[(.*?)\]\((.*?)\)/g, (match, name, id) => {
-                const safeName = AppUtils.escapeHTML(name);
+                let safeName = AppUtils.escapeHTML(name);
+                safeName = safeName.charAt(0).toUpperCase() + safeName.slice(1);
                 const safeId = AppUtils.escapeHTML(id);
                 return `<span class="mention-link" onclick="App.focusEntity('${safeId}', '', '${log.id}')">@${safeName}</span>`;
             });
@@ -2146,12 +2154,14 @@ Stack: ${e.stack}`;
                         eName = matchingItem;
                     }
 
-                    const escapedName = AppUtils.escapeRegex(AppUtils.escapeHTML(eName));
+                    const safeEName = AppUtils.escapeHTML(eName);
+                    const capitalizedEName = safeEName.charAt(0).toUpperCase() + safeEName.slice(1);
+                    const escapedName = AppUtils.escapeRegex(safeEName);
                     // Replace plain @EntityName
                     // Regex ensures we match @EntityName only if it is not already inside an HTML tag
                     // (which happens if it was previously converted, or part of a fallback)
                     const mentionRegexNew = new RegExp(`(^|[^\\w>])@${escapedName}(?=[\\s\\.,;:]|$)`, 'g');
-                    displayedText = displayedText.replace(mentionRegexNew, `$1<span class="mention-link" onclick="App.focusEntity('${rel.id}', '', '${log.id}')">@${AppUtils.escapeHTML(eName)}</span>`);
+                    displayedText = displayedText.replace(mentionRegexNew, `$1<span class="mention-link" onclick="App.focusEntity('${rel.id}', '', '${log.id}')">@${capitalizedEName}</span>`);
                 }
             }
 
@@ -2398,7 +2408,8 @@ Stack: ${e.stack}`;
 
             // Fallback general replacement for standard format @[name](id)
             textContent = textContent.replace(/@\[(.*?)\]\((.*?)\)/g, (match, name, id) => {
-                const safeName = AppUtils.escapeHTML(name);
+                let safeName = AppUtils.escapeHTML(name);
+                safeName = safeName.charAt(0).toUpperCase() + safeName.slice(1);
                 const safeId = AppUtils.escapeHTML(id);
                 return `<span class="mention-link" onclick="App.focusEntity('${safeId}', '', '${log.id}')">@${safeName}</span>`;
             });
@@ -2427,9 +2438,11 @@ Stack: ${e.stack}`;
                         eName = matchingItem;
                     }
 
-                    const escapedName = AppUtils.escapeRegex(AppUtils.escapeHTML(eName));
+                    const safeEName = AppUtils.escapeHTML(eName);
+                    const capitalizedEName = safeEName.charAt(0).toUpperCase() + safeEName.slice(1);
+                    const escapedName = AppUtils.escapeRegex(safeEName);
                     const mentionRegexNew = new RegExp(`(^|[^\\w>])@${escapedName}(?=[\\s\\.,;:]|$)`, 'g');
-                    textContent = textContent.replace(mentionRegexNew, `$1<span class="mention-link" onclick="App.focusEntity('${rel.id}', '', '${log.id}')">@${AppUtils.escapeHTML(eName)}</span>`);
+                    textContent = textContent.replace(mentionRegexNew, `$1<span class="mention-link" onclick="App.focusEntity('${rel.id}', '', '${log.id}')">@${capitalizedEName}</span>`);
                 }
             }
 
