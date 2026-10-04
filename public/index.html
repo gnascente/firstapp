@@ -118,7 +118,7 @@
         .task-header { display: block; margin-bottom: 12px; }
         .task-header::after { content: ""; display: table; clear: both; }
         .task-actions { float: right; display: flex; gap: 12px; align-items: center; margin-left: 12px; margin-bottom: 4px; padding-top: 6px; }
-        .task-title { display: block; padding-top: 6px; font-size: 18px; font-weight: 500; word-break: break-word; line-height: 1.3; color: #fff; text-align: justify; }
+        .task-title { display: block; padding-top: 6px; font-size: 18px; font-weight: 500; word-break: break-word; line-height: 1.3; color: #fff; text-align: justify; text-transform: capitalize; }
 
         .create-btn-dynamic { background: rgba(168, 199, 250, 0.1); border: 1px dashed var(--primary); border-radius: 12px; padding: 16px; display: flex; align-items: center; gap: 12px; cursor: pointer; color: var(--primary); font-weight: 500; margin-bottom: 16px; }
 
@@ -142,14 +142,14 @@
             overflow: hidden !important;
             text-overflow: ellipsis !important;
             display: block !important;
-        }
+         text-align: justify; }
         .log-item-group.collapsed .log-entry:first-child .stacked-deck,
         .log-item-group.collapsed .log-entry:first-child .log-links-bar {
             display: none !important;
         }
 
         .log-header { display: flex; justify-content: space-between; align-items: center; font-size: 11px; opacity: 0.8; margin-bottom: 2px; }
-        .log-text { font-size: 14px; line-height: 1.4; word-break: break-word; white-space: pre-wrap; color: #e2e2e6; }
+        .log-text { font-size: 14px; line-height: 1.4; word-break: break-word; white-space: pre-wrap; color: #e2e2e6;  text-align: justify; }
 
         .subtask-list { list-style: none; display: flex; flex-direction: column; gap: 12px; padding-top: 8px; clear:both; }
         .subtask-item { display: flex; flex-direction: column; gap: 8px; font-size: 14px; background: rgba(0,0,0,0.2); padding: 12px; border-radius: 8px; }
@@ -157,7 +157,7 @@
         .subtask-text-wrapper { display: flex; align-items: flex-start; gap: 8px; flex-grow: 1; cursor: pointer; padding: 4px 0;}
         .subtask-text { font-weight: 500; color: var(--primary); font-size: 15px; text-align: justify; word-break: break-word; line-height: 1.3; margin-top: 2px; display: block; width: 100%; }
 
-        .log-links-bar { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.05); }
+        .log-links-bar { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.05);  flex-direction: row; align-items: center; gap: 8px; }
         .link-label { font-size: 11px; color: var(--on-surface-variant); display: flex; align-items: center; gap: 6px; font-weight: 500; text-transform: uppercase;}
         .pills-container { display: flex; flex-wrap: wrap; gap: 6px; }
         .pill-dark { background: #333; color: #e2e2e6; padding: 4px 10px; border-radius: 16px; font-size: 12px; display: inline-flex; align-items: center; gap: 4px; border: 1px solid #444; cursor: pointer; transition: 0.2s;}
@@ -571,7 +571,10 @@ var AppState = {
             if (e.state.view === 'home') App.goHome(true);
             else if (e.state.view === 'list') {
                 App.moduleType = e.state.moduleType; App.moduleName = e.state.moduleName; App.moduleIcon = e.state.moduleIcon; App.currentView = 'list';
-                document.getElementById('viewList').classList.add('active'); document.getElementById('viewTimeline').classList.remove('active');
+                document.getElementById('viewList').classList.add('active');
+        document.getElementById('syncIconBtn').style.display = 'none';
+        document.querySelector('.header-actions i[title="Imprimir Relatório"]').style.display = 'none';
+        document.getElementById('menuWrapper').style.display = 'none'; document.getElementById('viewTimeline').classList.remove('active');
                 document.getElementById('headerIcon').innerText = App.moduleIcon; document.getElementById('headerText').innerText = App.moduleName;
                 document.getElementById('btnBack').style.display = 'inline-block'; document.getElementById('headerVersion').style.display = 'none'; document.getElementById('mainFab').style.display = 'none';
                 App.renderList();
@@ -855,7 +858,7 @@ var App = {
 
             let globalEntity = await AppDB.entities.get('global-timeline');
             if (!globalEntity) {
-                await AppDB.entities.put({ id: 'global-timeline', type: 'system', name: 'Timeline Global', createdAt: Date.now(), updatedAt: Date.now(), parentId: null });
+                await AppDB.entities.put({ id: 'global-timeline', type: 'system', name: 'Linha do Tempo', createdAt: Date.now(), updatedAt: Date.now(), parentId: null });
             }
 
             const startDate = new Date(2025, 11, 1).getTime(); // Dec 1, 2025
@@ -1918,6 +1921,9 @@ Stack: ${e.stack}`;
     openModule: function(type, name, icon, fromPopState = false) {
         this.currentView = 'list'; this.moduleType = type; this.moduleName = name; this.moduleIcon = icon;
         document.getElementById('viewList').classList.add('active');
+        document.getElementById('syncIconBtn').style.display = 'none';
+        document.querySelector('.header-actions i[title="Imprimir Relatório"]').style.display = 'none';
+        document.getElementById('menuWrapper').style.display = 'none';
         document.getElementById('viewTimeline').classList.remove('active');
         document.getElementById('headerIcon').innerText = icon; document.getElementById('headerText').innerText = name;
         document.getElementById('btnBack').style.display = 'inline-block'; document.getElementById('headerVersion').style.display = 'none';
@@ -1928,7 +1934,17 @@ Stack: ${e.stack}`;
 
     focusEntity: async function(id, focusTerm = '', focusLogId = null) {
         if (id === 'global-timeline') {
-            this.openTimeline();
+            this.openTimeline(false);
+            if (focusLogId) {
+                setTimeout(() => {
+                    const logEl = document.getElementById('log-' + focusLogId);
+                    if (logEl) {
+                        logEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        logEl.classList.add('highlight-log');
+                        setTimeout(() => logEl.classList.remove('highlight-log'), 2000);
+                    }
+                }, 300);
+            }
             return;
         }
         const entity = await AppDB.entities.get(id); if(!entity || entity.isDeleted) return;
@@ -1944,6 +1960,9 @@ Stack: ${e.stack}`;
 
         this.currentView = 'list'; this.moduleType = targetModuleType; this.moduleName = targetModuleName; this.moduleIcon = targetModuleIcon;
         document.getElementById('viewList').classList.add('active');
+        document.getElementById('syncIconBtn').style.display = 'none';
+        document.querySelector('.header-actions i[title="Imprimir Relatório"]').style.display = 'none';
+        document.getElementById('menuWrapper').style.display = 'none';
         document.getElementById('viewTimeline').classList.remove('active');
         document.getElementById('headerIcon').innerText = targetModuleIcon; document.getElementById('headerText').innerText = targetModuleName;
         document.getElementById('btnBack').style.display = 'inline-block'; document.getElementById('headerVersion').style.display = 'none';
@@ -2161,7 +2180,7 @@ Stack: ${e.stack}`;
                     <div class="log-header">
                         <span style="display:flex; align-items:center;">
                             ${toggleHtml}
-                            <i class="material-icons" style="font-size:12px; margin-right:4px;">schedule</i> ${AppUtils.formatDate(log.createdAt)}
+                            Em ${AppUtils.formatDate(log.createdAt)}
                         </span>
                         <div class="log-actions">
                             ${addIconHtml}
@@ -2241,6 +2260,9 @@ Stack: ${e.stack}`;
         MenuModal.closeUI();
         document.getElementById('viewList').classList.remove('active');
         document.getElementById('viewTimeline').classList.add('active');
+        document.getElementById('syncIconBtn').style.display = '';
+        document.querySelector('.header-actions i[title="Imprimir Relatório"]').style.display = '';
+        document.getElementById('menuWrapper').style.display = '';
 
         document.getElementById('headerIcon').innerText = 'timeline';
         document.getElementById('headerText').innerText = 'Linha do Tempo';
@@ -2254,7 +2276,7 @@ Stack: ${e.stack}`;
         // Garante que a entidade global-timeline existe silenciosamente
         let globalEntity = await AppDB.entities.get('global-timeline');
         if (!globalEntity) {
-            await AppDB.entities.put({ id: 'global-timeline', type: 'system', name: 'Timeline Global', createdAt: Date.now(), updatedAt: Date.now(), parentId: null });
+            await AppDB.entities.put({ id: 'global-timeline', type: 'system', name: 'Linha do Tempo', createdAt: Date.now(), updatedAt: Date.now(), parentId: null });
         }
 
         document.getElementById('timelineSearchInput').value = '';
@@ -3345,6 +3367,23 @@ Editor.canvas.addEventListener('mousedown', (e) => Editor.startDraw(e)); Editor.
 Editor.canvas.addEventListener('touchstart', (e) => Editor.startDraw(e), {passive: false}); Editor.canvas.addEventListener('touchmove', (e) => Editor.draw(e), {passive: false}); Editor.canvas.addEventListener('touchend', (e) => Editor.stopDraw(e), {passive: false});
 
 App.init();
+
+// Fix for text selection issue
+document.addEventListener('click', function(e) {
+    if (window.getSelection) {
+        let sel = window.getSelection();
+        if (!sel.isCollapsed) {
+            let tag = e.target.tagName.toLowerCase();
+            if (tag !== 'input' && tag !== 'textarea') {
+                // Also check if the clicked element has user-select: text
+                let cs = window.getComputedStyle(e.target);
+                if (cs.userSelect !== 'text') {
+                    sel.removeAllRanges();
+                }
+            }
+        }
+    }
+});
 </script>
 </body>
 </html>
