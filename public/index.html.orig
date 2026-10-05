@@ -21,12 +21,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
     <meta name="google" content="notranslate">
-    <title>Linha do Tempo</title>
+    <title>Oráculo P-31</title>
 
     <meta name="theme-color" content="#000000">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Linha do Tempo">
+    <meta name="apple-mobile-web-app-title" content="Oráculo P-31">
 
     <!-- Version updated to reflect sync fixes -->
 
@@ -72,7 +72,7 @@
 
         header { padding: 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--surface-variant); background: var(--surface); z-index: 20; flex-shrink: 0; }
         header h1 { font-size: 20px; font-weight: 500; display: flex; align-items: center; gap: 8px; flex-grow: 1; overflow: hidden; }
-        header h1 span { white-space: normal; overflow: visible; text-overflow: unset; line-height: 1.1; display: inline-block; word-break: break-word; }
+        header h1 span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .header-actions { display: flex; gap: 16px; align-items: center; flex-shrink: 0;}
 
         .home-search-container { padding: 16px; background: var(--surface); border-bottom: 1px solid var(--surface-variant); flex-shrink: 0; z-index: 15; position: relative; display: none; }
@@ -100,7 +100,7 @@
 
         .search-container { padding: 16px; background: var(--surface); position: sticky; top: 0; z-index: 15; border-bottom: 1px solid var(--surface-variant); flex-shrink: 0; display: none; }
         .search-container.show-search { display: flex; }
-        .search-box { position: relative; display: flex; align-items: center; flex-grow: 1; }
+        .search-box { position: relative; display: flex; align-items: center; }
         .search-box input {
             flex-grow: 1; background: var(--background); border: 1px solid var(--border); color: var(--on-surface); padding: 12px 16px 12px 44px; border-radius: 24px;
             font-size: 15px; outline: none; width: 100%; transition: border-color 0.2s;
@@ -118,7 +118,7 @@
         .task-header { display: block; margin-bottom: 12px; }
         .task-header::after { content: ""; display: table; clear: both; }
         .task-actions { float: right; display: flex; gap: 12px; align-items: center; margin-left: 12px; margin-bottom: 4px; padding-top: 6px; }
-        .task-title { display: block; padding-top: 6px; font-size: 18px; font-weight: 500; word-break: break-word; line-height: 1.3; color: #fff; text-align: justify; text-transform: capitalize; }
+        .task-title { display: block; padding-top: 6px; font-size: 18px; font-weight: 500; word-break: break-word; line-height: 1.3; color: #fff; text-align: justify; }
 
         .create-btn-dynamic { background: rgba(168, 199, 250, 0.1); border: 1px dashed var(--primary); border-radius: 12px; padding: 16px; display: flex; align-items: center; gap: 12px; cursor: pointer; color: var(--primary); font-weight: 500; margin-bottom: 16px; }
 
@@ -142,14 +142,14 @@
             overflow: hidden !important;
             text-overflow: ellipsis !important;
             display: block !important;
-         text-align: justify; }
+        }
         .log-item-group.collapsed .log-entry:first-child .stacked-deck,
         .log-item-group.collapsed .log-entry:first-child .log-links-bar {
             display: none !important;
         }
 
         .log-header { display: flex; justify-content: space-between; align-items: center; font-size: 11px; opacity: 0.8; margin-bottom: 2px; }
-        .log-text { font-size: 14px; line-height: 1.4; word-break: break-word; white-space: pre-wrap; color: #e2e2e6;  text-align: justify; }
+        .log-text { font-size: 14px; line-height: 1.4; word-break: break-word; white-space: pre-wrap; color: #e2e2e6; }
 
         .subtask-list { list-style: none; display: flex; flex-direction: column; gap: 12px; padding-top: 8px; clear:both; }
         .subtask-item { display: flex; flex-direction: column; gap: 8px; font-size: 14px; background: rgba(0,0,0,0.2); padding: 12px; border-radius: 8px; }
@@ -157,7 +157,7 @@
         .subtask-text-wrapper { display: flex; align-items: flex-start; gap: 8px; flex-grow: 1; cursor: pointer; padding: 4px 0;}
         .subtask-text { font-weight: 500; color: var(--primary); font-size: 15px; text-align: justify; word-break: break-word; line-height: 1.3; margin-top: 2px; display: block; width: 100%; }
 
-        .log-links-bar { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.05);  flex-direction: row; align-items: center; gap: 8px; }
+        .log-links-bar { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.05); }
         .link-label { font-size: 11px; color: var(--on-surface-variant); display: flex; align-items: center; gap: 6px; font-weight: 500; text-transform: uppercase;}
         .pills-container { display: flex; flex-wrap: wrap; gap: 6px; }
         .pill-dark { background: #333; color: #e2e2e6; padding: 4px 10px; border-radius: 16px; font-size: 12px; display: inline-flex; align-items: center; gap: 4px; border: 1px solid #444; cursor: pointer; transition: 0.2s;}
@@ -180,7 +180,7 @@
         .stacked-deck:not(.single) .deck-photo:nth-child(2) { transform: rotate(1deg) translate(5px, 3px); z-index: 2; filter: grayscale(40%) brightness(0.8); }
         .stacked-deck:not(.single) .deck-photo:nth-child(3) { transform: rotate(4deg) translate(10px, 6px); z-index: 1; filter: grayscale(70%) brightness(0.6); }
         .image-preview { width: 100%; max-height: 200px; object-fit: cover; border-radius: 12px; border: 1px solid var(--border); cursor: pointer; margin-top: 8px; margin-bottom: 8px; display: block; }
-        .pdf-preview { display: flex; flex-direction: column; align-items: center; justify-content: center; background: var(--surface-variant); border: 1px solid var(--border); border-radius: 12px; color: var(--danger); cursor: pointer; }
+        .pdf-preview { display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(0,0,0,0.2); border: 1px solid var(--border); border-radius: 12px; color: var(--danger); cursor: pointer; }
 
         .fab { position: fixed; bottom: 54px; right: 24px; left: auto; transform: none; background-color: var(--primary); color: var(--on-primary); border: none; width: 56px; height: 56px; border-radius: 16px; box-shadow: var(--shadow); cursor: pointer; display: grid; place-content: center; z-index: 99; transition: transform 0.2s; }
         .fab:active { transform: scale(0.9); }
@@ -219,7 +219,7 @@
         .timeline-day-num { font-size: 24px; font-weight: bold; color: var(--on-surface); line-height: 1; margin-top: 4px; }
         .timeline-time { font-size: 10px; color: var(--on-surface-variant); margin-top: 6px; }
         .timeline-right { flex-grow: 1; display: flex; flex-direction: column; padding-bottom: 8px; border-bottom: 1px solid var(--surface-variant); }
-        .timeline-text { font-size: 15px; line-height: 1.4; color: #fff; word-break: break-word; white-space: pre-wrap; font-weight: 500; text-align: justify; }
+        .timeline-text { font-size: 15px; line-height: 1.4; color: #fff; word-break: break-word; white-space: pre-wrap; font-weight: 500; }
         .timeline-meta { font-size: 12px; color: var(--on-surface-variant); margin-top: 8px; display: flex; align-items: center; gap: 4px; }
         .timeline-media-wrapper { width: 80px; height: 80px; flex-shrink: 0; border-radius: 8px; overflow: hidden; margin-left: 12px; position: relative; border: 1px solid #555; cursor: pointer; }
         .timeline-content-row { display: flex; justify-content: space-between; align-items: flex-start; }
@@ -319,10 +319,10 @@
     <header id="mainHeader">
         <i class="material-icons action-icon" id="btnBack" style="display:none; margin-right: 12px;" onclick="App.goBack()">arrow_back</i>
         <h1 id="headerTitle">
-            <i class="material-icons" style="color:var(--primary);" id="headerIcon">timeline</i>
+            <i class="material-icons" style="color:var(--primary);" id="headerIcon">oil_barrel</i>
             <div style="display:flex; flex-direction:column; line-height:1; min-width: 0;">
-                <span id="headerText">Linha do Tempo</span>
-                <span id="headerVersion" style="font-size: 10px; color: var(--on-surface-variant); font-weight: normal; margin-top:2px;">v 4.8.19</span>
+                <span id="headerText">Oráculo P-31</span>
+                <span id="headerVersion" style="font-size: 10px; color: var(--on-surface-variant); font-weight: normal; margin-top:2px;">v 4.8.13</span>
             </div>
         </h1>
         <div class="header-actions">
@@ -333,7 +333,7 @@
             <div style="position: relative;" id="menuWrapper">
                 <i class="material-icons action-icon" onclick="App.toggleMenu(event)">more_vert</i>
                 <div id="mainMenu" class="dropdown-menu">
-                <div class="menu-item" onclick="MenuModal.closeUI(); App.openModule('equipamento', 'Equipamentos', 'precision_manufacturing')"><i class="material-icons">precision_manufacturing</i> Equipamentos</div>
+                <div class="menu-item" onclick="App.openTimeline()"><i class="material-icons">timeline</i> Linha do Tempo</div>
                     <input type="file" id="restoreLocalFile" accept=".zip,.json" style="display:none" onchange="App.restoreFromLocal(event)">
                     <div class="menu-item" onclick="document.getElementById('restoreLocalFile').click()"><i class="material-icons">folder_zip</i> Restaurar (Local)</div>
                     <div class="menu-item" onclick="App.exportToLocal()"><i class="material-icons">download</i> Exportar (Local)</div>
@@ -343,6 +343,35 @@
         </div>
     </header>
 
+    <div id="viewHome" class="view-section active">
+        <div class="home-search-container">
+            <div class="search-box">
+                <i class="material-icons search-icon">search</i>
+                <input type="text" id="homeSearchInput" name="q_search_home" placeholder="Busca global em tudo..." autocomplete="new-password" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" oninput="clearTimeout(App.searchTimeout); App.searchTimeout = setTimeout(() => App.renderHomeSearch(), 200);">
+            </div>
+        </div>
+        <div class="home-grid" id="homeGrid">
+            <div class="module-card" onclick="App.openModule('servico', 'Serviços', 'handyman')">
+                <i class="material-icons">handyman</i><span>Serviços</span>
+            </div>
+            <div class="module-card" onclick="App.openModule('equipamento', 'Equipamentos', 'precision_manufacturing')">
+                <i class="material-icons">precision_manufacturing</i><span>Equipamentos</span>
+            </div>
+            <div class="module-card" onclick="App.openModule('pessoa', 'Pessoas', 'people')">
+                <i class="material-icons">people</i><span>Pessoas</span>
+            </div>
+            <div class="module-card" onclick="App.openModule('documento', 'Documentos', 'description')">
+                <i class="material-icons">description</i><span>Documentos</span>
+            </div>
+            <div class="module-card" onclick="App.openModule('auditoria', 'Auditorias', 'verified_user')">
+                <i class="material-icons">verified_user</i><span>Auditorias</span>
+            </div>
+            <div class="module-card" onclick="App.openModule('material', 'Materiais', 'inventory_2')">
+                <i class="material-icons">inventory_2</i><span>Materiais</span>
+            </div>
+        </div>
+        <ul class="task-list" id="homeSearchList" style="display:none;"></ul>
+    </div>
 
     <div id="viewList" class="view-section">
         <div class="search-container">
@@ -571,10 +600,7 @@ var AppState = {
             if (e.state.view === 'home') App.goHome(true);
             else if (e.state.view === 'list') {
                 App.moduleType = e.state.moduleType; App.moduleName = e.state.moduleName; App.moduleIcon = e.state.moduleIcon; App.currentView = 'list';
-                document.getElementById('viewList').classList.add('active');
-        document.getElementById('syncIconBtn').style.display = 'none';
-        document.querySelector('.header-actions i[title="Imprimir Relatório"]').style.display = 'none';
-        document.getElementById('menuWrapper').style.display = 'none'; document.getElementById('viewTimeline').classList.remove('active');
+                document.getElementById('viewHome').classList.remove('active'); document.getElementById('viewList').classList.add('active'); document.getElementById('viewTimeline').classList.remove('active');
                 document.getElementById('headerIcon').innerText = App.moduleIcon; document.getElementById('headerText').innerText = App.moduleName;
                 document.getElementById('btnBack').style.display = 'inline-block'; document.getElementById('headerVersion').style.display = 'none'; document.getElementById('mainFab').style.display = 'none';
                 App.renderList();
@@ -745,10 +771,9 @@ var AppUtils = {
 };
 
 async function processMultipleMedia(files, onProgress, callback) {
-    return new Promise(async (resolvePromise) => {
-        if (!files || files.length === 0) { callback([]); return resolvePromise(); }
-        let processedArray = [];
-        for(let file of files) {
+    if (!files || files.length === 0) return callback([]);
+    let processedArray = [];
+    for(let file of files) {
         let captureTime = Date.now();
         if (file.type === 'application/pdf') {
             let customName = await CustomDialog.prompt("Nome curto para este PDF:", file.name, "Nome do Arquivo");
@@ -795,13 +820,11 @@ async function processMultipleMedia(files, onProgress, callback) {
                 });
             }
         }
-        }
-        callback(processedArray);
-        resolvePromise(processedArray);
-    });
+    }
+    callback(processedArray);
 }
 
-function renderStackedDeckHTML(images, logId, searchTerm = '') {
+function renderStackedDeckHTML(images, logId) {
     if (!images || images.length === 0) return '';
     let clickHandler = `CarouselModal.open('${logId}')`;
     let pdfCount = images.filter(img => img.data && (img.data.startsWith('data:application/pdf') || img.data.endsWith('.pdf'))).length;
@@ -810,23 +833,13 @@ function renderStackedDeckHTML(images, logId, searchTerm = '') {
     if (images.length === 1) {
         let img = images[0];
         if (img.isPlaceholder) return `<div class="pdf-preview deck-photo" style="position:relative; left:0; width:100%; height:auto; min-height:140px; background:#111;"><i class="material-icons" style="font-size:48px; color:var(--primary); animation: spin 1s linear infinite;">sync</i><span id="video-progress-text" style="font-size: 13px; margin-top: 8px; color:var(--primary); font-weight:bold;">A processar: 0%</span></div>`;
-        if ((img.data.startsWith('data:application/pdf') || img.data.endsWith('.pdf'))) {
-            let pdfName = AppUtils.getPdfName(img.data).toLowerCase();
-            let highlightClass = (searchTerm && pdfName.includes(searchTerm.toLowerCase())) ? ' pdf-highlight-focus' : '';
-            let highlightStyle = (searchTerm && pdfName.includes(searchTerm.toLowerCase())) ? 'border: 2px solid yellow; box-sizing: border-box;' : '';
-            return `<div class="pdf-preview deck-photo${highlightClass}" style="position:relative; left:0; width:100%; height:auto; min-height:140px; padding:12px; ${highlightStyle}" onclick="${clickHandler}"><i class="material-icons" style="font-size:32px;">picture_as_pdf</i><span style="font-size: 13px; margin-top: 8px; text-align:center;">${AppUtils.getPdfName(img.data)}</span></div>`;
-        }
+        if ((img.data.startsWith('data:application/pdf') || img.data.endsWith('.pdf'))) return `<div class="pdf-preview deck-photo" style="position:relative; left:0; width:100%; height:auto; min-height:140px; padding:12px;" onclick="${clickHandler}"><i class="material-icons" style="font-size:32px;">picture_as_pdf</i><span style="font-size: 13px; margin-top: 8px; text-align:center;">${AppUtils.getPdfName(img.data)}</span></div>`;
         else if (img.isVideo || (img.data.startsWith('data:video/') || img.data.endsWith('.webm') || img.data.endsWith('.mp4'))) return `<div class="pdf-preview deck-photo" style="position:relative; left:0; width:100%; height:auto; min-height:140px; background: url('${img.thumbnail || ''}') center/cover;" onclick="${clickHandler}"><div style="background:rgba(0,0,0,0.5); width:100%; height:100%; min-height:140px; display:flex; flex-direction:column; align-items:center; justify-content:center;"><i class="material-icons" style="font-size:48px; color:#fff;">play_circle_outline</i></div></div>`;
         else return `<img src="${img.data}" class="image-preview" onclick="${clickHandler}" style="margin:0;">`;
     } else {
         const photosHtml = images.slice(0, 3).map(img => {
-            if (img.isPlaceholder) return `<div class="pdf-preview deck-photo" style="background:#111;"><i class="material-icons" style="font-size:24px; color:var(--primary); animation: spin 1s linear infinite;">sync</i><span id="video-progress-text" style="font-size: 9px; margin-top: 4px; color:var(--primary); font-weight:bold;">0%</span></div>`;
-            if ((img.data.startsWith('data:application/pdf') || img.data.endsWith('.pdf'))) {
-                let pdfName = AppUtils.getPdfName(img.data).toLowerCase();
-                let highlightClass = (searchTerm && pdfName.includes(searchTerm.toLowerCase())) ? ' pdf-highlight-focus' : '';
-                let highlightStyle = (searchTerm && pdfName.includes(searchTerm.toLowerCase())) ? 'border: 2px solid yellow; box-sizing: border-box;' : '';
-                return `<div class="pdf-preview deck-photo${highlightClass}" style="${highlightStyle}"><i class="material-icons" style="font-size:24px;">picture_as_pdf</i><span style="font-size:9px; margin-top:4px; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; padding:0 4px; display:block; text-align:center; width:100%; box-sizing:border-box;">${AppUtils.getPdfName(img.data)}</span></div>`;
-            }
+            if (img.isPlaceholder) return `<div class="pdf-preview deck-photo" style="background:#111;"><i class="material-icons" style="font-size:24px; color:var(--primary); animation: spin 1s linear infinite;">sync</i></div>`;
+            if ((img.data.startsWith('data:application/pdf') || img.data.endsWith('.pdf'))) return `<div class="pdf-preview deck-photo"><i class="material-icons" style="font-size:24px;">picture_as_pdf</i><span style="font-size:9px; margin-top:4px;">PDF</span></div>`;
             else if (img.isVideo || (img.data.startsWith('data:video/') || img.data.endsWith('.webm') || img.data.endsWith('.mp4'))) return `<div class="pdf-preview deck-photo" style="background: url('${img.thumbnail || ''}') center/cover;"><div style="background:rgba(0,0,0,0.5); width:100%; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center;"><i class="material-icons" style="font-size:24px; color:#fff;">play_circle_outline</i></div></div>`;
             return `<img src="${img.data}" class="deck-photo">`;
         }).join('');
@@ -858,7 +871,7 @@ var App = {
 
             let globalEntity = await AppDB.entities.get('global-timeline');
             if (!globalEntity) {
-                await AppDB.entities.put({ id: 'global-timeline', type: 'system', name: 'Linha do Tempo', createdAt: Date.now(), updatedAt: Date.now(), parentId: null });
+                await AppDB.entities.put({ id: 'global-timeline', type: 'system', name: 'Timeline Global', createdAt: Date.now(), updatedAt: Date.now(), parentId: null });
             }
 
             const startDate = new Date(2025, 11, 1).getTime(); // Dec 1, 2025
@@ -1129,29 +1142,25 @@ var App = {
             if (log) logsToShare.push(log);
         }
 
+        // Group by entity
+        let grouped = {};
+        for (let log of logsToShare) {
+            let eName = 'Linha do Tempo';
+            if (log.originEntityId !== 'global-timeline') {
+                let e = await AppDB.entities.get(log.originEntityId);
+                if (e) eName = e.name;
+            }
+            if (!grouped[eName]) grouped[eName] = [];
+            grouped[eName].push(log);
+        }
+
         let shareText = '';
         let shareFiles = [];
         let photoCounter = 1;
         let videoCounter = 1;
 
-        let grouped = {};
-        if (this.currentView === 'timeline') {
-            grouped['Linha do tempo'] = logsToShare;
-        } else {
-            // Group by entity
-            for (let log of logsToShare) {
-                let eName = 'Linha do tempo';
-                if (log.originEntityId !== 'global-timeline') {
-                    let e = await AppDB.entities.get(log.originEntityId);
-                    if (e) eName = e.name;
-                }
-                if (!grouped[eName]) grouped[eName] = [];
-                grouped[eName].push(log);
-            }
-        }
-
         for (let [eName, logs] of Object.entries(grouped)) {
-            shareText += `*${eName}*\n\n`;
+            shareText += `*${eName}*\n`;
             for (let log of logs.sort((a, b) => a.createdAt - b.createdAt)) {
                 let plainText = log.text || '';
                 // Remove specific markdown wrappers but keep names
@@ -1180,21 +1189,15 @@ var App = {
 
                             if (ext === 'pdf') {
                                 let nameMatch = mimePart.match(/name=([^;]+)/);
-                                let baseName = '';
                                 if (nameMatch) {
                                     filename = decodeURIComponent(nameMatch[1]);
-                                    baseName = filename.toLowerCase().endsWith('.pdf') ? filename.slice(0, -4) : filename;
-                                    if (!filename.toLowerCase().endsWith('.pdf')) {
-                                        filename += '.pdf';
-                                    }
+                                    if (!filename.toLowerCase().endsWith('.pdf')) filename += '.pdf';
                                 } else {
                                     filename = 'documento.pdf';
-                                    baseName = 'documento';
                                 }
-                                if (baseName.length > 13) {
-                                    displayFilename = baseName.substring(0, 13) + '...pdf';
-                                } else {
-                                    displayFilename = filename;
+                                displayFilename = filename;
+                                if (displayFilename.length > 13) {
+                                    displayFilename = displayFilename.substring(0, 13) + '...pdf';
                                 }
                             } else if (ext === 'mp4') {
                                 filename = `video ${String(videoCounter).padStart(2, '0')}.mp4`;
@@ -1261,14 +1264,7 @@ var App = {
                     }
                 }
 
-                const logDate = new Date(log.createdAt);
-                const day = logDate.getDate().toString().padStart(2, '0');
-                const month = (logDate.getMonth() + 1).toString().padStart(2, '0');
-                const year = logDate.getFullYear().toString().slice(-2);
-                const dateStr = `${day}/${month}/${year}`;
-                const authorDisp = log.authorName || 'N/A';
-
-                shareText += `Em ${dateStr} (${authorDisp}): ${plainText}`;
+                shareText += `- ${plainText}`;
                 if (attachmentsText.length > 0) {
                     shareText += ` (anexos: ${attachmentsText.join(', ')})`;
                 }
@@ -1391,11 +1387,6 @@ var App = {
             }
         });
         App.saveExpandedState();
-
-        let mainIcon = entityEl.querySelector('.task-actions .action-icon[onclick*="toggleAllLogGroups"]');
-        if (mainIcon) {
-            mainIcon.innerText = allAreCollapsed ? 'unfold_more' : 'unfold_less';
-        }
     },
     syncCloud: async function() {
         if(!navigator.onLine) {
@@ -1806,24 +1797,122 @@ Stack: ${e.stack}`;
                     </div>
                 `;
 
-                const generateGroupHTML = (logs) => {
-                    let logGroups = {};
-                    logs.forEach(l => {
+                const categories = Object.keys(MODULE_MAPPING);
+
+                for (let catKey of categories) {
+                    let catName = MODULE_MAPPING[catKey][0];
+                    let entitiesInCat = allEntities.filter(e => e.type === catKey);
+
+                    let catHtml = '';
+                    let hasLogsInCat = false;
+
+                    for (let entity of entitiesInCat) {
+                        let logsOfEntity = allLogs.filter(l => l.relatedEntities.some(rel => rel.id === entity.id));
+
+                        if (logsOfEntity.length > 0) {
+                            hasLogsInCat = true;
+
+                            let logGroups = {};
+                            logsOfEntity.forEach(l => {
+                                let gId = l.groupId || l.id;
+                                if (!logGroups[gId]) logGroups[gId] = [];
+                                logGroups[gId].push(l);
+                            });
+
+                            let sortedGroups = Object.values(logGroups).sort((a, b) => {
+                                let maxA = Math.max(...a.map(l => l.createdAt));
+                                let maxB = Math.max(...b.map(l => l.createdAt));
+                                return maxB - maxA;
+                            });
+
+                            let logsHtml = '';
+                            for (let group of sortedGroups) {
+                                group.sort((a, b) => b.createdAt - a.createdAt);
+
+                                logsHtml += `<div class="print-log-group" style="border: 1px solid #dcdcdc; background: #ffffff; border-radius: 6px; margin-bottom: 16px; page-break-inside: avoid; box-shadow: 0 1px 3px rgba(0,0,0,0.1); overflow: hidden;">`;
+
+                                for (let i = 0; i < group.length; i++) {
+                                    let log = group[i];
+                                    let mediaHtml = '';
+                                    if (log.images && log.images.length > 0) {
+                                        mediaHtml = log.images.map(img => {
+                                            if((img.data.startsWith('data:application/pdf') || img.data.endsWith('.pdf'))) {
+                                                return `<div class="print-media-box"><div style="font-weight:bold; font-size:14px; color:#d32f2f;">PDF</div><div style="font-size:10px;word-break:break-all; text-align:center; margin-top:4px;">${AppUtils.getPdfName(img.data)}</div></div>`;
+                                            }
+                                            if(img.isVideo || (img.data.startsWith('data:video/') || img.data.endsWith('.webm') || img.data.endsWith('.mp4'))) {
+                                                let thumbSrc = img.thumbnail || 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=';
+                                                return `
+                                                <div class="print-media-box" style="position:relative; display:inline-block;">
+                                                    <img src="${thumbSrc}" class="print-media-img" style="display:block;">
+                                                    <div class="play-overlay"><span style="color:#fff; font-size:18px;">&#9654;</span></div>
+                                                </div>`;
+                                            }
+                                            return `<div class="print-media-box"><img src="${img.data}" class="print-media-img"></div>`;
+                                        }).join('');
+                                    }
+
+                                    let borderBottom = i < group.length - 1 ? 'border-bottom: 1px solid #eee;' : '';
+
+                                    let authorDispPrint = log.authorName || 'N/A';
+                                    if (authorDispPrint.length > 15) authorDispPrint = authorDispPrint.substring(0, 15) + '...';
+                                    authorDispPrint = authorDispPrint.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+
+                                    logsHtml += `
+                                        <div class="print-log-item" style="padding: 12px; ${borderBottom} page-break-inside: avoid; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
+                                            <div class="print-header" style="font-size: 12px; color: #555; margin-bottom: 8px; font-weight: bold;">${AppUtils.formatDate(log.createdAt)} por ${authorDispPrint}</div>
+                                            <div class="print-text" style="font-size: 14px; margin-bottom: 12px; white-space: pre-wrap; word-break: break-word; color: #222;">${log.text || ''}</div>
+                                            ${mediaHtml ? `<div style="margin-top:8px;">${mediaHtml}</div>` : ''}
+                                        </div>
+                                    `;
+                                }
+                                logsHtml += `</div>`;
+                            }
+
+                            catHtml += `
+                                <div class="print-card" style="border: 2px solid #062e6f; border-radius: 8px; margin-bottom: 24px; page-break-inside: avoid; overflow: hidden; font-family: sans-serif;">
+                                    <div class="print-entity" style="background-color: #062e6f; color: #ffffff; padding: 12px 16px; margin: 0; font-size: 16px; font-weight: bold; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
+                                        ${entity.name}
+                                    </div>
+                                    <div style="padding: 16px; background-color: #f8f9fa; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
+                                        ${logsHtml}
+                                    </div>
+                                </div>
+                            `;
+                        }
+                    }
+
+                    if (hasLogsInCat) {
+                        printArea.innerHTML += `
+                            <div style="margin-top: 24px;">
+                                <h2 style="font-size:18px; color:#333; border-bottom:1px solid #ccc; padding-bottom:4px; margin-bottom:8px; text-transform:uppercase; page-break-after: avoid;">${catName}</h2>
+                                ${catHtml}
+                            </div>
+                        `;
+                    }
+                }
+
+                let orphanLogs = allLogs.filter(l => !l.relatedEntities.some(rel => allEntities.some(e => e.id === rel.id)));
+                if (orphanLogs.length > 0) {
+
+                    let orphanLogGroups = {};
+                    orphanLogs.forEach(l => {
                         let gId = l.groupId || l.id;
-                        if (!logGroups[gId]) logGroups[gId] = [];
-                        logGroups[gId].push(l);
+                        if (!orphanLogGroups[gId]) orphanLogGroups[gId] = [];
+                        orphanLogGroups[gId].push(l);
                     });
 
-                    let sortedGroups = Object.values(logGroups).sort((a, b) => {
+                    let sortedOrphanGroups = Object.values(orphanLogGroups).sort((a, b) => {
                         let maxA = Math.max(...a.map(l => l.createdAt));
                         let maxB = Math.max(...b.map(l => l.createdAt));
                         return maxB - maxA;
                     });
 
-                    let html = '';
-                    for (let group of sortedGroups) {
+                    let orphanHtml = '';
+                    for (let group of sortedOrphanGroups) {
                         group.sort((a, b) => b.createdAt - a.createdAt);
-                        html += `<div class="print-log-group" style="border: 1px solid #dcdcdc; background: #ffffff; border-radius: 6px; margin-bottom: 16px; page-break-inside: avoid; box-shadow: 0 1px 3px rgba(0,0,0,0.1); overflow: hidden;">`;
+
+                        orphanHtml += `<div class="print-log-group" style="border: 1px solid #dcdcdc; background: #ffffff; border-radius: 6px; margin-bottom: 16px; page-break-inside: avoid; box-shadow: 0 1px 3px rgba(0,0,0,0.1); overflow: hidden;">`;
+
                         for (let i = 0; i < group.length; i++) {
                             let log = group[i];
                             let mediaHtml = '';
@@ -1834,78 +1923,46 @@ Stack: ${e.stack}`;
                                     }
                                     if(img.isVideo || (img.data.startsWith('data:video/') || img.data.endsWith('.webm') || img.data.endsWith('.mp4'))) {
                                         let thumbSrc = img.thumbnail || 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=';
-                                        return `<div class="print-media-box" style="position:relative; display:inline-block;"><img src="${thumbSrc}" class="print-media-img" style="display:block;"><div class="play-overlay"><span style="color:#fff; font-size:18px;">&#9654;</span></div></div>`;
+                                        return `
+                                        <div class="print-media-box" style="position:relative; display:inline-block;">
+                                            <img src="${thumbSrc}" class="print-media-img" style="display:block;">
+                                            <div class="play-overlay"><span style="color:#fff; font-size:18px;">&#9654;</span></div>
+                                        </div>`;
                                     }
                                     return `<div class="print-media-box"><img src="${img.data}" class="print-media-img"></div>`;
                                 }).join('');
                             }
 
                             let borderBottom = i < group.length - 1 ? 'border-bottom: 1px solid #eee;' : '';
-                            let authorDispPrint = log.authorName || 'N/A';
-                            if (authorDispPrint.length > 15) authorDispPrint = authorDispPrint.substring(0, 15) + '...';
-                            authorDispPrint = authorDispPrint.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
 
-                            html += `
+                            let authorDispOrphanPrint = log.authorName || 'N/A';
+                            if (authorDispOrphanPrint.length > 15) authorDispOrphanPrint = authorDispOrphanPrint.substring(0, 15) + '...';
+                            authorDispOrphanPrint = authorDispOrphanPrint.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+
+                            orphanHtml += `
                                 <div class="print-log-item" style="padding: 12px; ${borderBottom} page-break-inside: avoid; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
-                                    <div class="print-header" style="font-size: 12px; color: #555; margin-bottom: 8px; font-weight: bold;">${AppUtils.formatDate(log.createdAt)} por ${authorDispPrint}</div>
+                                    <div class="print-header" style="font-size: 12px; color: #555; margin-bottom: 8px; font-weight: bold;">${AppUtils.formatDate(log.createdAt)} por ${authorDispOrphanPrint}</div>
                                     <div class="print-text" style="font-size: 14px; margin-bottom: 12px; white-space: pre-wrap; word-break: break-word; color: #222;">${log.text || ''}</div>
                                     ${mediaHtml ? `<div style="margin-top:8px;">${mediaHtml}</div>` : ''}
                                 </div>
                             `;
                         }
-                        html += `</div>`;
+                        orphanHtml += `</div>`;
                     }
-                    return html;
-                };
 
-                // Split into Timeline vs Equipments
-                const timelineLogs = allLogs.filter(l => l.originEntityId === 'global-timeline' || l.relatedEntities.some(rel => rel.id === 'global-timeline'));
-
-                // For equipments, we only include logs whose originEntityId is an equipment, AND it's not already in timelineLogs
-                const equipmentEntities = allEntities.filter(e => e.type === 'equipamento');
-                const equipmentIds = equipmentEntities.map(e => e.id);
-                const equipmentLogs = allLogs.filter(l =>
-                    equipmentIds.includes(l.originEntityId) && !timelineLogs.includes(l)
-                );
-
-                if (timelineLogs.length > 0) {
                     printArea.innerHTML += `
                         <div style="margin-top: 24px;">
-                            <h2 style="font-size:18px; color:#333; border-bottom:1px solid #ccc; padding-bottom:4px; margin-bottom:8px; text-transform:uppercase; page-break-after: avoid;">Linha do Tempo</h2>
-                            <div style="padding: 16px; background-color: #f8f9fa; border: 1px solid #ddd; border-radius: 8px; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
-                                ${generateGroupHTML(timelineLogs)}
+                            <h2 style="font-size:18px; color:#333; border-bottom:1px solid #ccc; padding-bottom:4px; margin-bottom:8px; text-transform:uppercase; page-break-after: avoid;">Entidades Excluídas</h2>
+                            <div class="print-card" style="border: 2px solid #062e6f; border-radius: 8px; margin-bottom: 24px; page-break-inside: avoid; overflow: hidden; font-family: sans-serif;">
+                                <div class="print-entity" style="background-color: #062e6f; color: #ffffff; padding: 12px 16px; margin: 0; font-size: 16px; font-weight: bold; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
+                                    Geral
+                                </div>
+                                <div style="padding: 16px; background-color: #f8f9fa; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
+                                    ${orphanHtml}
+                                </div>
                             </div>
                         </div>
                     `;
-                }
-
-                if (equipmentLogs.length > 0) {
-                    let catHtml = '';
-
-                    for (let entity of equipmentEntities) {
-                        let logsOfEntity = equipmentLogs.filter(l => l.originEntityId === entity.id);
-                        if (logsOfEntity.length > 0) {
-                            catHtml += `
-                                <div class="print-card" style="border: 2px solid #062e6f; border-radius: 8px; margin-bottom: 24px; page-break-inside: avoid; overflow: hidden; font-family: sans-serif;">
-                                    <div class="print-entity" style="background-color: #062e6f; color: #ffffff; padding: 12px 16px; margin: 0; font-size: 16px; font-weight: bold; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
-                                        ${entity.name}
-                                    </div>
-                                    <div style="padding: 16px; background-color: #f8f9fa; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
-                                        ${generateGroupHTML(logsOfEntity)}
-                                    </div>
-                                </div>
-                            `;
-                        }
-                    }
-
-                    if (catHtml) {
-                        printArea.innerHTML += `
-                            <div style="margin-top: 24px;">
-                                <h2 style="font-size:18px; color:#333; border-bottom:1px solid #ccc; padding-bottom:4px; margin-bottom:8px; text-transform:uppercase; page-break-after: avoid;">Equipamentos</h2>
-                                ${catHtml}
-                            </div>
-                        `;
-                    }
                 }
 
                 document.getElementById('progressModal').classList.remove('active');
@@ -1918,17 +1975,77 @@ Stack: ${e.stack}`;
     },
 
     goHome: function(fromPopState = false) {
-        this.openTimeline(fromPopState);
+        this.currentView = 'home';
+        document.getElementById('viewHome').classList.add('active'); document.getElementById('viewList').classList.remove('active');
+        document.getElementById('viewTimeline').classList.remove('active');
+        document.getElementById('headerIcon').innerText = 'oil_barrel'; document.getElementById('headerText').innerText = 'Oráculo P-31';
+        document.getElementById('btnBack').style.display = 'none'; document.getElementById('headerVersion').style.display = 'inline';
+        document.getElementById('mainFab').style.display = 'none';
+
+        document.getElementById('homeSearchInput').value = '';
+        this.renderHomeSearch();
+        history.replaceState({ view: 'home' }, '');
         this.calculateStorage();
     },
 
+    renderHomeSearch: async function() {
+        this.currentSearchId++;
+        const searchId = this.currentSearchId;
+        const term = document.getElementById('homeSearchInput').value.toLowerCase().trim();
+        const grid = document.getElementById('homeGrid');
+        const list = document.getElementById('homeSearchList');
+
+        if(!term) { grid.style.display = 'grid'; list.style.display = 'none'; return; }
+
+        grid.style.display = 'none';
+        list.style.display = 'flex';
+        list.innerHTML = '<div class="empty-state"><i class="material-icons" style="animation: spin 1s linear infinite;">sync</i><p>Aguarde...</p></div>';
+
+        let resultList = [];
+        let allEntities = (await AppDB.entities.toArray()).filter(e => !e.isDeleted);
+        for(let e of allEntities) {
+            let matchesName = e.name.toLowerCase().includes(term);
+            let relatedLogs = await AppDB.logs.filter(l => !l.isDeleted && l.relatedEntities.some(rel => rel.id === e.id) && l.text && l.text.toLowerCase().includes(term)).toArray();
+            if(matchesName || relatedLogs.length > 0) resultList.push({ entity: e, logsMatched: relatedLogs });
+        }
+
+        if (this.currentSearchId !== searchId) return;
+
+        grid.style.display = 'none';
+        list.style.display = 'flex';
+        list.innerHTML = '';
+
+        if (resultList.length === 0) { list.innerHTML = `<div class="empty-state"><i class="material-icons">search_off</i><p>Nenhum resultado encontrado.</p></div>`; return; }
+
+        resultList.sort((a, b) => b.entity.createdAt - a.entity.createdAt).forEach(item => {
+            let e = item.entity; let modInfo = MODULE_MAPPING[e.type] || ['Desconhecido', 'help'];
+            let snippetsHtml = '';
+            if(item.logsMatched.length > 0) {
+                snippetsHtml = `<div class="search-snippets">`;
+                item.logsMatched.forEach(l => {
+                    let text = l.text; let idx = text.toLowerCase().indexOf(term);
+                    let start = Math.max(0, idx - 25); let end = Math.min(text.length, idx + term.length + 25);
+                    let snippet = text.substring(start, end).replace(/\n/g, ' ');
+                    snippetsHtml += `<div class="snippet-item">...${AppUtils.highlight(snippet, term)}...</div>`;
+                });
+                snippetsHtml += `</div>`;
+            }
+
+            list.innerHTML += `
+                <li class="task-item" style="cursor:pointer;" onclick="App.focusEntity('${e.id}', '${term}')">
+                    <div class="task-header" style="margin-bottom:4px;">
+                        <span class="task-title" style="font-size:15px;">${AppUtils.highlight(e.name, term)}</span>
+                    </div>
+                    <span class="module-link-badge" style="align-self:flex-start; margin-left:0; display:block; clear:both; margin-top:4px;">${modInfo[0]}</span>
+                    ${snippetsHtml}
+                </li>
+            `;
+        });
+    },
 
     openModule: function(type, name, icon, fromPopState = false) {
         this.currentView = 'list'; this.moduleType = type; this.moduleName = name; this.moduleIcon = icon;
-        document.getElementById('viewList').classList.add('active');
-        document.getElementById('syncIconBtn').style.display = 'none';
-        document.querySelector('.header-actions i[title="Imprimir Relatório"]').style.display = 'none';
-        document.getElementById('menuWrapper').style.display = 'none';
+        document.getElementById('viewHome').classList.remove('active'); document.getElementById('viewList').classList.add('active');
         document.getElementById('viewTimeline').classList.remove('active');
         document.getElementById('headerIcon').innerText = icon; document.getElementById('headerText').innerText = name;
         document.getElementById('btnBack').style.display = 'inline-block'; document.getElementById('headerVersion').style.display = 'none';
@@ -1939,17 +2056,7 @@ Stack: ${e.stack}`;
 
     focusEntity: async function(id, focusTerm = '', focusLogId = null) {
         if (id === 'global-timeline') {
-            this.openTimeline(false);
-            if (focusLogId) {
-                setTimeout(() => {
-                    const logEl = document.getElementById('timeline-log-' + focusLogId);
-                    if (logEl) {
-                        logEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        logEl.classList.add('flash-highlight');
-                        setTimeout(() => logEl.classList.remove('flash-highlight'), 1500);
-                    }
-                }, 300);
-            }
+            this.openTimeline();
             return;
         }
         const entity = await AppDB.entities.get(id); if(!entity || entity.isDeleted) return;
@@ -1964,27 +2071,13 @@ Stack: ${e.stack}`;
         }
 
         this.currentView = 'list'; this.moduleType = targetModuleType; this.moduleName = targetModuleName; this.moduleIcon = targetModuleIcon;
-        document.getElementById('viewList').classList.add('active');
-        document.getElementById('syncIconBtn').style.display = 'none';
-        document.querySelector('.header-actions i[title="Imprimir Relatório"]').style.display = 'none';
-        document.getElementById('menuWrapper').style.display = 'none';
+        document.getElementById('viewHome').classList.remove('active'); document.getElementById('viewList').classList.add('active');
         document.getElementById('viewTimeline').classList.remove('active');
         document.getElementById('headerIcon').innerText = targetModuleIcon; document.getElementById('headerText').innerText = targetModuleName;
         document.getElementById('btnBack').style.display = 'inline-block'; document.getElementById('headerVersion').style.display = 'none';
         document.getElementById('mainFab').style.display = 'none';
 
         document.getElementById('searchInput').value = focusTerm;
-
-        // Before rendering, ensure the target log's group is expanded if we have a focusLogId
-        if (focusLogId) {
-            const logToFocus = await AppDB.logs.get(focusLogId);
-            if (logToFocus) {
-                const gId = logToFocus.groupId || logToFocus.id;
-                App.expandedGroups.add('log-group-' + gId);
-                App.saveExpandedState();
-            }
-        }
-
         await this.renderList();
         history.pushState({ view: 'list', moduleType: targetModuleType, moduleName: targetModuleName, moduleIcon: targetModuleIcon }, '');
 
@@ -2012,8 +2105,8 @@ Stack: ${e.stack}`;
                 }
 
                 el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                el.classList.add('flash-highlight');
-                setTimeout(() => el.classList.remove('flash-highlight'), 1500);
+                el.style.backgroundColor = 'rgba(255, 235, 59, 0.3)';
+                setTimeout(() => el.style.backgroundColor = '', 1500);
             }
         }, 300);
     },
@@ -2093,7 +2186,7 @@ Stack: ${e.stack}`;
 
         for (let i = 0; i < group.length; i++) {
             let log = group[i];
-            let mediaHtml = log.images && log.images.length > 0 ? renderStackedDeckHTML(log.images, log.id, searchTerm) : '';
+            let mediaHtml = log.images && log.images.length > 0 ? renderStackedDeckHTML(log.images, log.id) : '';
             let isOrigin = log.originEntityId === contextEntityId;
             let otherLinks = log.relatedEntities.filter(rel => rel.id !== log.originEntityId);
 
@@ -2103,16 +2196,14 @@ Stack: ${e.stack}`;
                     let pills = [];
                     for(let rel of otherLinks) {
                         let linkedE = await AppDB.entities.get(rel.id); if(!linkedE) continue;
-                        let displayName = linkedE.id === 'global-timeline' ? 'Linha do Tempo' : linkedE.name;
-                        pills.push(`<div class="pill-dark" onclick="App.focusEntity('${linkedE.id}', '', '${log.id}')">${displayName} <i class="material-icons" style="font-size:12px; margin-left:4px;" title="Ir para Destino">arrow_forward</i></div>`);
+                        pills.push(`<div class="pill-dark" onclick="App.focusEntity('${linkedE.id}', '', '${log.id}')">${linkedE.name} <i class="material-icons" style="font-size:12px; margin-left:4px;" title="Ir para Destino">arrow_forward</i></div>`);
                     }
                     linksBarHtml = `<div class="log-links-bar"><div class="link-label">Vinculado a:</div><div class="pills-container">${pills.join('')}</div></div>`;
                 }
             } else {
                 let originE = await AppDB.entities.get(log.originEntityId);
                 if (originE) {
-                    let originDisplayName = originE.id === 'global-timeline' ? 'Linha do Tempo' : originE.name;
-                    let originPill = `<div class="pill-dark origin" onclick="App.focusEntity('${originE.id}', '', '${log.id}')">${originDisplayName} <i class="material-icons" style="font-size:12px; margin-left:4px;" title="Ir para Origem">arrow_forward</i></div>`;
+                    let originPill = `<div class="pill-dark origin" onclick="App.focusEntity('${originE.id}', '', '${log.id}')">${originE.name} <i class="material-icons" style="font-size:12px; margin-left:4px;" title="Ir para Origem">arrow_forward</i></div>`;
                     linksBarHtml = `<div class="log-links-bar"><div class="link-label">Vinculado de:</div><div class="pills-container">${originPill}</div></div>`;
                 }
             }
@@ -2121,49 +2212,38 @@ Stack: ${e.stack}`;
 
             displayedText = AppUtils.escapeHTML(displayedText);
 
-            // Fallback general replacement for standard format @[name](id)
-            displayedText = displayedText.replace(/@\[(.*?)\]\((.*?)\)/g, (match, name, id) => {
-                let safeName = AppUtils.escapeHTML(name);
-                safeName = safeName.charAt(0).toUpperCase() + safeName.slice(1);
-                const safeId = AppUtils.escapeHTML(id);
-                return `<span class="mention-link" onclick="App.focusEntity('${safeId}', '', '${log.id}')">@${safeName}</span>`;
-            });
-
             // Format mentions as links before highlight to avoid messing up HTML
             if (log.relatedEntities && log.relatedEntities.length > 0) {
-                // Pre-sort relations by name length descending to avoid partial matches replacing parts of larger names
-                let sortedRels = [...log.relatedEntities].filter(r => r.id !== log.originEntityId).sort((a, b) => {
-                    let aName = window.cachedEntitiesMap ? (window.cachedEntitiesMap.get(a.id) || "") : "";
-                    let bName = window.cachedEntitiesMap ? (window.cachedEntitiesMap.get(b.id) || "") : "";
-                    return bName.length - aName.length;
-                });
+                for (let rel of log.relatedEntities) {
+                    if (rel.id !== log.originEntityId) {
+                        let eName = 'Entidade';
+                        let matchingItem = window.cachedEntitiesMap ? window.cachedEntitiesMap.get(rel.id) : null;
+                        if (!matchingItem) {
+                             AppDB.entities.get(rel.id).then(entity => {
+                                if (entity) {
+                                    if (!window.cachedEntitiesMap) window.cachedEntitiesMap = new Map();
+                                    window.cachedEntitiesMap.set(entity.id, entity.name);
+                                }
+                             });
+                        } else {
+                            eName = matchingItem;
+                        }
 
-                for (let rel of sortedRels) {
-                    let eName = 'Entidade';
-                    let matchingItem = window.cachedEntitiesMap ? window.cachedEntitiesMap.get(rel.id) : null;
-                    if (!matchingItem) {
-                        // Will not block execution, map will be ready next time
-                        AppDB.entities.get(rel.id).then(entity => {
-                            if (entity) {
-                                if (!window.cachedEntitiesMap) window.cachedEntitiesMap = new Map();
-                                window.cachedEntitiesMap.set(entity.id, entity.name);
-                            }
-                        });
-                        continue; // Skip plain text replacement if name not known, rely on @[...](...) fallback above
-                    } else {
-                        eName = matchingItem;
+                        const escapedName = AppUtils.escapeRegex(AppUtils.escapeHTML(eName));
+                        const mentionRegexOld = new RegExp(`@\\[${escapedName}\\]\\(${rel.id}\\)`, 'g');
+                        displayedText = displayedText.replace(mentionRegexOld, `<span class="mention-link" onclick="App.focusEntity('${rel.id}')">@${AppUtils.escapeHTML(eName)}</span>`);
+
+                        const mentionRegexNew = new RegExp(`@${escapedName}`, 'g');
+                        displayedText = displayedText.replace(mentionRegexNew, `<span class="mention-link" onclick="App.focusEntity('${rel.id}')">@${AppUtils.escapeHTML(eName)}</span>`);
                     }
-
-                    const safeEName = AppUtils.escapeHTML(eName);
-                    const capitalizedEName = safeEName.charAt(0).toUpperCase() + safeEName.slice(1);
-                    const escapedName = AppUtils.escapeRegex(safeEName);
-                    // Replace plain @EntityName
-                    // Regex ensures we match @EntityName only if it is not already inside an HTML tag
-                    // (which happens if it was previously converted, or part of a fallback)
-                    const mentionRegexNew = new RegExp(`(^|[^\\w>])@${escapedName}(?=[\\s\\.,;:]|$)`, 'g');
-                    displayedText = displayedText.replace(mentionRegexNew, `$1<span class="mention-link" onclick="App.focusEntity('${rel.id}', '', '${log.id}')">@${capitalizedEName}</span>`);
                 }
             }
+
+            displayedText = displayedText.replace(/@\[(.*?)\]\((.*?)\)/g, (match, name, id) => {
+                const safeName = AppUtils.escapeHTML(name);
+                const safeId = AppUtils.escapeHTML(id);
+                return `<span class="mention-link" onclick="App.focusEntity('${safeId}')">@${safeName}</span>`;
+            });
 
             if(searchTerm) displayedText = AppUtils.highlight(displayedText, searchTerm);
 
@@ -2190,7 +2270,7 @@ Stack: ${e.stack}`;
                     <div class="log-header">
                         <span style="display:flex; align-items:center;">
                             ${toggleHtml}
-                            Em ${AppUtils.formatDate(log.createdAt)}
+                            <i class="material-icons" style="font-size:12px; margin-right:4px;">schedule</i> ${AppUtils.formatDate(log.createdAt)}
                         </span>
                         <div class="log-actions">
                             ${addIconHtml}
@@ -2268,16 +2348,14 @@ Stack: ${e.stack}`;
     openTimeline: async function(fromPopState = false) {
         this.currentView = 'timeline';
         MenuModal.closeUI();
+        document.getElementById('viewHome').classList.remove('active');
         document.getElementById('viewList').classList.remove('active');
         document.getElementById('viewTimeline').classList.add('active');
-        document.getElementById('syncIconBtn').style.display = '';
-        document.querySelector('.header-actions i[title="Imprimir Relatório"]').style.display = '';
-        document.getElementById('menuWrapper').style.display = '';
 
         document.getElementById('headerIcon').innerText = 'timeline';
         document.getElementById('headerText').innerText = 'Linha do Tempo';
-        document.getElementById('btnBack').style.display = 'none';
-        document.getElementById('headerVersion').style.display = 'block';
+        document.getElementById('btnBack').style.display = 'inline-block';
+        document.getElementById('headerVersion').style.display = 'none';
 
         const fab = document.getElementById('mainFab');
         fab.style.display = 'grid';
@@ -2286,7 +2364,7 @@ Stack: ${e.stack}`;
         // Garante que a entidade global-timeline existe silenciosamente
         let globalEntity = await AppDB.entities.get('global-timeline');
         if (!globalEntity) {
-            await AppDB.entities.put({ id: 'global-timeline', type: 'system', name: 'Linha do Tempo', createdAt: Date.now(), updatedAt: Date.now(), parentId: null });
+            await AppDB.entities.put({ id: 'global-timeline', type: 'system', name: 'Timeline Global', createdAt: Date.now(), updatedAt: Date.now(), parentId: null });
         }
 
         document.getElementById('timelineSearchInput').value = '';
@@ -2317,7 +2395,7 @@ Stack: ${e.stack}`;
 
         // We need to re-render with highlight tags
         this.renderTimeline(term).then(() => {
-            const marks = container.querySelectorAll('mark.highlight, .pdf-highlight-focus');
+            const marks = container.querySelectorAll('mark.highlight');
             this.timelineCurrentMatches = Array.from(marks).filter(mark => mark.closest('.timeline-entry'));
 
             if (this.timelineCurrentMatches.length > 0) {
@@ -2391,7 +2469,7 @@ Stack: ${e.stack}`;
             const monthStr = monthNames[dateObj.getMonth()];
             const yearStr = dateObj.getFullYear();
             const dayName = daysOfWeek[dateObj.getDay()];
-            const timeStr = `${dateObj.getHours().toString().padStart(2, '0')}:${dateObj.getMinutes().toString().padStart(2, '0')}h`;
+            const timeStr = `${dateObj.getHours().toString().padStart(2, '0')}:${dateObj.getMinutes().toString().padStart(2, '0')}`;
 
             const groupDateStr = `${monthStr} ${yearStr}`;
 
@@ -2406,45 +2484,38 @@ Stack: ${e.stack}`;
 
             textContent = AppUtils.escapeHTML(textContent);
 
-            // Fallback general replacement for standard format @[name](id)
-            textContent = textContent.replace(/@\[(.*?)\]\((.*?)\)/g, (match, name, id) => {
-                let safeName = AppUtils.escapeHTML(name);
-                safeName = safeName.charAt(0).toUpperCase() + safeName.slice(1);
-                const safeId = AppUtils.escapeHTML(id);
-                return `<span class="mention-link" onclick="App.focusEntity('${safeId}', '', '${log.id}')">@${safeName}</span>`;
-            });
-
             // Format mentions as links before highlight to avoid messing up HTML
             if (log.relatedEntities && log.relatedEntities.length > 0) {
-                // Pre-sort relations by name length descending to avoid partial matches replacing parts of larger names
-                let sortedRels = [...log.relatedEntities].filter(r => r.id !== log.originEntityId).sort((a, b) => {
-                    let aName = window.cachedEntitiesMap ? (window.cachedEntitiesMap.get(a.id) || "") : "";
-                    let bName = window.cachedEntitiesMap ? (window.cachedEntitiesMap.get(b.id) || "") : "";
-                    return bName.length - aName.length;
-                });
+                for (let rel of log.relatedEntities) {
+                    if (rel.id !== log.originEntityId) {
+                        let eName = 'Entidade';
+                        let matchingItem = window.cachedEntitiesMap ? window.cachedEntitiesMap.get(rel.id) : null;
+                        if (!matchingItem) {
+                             AppDB.entities.get(rel.id).then(entity => {
+                                if (entity) {
+                                    if (!window.cachedEntitiesMap) window.cachedEntitiesMap = new Map();
+                                    window.cachedEntitiesMap.set(entity.id, entity.name);
+                                }
+                             });
+                        } else {
+                            eName = matchingItem;
+                        }
 
-                for (let rel of sortedRels) {
-                    let eName = 'Entidade';
-                    let matchingItem = window.cachedEntitiesMap ? window.cachedEntitiesMap.get(rel.id) : null;
-                    if (!matchingItem) {
-                        AppDB.entities.get(rel.id).then(entity => {
-                            if (entity) {
-                                if (!window.cachedEntitiesMap) window.cachedEntitiesMap = new Map();
-                                window.cachedEntitiesMap.set(entity.id, entity.name);
-                            }
-                        });
-                        continue;
-                    } else {
-                        eName = matchingItem;
+                        const escapedName = AppUtils.escapeRegex(AppUtils.escapeHTML(eName));
+                        const mentionRegexOld = new RegExp(`@\\[${escapedName}\\]\\(${rel.id}\\)`, 'g');
+                        textContent = textContent.replace(mentionRegexOld, `<span class="mention-link" onclick="App.focusEntity('${rel.id}')">@${AppUtils.escapeHTML(eName)}</span>`);
+
+                        const mentionRegexNew = new RegExp(`@${escapedName}`, 'g');
+                        textContent = textContent.replace(mentionRegexNew, `<span class="mention-link" onclick="App.focusEntity('${rel.id}')">@${AppUtils.escapeHTML(eName)}</span>`);
                     }
-
-                    const safeEName = AppUtils.escapeHTML(eName);
-                    const capitalizedEName = safeEName.charAt(0).toUpperCase() + safeEName.slice(1);
-                    const escapedName = AppUtils.escapeRegex(safeEName);
-                    const mentionRegexNew = new RegExp(`(^|[^\\w>])@${escapedName}(?=[\\s\\.,;:]|$)`, 'g');
-                    textContent = textContent.replace(mentionRegexNew, `$1<span class="mention-link" onclick="App.focusEntity('${rel.id}', '', '${log.id}')">@${capitalizedEName}</span>`);
                 }
             }
+
+            textContent = textContent.replace(/@\[(.*?)\]\((.*?)\)/g, (match, name, id) => {
+                const safeName = AppUtils.escapeHTML(name);
+                const safeId = AppUtils.escapeHTML(id);
+                return `<span class="mention-link" onclick="App.focusEntity('${safeId}')">@${safeName}</span>`;
+            });
 
             if (highlightTerm) {
                 textContent = AppUtils.highlight(textContent, highlightTerm);
@@ -2452,44 +2523,22 @@ Stack: ${e.stack}`;
 
             let mediaHtml = '';
             if (log.images && log.images.length > 0) {
-                // Approximate available vertical space based on text length
-                // Very rough estimation: 1 thumbnail per 120 characters, minimum 1
-                let newlines = (textContent.match(/\n/g) || []).length;
-                let estimatedLines = newlines + ((textContent.length || 0) / 40);
-                let maxThumbs = Math.max(1, Math.floor(estimatedLines / 4));
+                let img = log.images[0];
+                let clickHandler = `CarouselModal.open('${log.id}')`;
+                let thumbSrc = img.data;
 
-                // Don't show more thumbnails than we actually have
-                let numThumbsToShow = Math.min(maxThumbs, log.images.length);
-                let remainingImgs = log.images.length - numThumbsToShow;
-
-                mediaHtml += `<div style="display:flex; flex-direction:column; gap:8px;">`;
-
-                for (let i = 0; i < numThumbsToShow; i++) {
-                    let img = log.images[i];
-                    let clickHandler = `CarouselModal.open('${log.id}', ${i})`;
-                    let thumbSrc = img.data;
-
-                    let thumbHtml = '';
-                    if (img.isVideo || (img.data.startsWith('data:video/') || img.data.endsWith('.webm') || img.data.endsWith('.mp4'))) {
-                        thumbSrc = img.thumbnail || '';
-                        thumbHtml = `<div class="timeline-media-wrapper" onclick="${clickHandler}" style="background: url('${thumbSrc}') center/cover; margin-left: 12px; margin-bottom: 0;"><div style="background:rgba(0,0,0,0.5); width:100%; height:100%; display:flex; align-items:center; justify-content:center;"><i class="material-icons" style="color:white;">play_circle_outline</i></div>`;
-                    } else if ((img.data.startsWith('data:application/pdf') || img.data.endsWith('.pdf'))) {
-                        let pdfName = AppUtils.getPdfName(img.data).toLowerCase();
-                        let highlightClass = (highlightTerm && pdfName.includes(highlightTerm.toLowerCase())) ? 'pdf-highlight-focus' : '';
-                        let highlightStyle = (highlightTerm && pdfName.includes(highlightTerm.toLowerCase())) ? 'border: 2px solid yellow; box-sizing: border-box;' : '';
-                        thumbHtml = `<div class="timeline-media-wrapper ${highlightClass}" onclick="${clickHandler}" style="background: var(--surface-variant); display:flex; align-items:center; justify-content:center; flex-direction:column; margin-left: 12px; margin-bottom: 0; ${highlightStyle}"><i class="material-icons" style="color:var(--danger); font-size: 32px;">picture_as_pdf</i><span style="font-size:9px; margin-top:4px; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; padding:0 4px; display:block; box-sizing:border-box;">${AppUtils.getPdfName(img.data)}</span>`;
-                    } else {
-                        thumbHtml = `<div class="timeline-media-wrapper" onclick="${clickHandler}" style="margin-left: 12px; margin-bottom: 0;"><img src="${thumbSrc}" style="width:100%; height:100%; object-fit:cover;">`;
-                    }
-
-                    if (i === numThumbsToShow - 1 && remainingImgs > 0) {
-                        thumbHtml += `<div style="position:absolute; bottom:4px; right:4px; background:rgba(0,0,0,0.7); color:white; font-size:10px; font-weight:bold; padding:2px 6px; border-radius:8px;">+${remainingImgs}</div>`;
-                    }
-                    thumbHtml += `</div>`;
-
-                    mediaHtml += thumbHtml;
+                if (img.isVideo || (img.data.startsWith('data:video/') || img.data.endsWith('.webm') || img.data.endsWith('.mp4'))) {
+                    thumbSrc = img.thumbnail || '';
+                    mediaHtml = `<div class="timeline-media-wrapper" onclick="${clickHandler}" style="background: url('${thumbSrc}') center/cover;"><div style="background:rgba(0,0,0,0.5); width:100%; height:100%; display:flex; align-items:center; justify-content:center;"><i class="material-icons" style="color:white;">play_circle_outline</i></div>`;
+                } else if ((img.data.startsWith('data:application/pdf') || img.data.endsWith('.pdf'))) {
+                    mediaHtml = `<div class="timeline-media-wrapper" onclick="${clickHandler}" style="background: var(--surface-variant); display:flex; align-items:center; justify-content:center; flex-direction:column;"><i class="material-icons" style="color:var(--danger); font-size: 32px;">picture_as_pdf</i><span style="font-size:9px; margin-top:4px; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; padding:0 4px;">PDF</span>`;
+                } else {
+                    mediaHtml = `<div class="timeline-media-wrapper" onclick="${clickHandler}"><img src="${thumbSrc}" style="width:100%; height:100%; object-fit:cover;">`;
                 }
 
+                if (log.images.length > 1) {
+                    mediaHtml += `<div style="position:absolute; bottom:4px; right:4px; background:rgba(0,0,0,0.7); color:white; font-size:10px; font-weight:bold; padding:2px 6px; border-radius:8px;">+${log.images.length - 1}</div>`;
+                }
                 mediaHtml += `</div>`;
             }
 
@@ -2556,36 +2605,14 @@ Stack: ${e.stack}`;
             for(let e of filtered) {
                 if(e.name.toLowerCase() === searchTerm) hasExactMatch = true;
                 let matchesName = e.name.toLowerCase().includes(searchTerm);
-                let relatedLogs = await AppDB.logs.filter(l => {
-                    if (l.isDeleted || !l.relatedEntities.some(rel => rel.id === e.id)) return false;
-                    if (l.text && l.text.toLowerCase().includes(searchTerm)) return true;
-                    if (l.images) {
-                        for (let img of l.images) {
-                            if ((img.data.startsWith('data:application/pdf') || img.data.endsWith('.pdf'))) {
-                                if (AppUtils.getPdfName(img.data).toLowerCase().includes(searchTerm)) return true;
-                            }
-                        }
-                    }
-                    return false;
-                }).toArray();
+                let relatedLogs = await AppDB.logs.filter(l => !l.isDeleted && l.relatedEntities.some(rel => rel.id === e.id) && l.text && l.text.toLowerCase().includes(searchTerm)).toArray();
 
                 let tasksMatched = [];
                 if(e.type === 'servico') {
                     const servTasks = await AppDB.entities.filter(t => !t.isDeleted && t.parentId === e.id && t.type === 'tarefa').toArray();
                     for(let t of servTasks) {
                         let matchesTaskName = t.name.toLowerCase().includes(searchTerm);
-                        let taskRelatedLogs = await AppDB.logs.filter(l => {
-                            if (l.isDeleted || !l.relatedEntities.some(rel => rel.id === t.id)) return false;
-                            if (l.text && l.text.toLowerCase().includes(searchTerm)) return true;
-                            if (l.images) {
-                                for (let img of l.images) {
-                                    if ((img.data.startsWith('data:application/pdf') || img.data.endsWith('.pdf'))) {
-                                        if (AppUtils.getPdfName(img.data).toLowerCase().includes(searchTerm)) return true;
-                                    }
-                                }
-                            }
-                            return false;
-                        }).toArray();
+                        let taskRelatedLogs = await AppDB.logs.filter(l => !l.isDeleted && l.relatedEntities.some(rel => rel.id === t.id) && l.text && l.text.toLowerCase().includes(searchTerm)).toArray();
                         if(matchesTaskName || taskRelatedLogs.length > 0) tasksMatched.push({ task: t, logsMatched: taskRelatedLogs });
                     }
                 }
@@ -2601,6 +2628,9 @@ Stack: ${e.stack}`;
 
         listEl.innerHTML = '';
 
+        if (searchTerm && !hasExactMatch) {
+            listEl.innerHTML += `<div class="create-btn-dynamic" onclick="App.createEntityOnTheFly('${rawSearchTerm.replace(/'/g, "\\'")}')"><i class="material-icons">add_circle_outline</i><span>Criar: <strong>${rawSearchTerm}</strong></span></div>`;
+        }
 
         if (filtered.length === 0 && !searchTerm) {
             listEl.innerHTML = `<div class="empty-state"><i class="material-icons">${this.moduleIcon}</i><p>Nenhum registo.<br>Busque para criar.</p></div>`;
@@ -2907,9 +2937,6 @@ var LogModal = {
             document.getElementById('logLinkContainer').style.display = 'block';
         }
 
-        document.getElementById('logCam').value = '';
-        document.getElementById('logGal').value = '';
-
         await this.renderLinks();
         this.updateUI(); AppState.openModal(this);
     },
@@ -3178,8 +3205,8 @@ const handleLogMedia = async (e) => {
 
     try {
         await processMultipleMedia(files, (pct) => {
-            const texts = document.querySelectorAll('#video-progress-text');
-            texts.forEach(t => t.innerText = `A processar: ${pct}%`);
+            const progressText = document.getElementById('video-progress-text');
+            if(progressText) progressText.innerText = `A processar: ${pct}%`;
         }, (newMedia) => {
             if(hasVideo) LogModal.tempMedia = LogModal.tempMedia.filter(m => !m.isPlaceholder);
             LogModal.tempMedia.push(...newMedia); LogModal.updateUI();
@@ -3209,7 +3236,7 @@ var CarouselModal = {
         this.container.addEventListener('scroll', () => { const itemW = window.innerWidth * 0.85 + 16; this.currentIndex = Math.round(this.container.scrollLeft / itemW); this.updateGlobalActions(); }, {passive: true});
         setTimeout(() => { const itemW = window.innerWidth * 0.85 + 16; this.container.scrollLeft = this.currentIndex * itemW; }, 50);
     },
-    closeUI: function() { document.title = this.originalTitle || "Linha do Tempo"; AppState.closeModalUI(); },
+    closeUI: function() { document.title = this.originalTitle || "Oráculo P-31"; AppState.closeModalUI(); },
     next: function() { const itemW = window.innerWidth * 0.85 + 16; this.container.scrollBy({ left: itemW, behavior: 'smooth' }); },
     prev: function() { const itemW = window.innerWidth * 0.85 + 16; this.container.scrollBy({ left: -itemW, behavior: 'smooth' }); },
     updateGlobalActions: function() {
@@ -3224,7 +3251,7 @@ var CarouselModal = {
     render: function() {
         this.container.innerHTML = this.imagesArray.map((img, idx) => {
             let media = '';
-            if (img.isPlaceholder) { media = `<div class="carousel-pdf" style="background:#111;"><i class="material-icons" style="font-size:48px; color:var(--primary); animation: spin 1s linear infinite;">sync</i><span id="video-progress-text" style="color:var(--primary); font-size:14px; margin-top:12px; text-align:center;">A processar: 0%</span></div>`; }
+            if (img.isPlaceholder) { media = `<div class="carousel-pdf" style="background:#111;"><i class="material-icons" style="font-size:48px; color:var(--primary); animation: spin 1s linear infinite;">sync</i><span style="color:var(--primary); font-size:14px; margin-top:12px; text-align:center;">A processar...</span></div>`; }
             else if ((img.data.startsWith('data:application/pdf') || img.data.endsWith('.pdf'))) { media = `<div class="carousel-pdf" onclick="App.openPDF('${img.data}')"><i class="material-icons" style="font-size:48px; color:var(--danger)">picture_as_pdf</i><span style="color:#fff; font-size:14px; margin-top:12px; text-align:center;">${AppUtils.getPdfName(img.data)}</span></div>`; }
             else if (img.isVideo || (img.data.startsWith('data:video/') || img.data.endsWith('.webm') || img.data.endsWith('.mp4'))) { media = `<div class="carousel-img-wrapper" style="pointer-events: auto;"><video src="${img.data}" class="carousel-img" controls playsinline style="pointer-events: auto; z-index: 20; position: relative; max-width: 100%; max-height: 80vh"></video></div>`; }
             else { media = `<div class="carousel-img-wrapper"><img src="${img.data}" class="carousel-img"><div class="carousel-touch-layer"></div></div>`; }
@@ -3382,23 +3409,6 @@ Editor.canvas.addEventListener('mousedown', (e) => Editor.startDraw(e)); Editor.
 Editor.canvas.addEventListener('touchstart', (e) => Editor.startDraw(e), {passive: false}); Editor.canvas.addEventListener('touchmove', (e) => Editor.draw(e), {passive: false}); Editor.canvas.addEventListener('touchend', (e) => Editor.stopDraw(e), {passive: false});
 
 App.init();
-
-// Fix for text selection issue
-document.addEventListener('click', function(e) {
-    if (window.getSelection) {
-        let sel = window.getSelection();
-        if (!sel.isCollapsed) {
-            let tag = e.target.tagName.toLowerCase();
-            if (tag !== 'input' && tag !== 'textarea') {
-                // Also check if the clicked element has user-select: text
-                let cs = window.getComputedStyle(e.target);
-                if (cs.userSelect !== 'text') {
-                    sel.removeAllRanges();
-                }
-            }
-        }
-    }
-});
 </script>
 </body>
 </html>
