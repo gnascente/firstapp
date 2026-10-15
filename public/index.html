@@ -322,7 +322,7 @@
             <i class="material-icons" style="color:var(--primary);" id="headerIcon">timeline</i>
             <div style="display:flex; flex-direction:column; line-height:1; min-width: 0;">
                 <span id="headerText">Linha do Tempo</span>
-                <span id="headerVersion" style="font-size: 10px; color: var(--on-surface-variant); font-weight: normal; margin-top:2px;">v 4.8.19</span>
+                <span id="headerVersion" style="font-size: 10px; color: var(--on-surface-variant); font-weight: normal; margin-top:2px;">v 4.8.20</span>
             </div>
         </h1>
         <div class="header-actions">
@@ -3168,9 +3168,7 @@ var LogModal = {
     }
 };
 
-const handleLogMedia = async (e) => {
-    const files = Array.from(e.target.files);
-    e.target.value = ''; // Clear early to prevent duplicate change events on some mobile browsers
+const processLogFiles = async (files) => {
     if(files.length === 0) return;
 
     let hasVideo = files.some(f => f.type.startsWith('video/'));
@@ -3189,8 +3187,35 @@ const handleLogMedia = async (e) => {
         LogModal.updateUI(); CustomDialog.alert("Erro ao processar ficheiros: " + err.message, "Erro");
     }
 };
+
+const handleLogMedia = async (e) => {
+    const files = Array.from(e.target.files);
+    e.target.value = ''; // Clear early to prevent duplicate change events on some mobile browsers
+    await processLogFiles(files);
+};
 document.getElementById('logCam').addEventListener('change', handleLogMedia);
 document.getElementById('logGal').addEventListener('change', handleLogMedia);
+
+document.getElementById('logText').addEventListener('paste', async (e) => {
+    if (!e.clipboardData || !e.clipboardData.items) return;
+
+    let imageFiles = [];
+    for (let i = 0; i < e.clipboardData.items.length; i++) {
+        let item = e.clipboardData.items[i];
+        if (item.type.indexOf('image/') !== -1) {
+            let file = item.getAsFile();
+            if (file) {
+                imageFiles.push(file);
+            }
+        }
+    }
+
+    if (imageFiles.length > 0) {
+        // Prevent default paste action so the image doesn't end up embedded as text if supported
+        e.preventDefault();
+        await processLogFiles(imageFiles);
+    }
+});
 
 var CarouselModal = {
     el: document.getElementById('carouselModal'), container: document.getElementById('carouselContainer'), currentLogId: null, imagesArray: [], currentIndex: 0, originalTitle: '',
