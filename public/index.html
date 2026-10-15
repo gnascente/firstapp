@@ -322,7 +322,7 @@
             <i class="material-icons" style="color:var(--primary);" id="headerIcon">timeline</i>
             <div style="display:flex; flex-direction:column; line-height:1; min-width: 0;">
                 <span id="headerText">Linha do Tempo</span>
-                <span id="headerVersion" style="font-size: 10px; color: var(--on-surface-variant); font-weight: normal; margin-top:2px;">v 4.8.20</span>
+                <span id="headerVersion" style="font-size: 10px; color: var(--on-surface-variant); font-weight: normal; margin-top:2px;">v 4.8.21</span>
             </div>
         </h1>
         <div class="header-actions">
@@ -642,6 +642,17 @@ var AppUtils = {
     },
     formatDate: function(ts) { if (!ts) return ""; const d = new Date(ts); return `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear().toString().slice(-2)} ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`; },
     escapeHTML: function(str) { return str.replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)); },
+    formatLinks: function(text) {
+        return text.replace(/(https?:\/\/[^\s]+)/g, function(url) {
+            let label = "Link";
+            if (url.toLowerCase().includes("outlook")) {
+                label = "Link Email";
+            } else if (url.toLowerCase().includes("teams.microsoft")) {
+                label = "Link Teams";
+            }
+            return `<a href="${url}" target="_blank" style="color: var(--primary); text-decoration: underline;">${label}</a>`;
+        });
+    },
     escapeRegex: function(string) { return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); },
     highlight: function(text, term) { if (!term) return text; const regex = new RegExp(`(${term})`, 'gi'); return text.replace(regex, '<mark class="highlight">$1</mark>'); },
 
@@ -2120,6 +2131,7 @@ Stack: ${e.stack}`;
             let displayedText = log.text || '';
 
             displayedText = AppUtils.escapeHTML(displayedText);
+            displayedText = AppUtils.formatLinks(displayedText);
 
             // Fallback general replacement for standard format @[name](id)
             displayedText = displayedText.replace(/@\[(.*?)\]\((.*?)\)/g, (match, name, id) => {
@@ -2405,6 +2417,7 @@ Stack: ${e.stack}`;
             let textContent = log.text || '';
 
             textContent = AppUtils.escapeHTML(textContent);
+            textContent = AppUtils.formatLinks(textContent);
 
             // Fallback general replacement for standard format @[name](id)
             textContent = textContent.replace(/@\[(.*?)\]\((.*?)\)/g, (match, name, id) => {
@@ -3225,8 +3238,6 @@ var CarouselModal = {
         if (!this.imagesArray || this.imagesArray.length === 0) return;
         this.currentIndex = startIndex || 0; this.render();
 
-        this.originalTitle = document.title; document.title = "Mídia";
-
         AppState.openModal(this); this.bindZoom();
         const navLeft = document.getElementById('carouselNavLeft'); const navRight = document.getElementById('carouselNavRight');
         if(this.imagesArray.length > 1) { navLeft.style.display = 'grid'; navRight.style.display = 'grid'; } else { navLeft.style.display = 'none'; navRight.style.display = 'none'; }
@@ -3234,7 +3245,7 @@ var CarouselModal = {
         this.container.addEventListener('scroll', () => { const itemW = window.innerWidth * 0.85 + 16; this.currentIndex = Math.round(this.container.scrollLeft / itemW); this.updateGlobalActions(); }, {passive: true});
         setTimeout(() => { const itemW = window.innerWidth * 0.85 + 16; this.container.scrollLeft = this.currentIndex * itemW; }, 50);
     },
-    closeUI: function() { document.title = this.originalTitle || "Linha do Tempo"; AppState.closeModalUI(); },
+    closeUI: function() { AppState.closeModalUI(); },
     next: function() { const itemW = window.innerWidth * 0.85 + 16; this.container.scrollBy({ left: itemW, behavior: 'smooth' }); },
     prev: function() { const itemW = window.innerWidth * 0.85 + 16; this.container.scrollBy({ left: -itemW, behavior: 'smooth' }); },
     updateGlobalActions: function() {
