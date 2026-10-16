@@ -2172,7 +2172,7 @@ Stack: ${e.stack}`;
                     // Replace plain @EntityName
                     // Regex ensures we match @EntityName only if it is not already inside an HTML tag
                     // (which happens if it was previously converted, or part of a fallback)
-                    const mentionRegexNew = new RegExp(`(^|[^\\w>])@${escapedName}(?=[\\s\\.,;:]|$)`, 'g');
+                    const mentionRegexNew = new RegExp(`(^|[^\\w>])@${escapedName}(?=[\\s\\.,;:]|$)`, 'gi');
                     displayedText = displayedText.replace(mentionRegexNew, `$1<span class="mention-link" onclick="App.focusEntity('${rel.id}', '', '${log.id}')">@${capitalizedEName}</span>`);
                 }
             }
@@ -2454,7 +2454,7 @@ Stack: ${e.stack}`;
                     const safeEName = AppUtils.escapeHTML(eName);
                     const capitalizedEName = safeEName.charAt(0).toUpperCase() + safeEName.slice(1);
                     const escapedName = AppUtils.escapeRegex(safeEName);
-                    const mentionRegexNew = new RegExp(`(^|[^\\w>])@${escapedName}(?=[\\s\\.,;:]|$)`, 'g');
+                    const mentionRegexNew = new RegExp(`(^|[^\\w>])@${escapedName}(?=[\\s\\.,;:]|$)`, 'gi');
                     textContent = textContent.replace(mentionRegexNew, `$1<span class="mention-link" onclick="App.focusEntity('${rel.id}', '', '${log.id}')">@${capitalizedEName}</span>`);
                 }
             }
