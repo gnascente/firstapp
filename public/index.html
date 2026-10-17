@@ -322,7 +322,7 @@
             <i class="material-icons" style="color:var(--primary);" id="headerIcon">timeline</i>
             <div style="display:flex; flex-direction:column; line-height:1; min-width: 0;">
                 <span id="headerText">Linha do Tempo</span>
-                <span id="headerVersion" style="font-size: 10px; color: var(--on-surface-variant); font-weight: normal; margin-top:2px;">v 4.8.21</span>
+                <span id="headerVersion" style="font-size: 10px; color: var(--on-surface-variant); font-weight: normal; margin-top:2px;">v 4.8.19</span>
             </div>
         </h1>
         <div class="header-actions">
@@ -460,7 +460,7 @@
         </div>
 
         <div class="input-group">
-            <textarea id="logText" name="q_log_text" class="input-field" placeholder="Descreva o andamento, evento ou observação... (Use @ para mencionar equipamentos)" autocomplete="new-password" role="presentation" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" oninput="LogModal.handleTextareaInput(event)"></textarea>
+            <textarea id="logText" name="q_log_text" class="input-field" placeholder="Descreva o andamento, evento ou observação... (Use @ para mencionar equipamentos)" autocomplete="new-password" role="presentation" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" oninput="LogModal.handleTextareaInput(event)" onpaste="LogModal.handlePaste(event)"></textarea>
             <div id="logMentionAutocomplete" class="autocomplete-dropdown"></div>
         </div>
 
@@ -642,17 +642,6 @@ var AppUtils = {
     },
     formatDate: function(ts) { if (!ts) return ""; const d = new Date(ts); return `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear().toString().slice(-2)} ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`; },
     escapeHTML: function(str) { return str.replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)); },
-    formatLinks: function(text) {
-        return text.replace(/(https?:\/\/[^\s]+)/g, function(url) {
-            let label = "Link";
-            if (url.toLowerCase().includes("outlook")) {
-                label = "Link Email";
-            } else if (url.toLowerCase().includes("teams.microsoft")) {
-                label = "Link Teams";
-            }
-            return `<a href="${url}" target="_blank" style="color: var(--primary); text-decoration: underline;">${label}</a>`;
-        });
-    },
     escapeRegex: function(string) { return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); },
     highlight: function(text, term) { if (!term) return text; const regex = new RegExp(`(${term})`, 'gi'); return text.replace(regex, '<mark class="highlight">$1</mark>'); },
 
@@ -2131,7 +2120,6 @@ Stack: ${e.stack}`;
             let displayedText = log.text || '';
 
             displayedText = AppUtils.escapeHTML(displayedText);
-            displayedText = AppUtils.formatLinks(displayedText);
 
             // Fallback general replacement for standard format @[name](id)
             displayedText = displayedText.replace(/@\[(.*?)\]\((.*?)\)/g, (match, name, id) => {
@@ -2172,7 +2160,7 @@ Stack: ${e.stack}`;
                     // Replace plain @EntityName
                     // Regex ensures we match @EntityName only if it is not already inside an HTML tag
                     // (which happens if it was previously converted, or part of a fallback)
-                    const mentionRegexNew = new RegExp(`(^|[^\\w>])@${escapedName}(?=[\\s\\.,;:]|$)`, 'gi');
+                    const mentionRegexNew = new RegExp(`(^|[^\\w>])@${escapedName}(?=[\\s\\.,;:]|$)`, 'g');
                     displayedText = displayedText.replace(mentionRegexNew, `$1<span class="mention-link" onclick="App.focusEntity('${rel.id}', '', '${log.id}')">@${capitalizedEName}</span>`);
                 }
             }
@@ -2417,7 +2405,6 @@ Stack: ${e.stack}`;
             let textContent = log.text || '';
 
             textContent = AppUtils.escapeHTML(textContent);
-            textContent = AppUtils.formatLinks(textContent);
 
             // Fallback general replacement for standard format @[name](id)
             textContent = textContent.replace(/@\[(.*?)\]\((.*?)\)/g, (match, name, id) => {
@@ -2454,7 +2441,7 @@ Stack: ${e.stack}`;
                     const safeEName = AppUtils.escapeHTML(eName);
                     const capitalizedEName = safeEName.charAt(0).toUpperCase() + safeEName.slice(1);
                     const escapedName = AppUtils.escapeRegex(safeEName);
-                    const mentionRegexNew = new RegExp(`(^|[^\\w>])@${escapedName}(?=[\\s\\.,;:]|$)`, 'gi');
+                    const mentionRegexNew = new RegExp(`(^|[^\\w>])@${escapedName}(?=[\\s\\.,;:]|$)`, 'g');
                     textContent = textContent.replace(mentionRegexNew, `$1<span class="mention-link" onclick="App.focusEntity('${rel.id}', '', '${log.id}')">@${capitalizedEName}</span>`);
                 }
             }
@@ -2928,6 +2915,26 @@ var LogModal = {
     },
     closeUI: function() { AppState.closeModalUI(); },
 
+    handlePaste: async function(e) {
+        let items = (e.clipboardData || e.originalEvent.clipboardData).items;
+        let filesToProcess = [];
+
+        for (let i = 0; i < items.length; i++) {
+            let item = items[i];
+            if (item.kind === 'file' && item.type.startsWith('image/')) {
+                let blob = item.getAsFile();
+                const ext = item.type.split('/')[1] || 'png';
+                const dateString = new Date().toISOString().replace(/[:.]/g, '-');
+                const file = new File([blob], `Pasted-Image-${dateString}.${ext}`, { type: item.type });
+                filesToProcess.push(file);
+            }
+        }
+
+        if(filesToProcess.length > 0) {
+            await handleLogMedia({ target: { files: filesToProcess, value: '' } });
+        }
+    },
+
     handleTextareaInput: async function(e) {
         const text = e.target.value;
         const cursor = e.target.selectionStart;
@@ -3181,7 +3188,9 @@ var LogModal = {
     }
 };
 
-const processLogFiles = async (files) => {
+const handleLogMedia = async (e) => {
+    const files = Array.from(e.target.files);
+    e.target.value = ''; // Clear early to prevent duplicate change events on some mobile browsers
     if(files.length === 0) return;
 
     let hasVideo = files.some(f => f.type.startsWith('video/'));
@@ -3200,35 +3209,8 @@ const processLogFiles = async (files) => {
         LogModal.updateUI(); CustomDialog.alert("Erro ao processar ficheiros: " + err.message, "Erro");
     }
 };
-
-const handleLogMedia = async (e) => {
-    const files = Array.from(e.target.files);
-    e.target.value = ''; // Clear early to prevent duplicate change events on some mobile browsers
-    await processLogFiles(files);
-};
 document.getElementById('logCam').addEventListener('change', handleLogMedia);
 document.getElementById('logGal').addEventListener('change', handleLogMedia);
-
-document.getElementById('logText').addEventListener('paste', async (e) => {
-    if (!e.clipboardData || !e.clipboardData.items) return;
-
-    let imageFiles = [];
-    for (let i = 0; i < e.clipboardData.items.length; i++) {
-        let item = e.clipboardData.items[i];
-        if (item.type.indexOf('image/') !== -1) {
-            let file = item.getAsFile();
-            if (file) {
-                imageFiles.push(file);
-            }
-        }
-    }
-
-    if (imageFiles.length > 0) {
-        // Prevent default paste action so the image doesn't end up embedded as text if supported
-        e.preventDefault();
-        await processLogFiles(imageFiles);
-    }
-});
 
 var CarouselModal = {
     el: document.getElementById('carouselModal'), container: document.getElementById('carouselContainer'), currentLogId: null, imagesArray: [], currentIndex: 0, originalTitle: '',
@@ -3238,6 +3220,8 @@ var CarouselModal = {
         if (!this.imagesArray || this.imagesArray.length === 0) return;
         this.currentIndex = startIndex || 0; this.render();
 
+        this.originalTitle = document.title; document.title = "Mídia";
+
         AppState.openModal(this); this.bindZoom();
         const navLeft = document.getElementById('carouselNavLeft'); const navRight = document.getElementById('carouselNavRight');
         if(this.imagesArray.length > 1) { navLeft.style.display = 'grid'; navRight.style.display = 'grid'; } else { navLeft.style.display = 'none'; navRight.style.display = 'none'; }
@@ -3245,7 +3229,7 @@ var CarouselModal = {
         this.container.addEventListener('scroll', () => { const itemW = window.innerWidth * 0.85 + 16; this.currentIndex = Math.round(this.container.scrollLeft / itemW); this.updateGlobalActions(); }, {passive: true});
         setTimeout(() => { const itemW = window.innerWidth * 0.85 + 16; this.container.scrollLeft = this.currentIndex * itemW; }, 50);
     },
-    closeUI: function() { AppState.closeModalUI(); },
+    closeUI: function() { document.title = this.originalTitle || "Linha do Tempo"; AppState.closeModalUI(); },
     next: function() { const itemW = window.innerWidth * 0.85 + 16; this.container.scrollBy({ left: itemW, behavior: 'smooth' }); },
     prev: function() { const itemW = window.innerWidth * 0.85 + 16; this.container.scrollBy({ left: -itemW, behavior: 'smooth' }); },
     updateGlobalActions: function() {
