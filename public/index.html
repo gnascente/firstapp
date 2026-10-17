@@ -19,7 +19,7 @@
     </script>
 
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover">
     <meta name="google" content="notranslate">
     <title>Linha do Tempo</title>
 
@@ -68,7 +68,7 @@
         .material-icons { pointer-events: none; -webkit-user-select: none !important; user-select: none !important; -webkit-touch-callout: none !important; }
         .action-icon, .tool-btn, .carousel-btn, .carousel-nav-btn { pointer-events: auto; -webkit-user-select: none !important; user-select: none !important; -webkit-touch-callout: none !important; }
 
-        .container { width: 100%; max-width: 480px; background: var(--surface); border-radius: 0; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; overflow: hidden; position: relative; height: 100%; }
+        .container { width: 100%; max-width: 480px; width: 100vw; background: var(--surface); border-radius: 0; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; overflow: hidden; position: relative; height: 100%; }
 
         header { padding: 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--surface-variant); background: var(--surface); z-index: 20; flex-shrink: 0; }
         header h1 { font-size: 20px; font-weight: 500; display: flex; align-items: center; gap: 8px; flex-grow: 1; overflow: hidden; }
@@ -322,7 +322,7 @@
             <i class="material-icons" style="color:var(--primary);" id="headerIcon">timeline</i>
             <div style="display:flex; flex-direction:column; line-height:1; min-width: 0;">
                 <span id="headerText">Linha do Tempo</span>
-                <span id="headerVersion" style="font-size: 10px; color: var(--on-surface-variant); font-weight: normal; margin-top:2px;">v 4.8.19</span>
+                <span id="headerVersion" style="font-size: 10px; color: var(--on-surface-variant); font-weight: normal; margin-top:2px;">v 4.8.20</span>
             </div>
         </h1>
         <div class="header-actions">
@@ -2033,6 +2033,7 @@ Stack: ${e.stack}`;
         const now = Date.now();
         const newEntity = { id: now.toString(), type: newType, name: name.trim(), createdAt: now, updatedAt: now, parentId: parentId };
         await AppDB.entities.put(newEntity);
+        window.cachedEntitiesMap.set(newEntity.id, name.trim());
         if(!parentId) { document.getElementById('searchInput').value = ''; }
         if(parentId) {
             App.expandedTasks.add(parentId);
@@ -2839,6 +2840,7 @@ var EntityModal = {
             const oldName = entity.name;
             const now = Date.now();
             entity.name = val; entity.updatedAt = now;
+            window.cachedEntitiesMap.set(entity.id, val);
             if(entity.parentId) {
                 App.expandedTasks.add(entity.parentId);
                 App.saveExpandedTasksState();
@@ -2850,11 +2852,13 @@ var EntityModal = {
                 if (oldName !== val) {
                     const id = entity.id;
                     const escapedId = AppUtils.escapeRegex(id);
+                    const escapedOldName = AppUtils.escapeRegex(oldName);
                     let affectedLogs = await AppDB.logs.filter(l => l.text.includes(`](${id})`) || (l.relatedEntities && l.relatedEntities.some(rel => rel.id === id))).toArray();
                     for(let log of affectedLogs) {
                         let updated = false;
                         if (log.text) {
-                            const newText = log.text.replace(new RegExp(`@\\[[^\\]]+\\]\\(${escapedId}\\)`, "gi"), `@[${val}](${id})`);
+                            let newText = log.text.replace(new RegExp(`@\\[[^\\]]+\\]\\(${escapedId}\\)`, "gi"), `@[${val}](${id})`);
+                            newText = newText.replace(new RegExp(`(^|[^\\w>])@${escapedOldName}(?=[\\s\\.,;:]|$)`, "gi"), `$1@${val}`);
                             if (newText !== log.text) { log.text = newText; updated = true; }
                         }
                         if (log.relatedEntities) {
@@ -3135,6 +3139,7 @@ var LogModal = {
                         updatedAt: now,
                         parentId: null
                     });
+                    window.cachedEntitiesMap.set(realId, this.tempRelations[i].name);
 
                     const oldId = this.tempRelations[i].id;
                     const escapedOldId = AppUtils.escapeRegex(oldId);
