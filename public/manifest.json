@@ -4,6 +4,7 @@
   "description": "Um app Hello World em PWA e Cloudflare Pages",
   "start_url": "/index.html",
   "display": "standalone",
+  "orientation": "portrait",
   "background_color": "#1a202c",
   "theme_color": "#2d3748",
   "icons": [

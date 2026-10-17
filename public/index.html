@@ -19,7 +19,7 @@
     </script>
 
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
     <meta name="google" content="notranslate">
     <title>Linha do Tempo</title>
 
@@ -422,7 +422,7 @@
     </div>
 </div>
 
-<div id="logContextMenu" class="dropdown-menu" style="position: fixed; display: none; flex-direction: column; z-index: 9999; box-shadow: 0 4px 12px rgba(0,0,0,0.5);">
+<div id="logContextMenu" class="dropdown-menu" style="position: fixed; display: none; flex-direction: column; z-index: 9999; box-shadow: 0 4px 12px rgba(0,0,0,0.5); min-width: 120px; width: 120px;">
     <div class="menu-item" onclick="App.editLogFromContext()">
         <i class="material-icons">edit</i>
         <span>Editar</span>
@@ -2836,12 +2836,39 @@ var EntityModal = {
         const val = document.getElementById('entityNameEditInput').value.trim(); if(!val) return;
         const entity = await AppDB.entities.get(this.currentTargetId);
         if(entity) {
-            entity.name = val; entity.updatedAt = Date.now();
+            const oldName = entity.name;
+            const now = Date.now();
+            entity.name = val; entity.updatedAt = now;
             if(entity.parentId) {
                 App.expandedTasks.add(entity.parentId);
                 App.saveExpandedTasksState();
             }
-            await AppDB.entities.put(entity); App.renderList();
+
+            await AppDB.transaction('rw', AppDB.entities, AppDB.logs, async () => {
+                await AppDB.entities.put(entity);
+
+                if (oldName !== val) {
+                    const id = entity.id;
+                    const escapedId = AppUtils.escapeRegex(id);
+                    let affectedLogs = await AppDB.logs.filter(l => l.text.includes(`](${id})`) || (l.relatedEntities && l.relatedEntities.some(rel => rel.id === id))).toArray();
+                    for(let log of affectedLogs) {
+                        let updated = false;
+                        if (log.text) {
+                            const newText = log.text.replace(new RegExp(`@\\[[^\\]]+\\]\\(${escapedId}\\)`, "gi"), `@[${val}](${id})`);
+                            if (newText !== log.text) { log.text = newText; updated = true; }
+                        }
+                        if (log.relatedEntities) {
+                            for (let rel of log.relatedEntities) {
+                                if (rel.id === id && rel.name !== val) { rel.name = val; updated = true; }
+                            }
+                        }
+                        if (updated) { log.updatedAt = now; await AppDB.logs.put(log); }
+                    }
+                }
+            });
+
+            App.renderList();
+            if (App.currentView === 'timeline') App.renderTimeline();
         }
         this.closeUI();
     },
