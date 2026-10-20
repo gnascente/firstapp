@@ -334,6 +334,7 @@
                 <i class="material-icons action-icon" onclick="App.toggleMenu(event)">more_vert</i>
                 <div id="mainMenu" class="dropdown-menu">
                 <div class="menu-item" onclick="MenuModal.closeUI(); App.openModule('equipamento', 'Equipamentos', 'precision_manufacturing')"><i class="material-icons">precision_manufacturing</i> Equipamentos</div>
+                <div class="menu-item" id="menuItemMap" onclick="MenuModal.closeUI(); App.openMap()"><i class="material-icons">map</i> Mapa</div>
                     <input type="file" id="restoreLocalFile" accept=".zip,.json" style="display:none" onchange="App.restoreFromLocal(event)">
                     <div class="menu-item" onclick="document.getElementById('restoreLocalFile').click()"><i class="material-icons">folder_zip</i> Restaurar (Local)</div>
                     <div class="menu-item" onclick="App.exportToLocal()"><i class="material-icons">download</i> Exportar (Local)</div>
@@ -343,6 +344,19 @@
         </div>
     </header>
 
+
+    <!-- MAP CONTEXT MENU -->
+    <div id="mapContextMenu" class="dropdown-menu" style="position: fixed; display: none; flex-direction: column; z-index: 9999; box-shadow: 0 4px 12px rgba(0,0,0,0.5); min-width: 120px; width: 120px;">
+        <div class="menu-item" id="mapContextAddItem" onclick="MapLogic.addPinFromContext()"><i class="material-icons">add_location</i> Adicionar item</div>
+    </div>
+
+    <!-- MAP CONTENT -->
+    <div id="viewMap" class="view-section" style="display:none; height: calc(100vh - 60px); overflow: auto; position: relative; background: #fff;">
+        <div style="position: relative; display: inline-block; min-width: 100%; width: 100%;">
+            <img id="mapImage" src="mapa_navio.jpg" style="display: block; width: 100%; height: auto; pointer-events: none; user-select: none;" />
+            <div id="mapPinsContainer" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; touch-action: none;"></div>
+        </div>
+    </div>
 
     <div id="viewList" class="view-section">
         <div class="search-container">
@@ -569,6 +583,7 @@ var AppState = {
         if (this.modals.length > 0) { let m = this.modals.pop(); m.el.classList.remove('active'); if(m.onHardwareBack) m.onHardwareBack(); }
         else if (e.state && e.state.view) {
             if (e.state.view === 'home') App.goHome(true);
+            else if (e.state.view === 'map') App.openMap(true);
             else if (e.state.view === 'list') {
                 App.moduleType = e.state.moduleType; App.moduleName = e.state.moduleName; App.moduleIcon = e.state.moduleIcon; App.currentView = 'list';
                 document.getElementById('viewList').classList.add('active');
@@ -834,6 +849,181 @@ function renderStackedDeckHTML(images, logId, searchTerm = '') {
         return `<div class="stacked-deck" onclick="${clickHandler}">${photosHtml}${countHtml}</div>`;
     }
 }
+
+var MapLogic = {
+    pins: [],
+    initialized: false,
+    longPressTimer: null,
+    longPressContext: null,
+    dragContext: null,
+    init: function() {
+        if (this.initialized) return;
+        this.loadMapPins();
+        this.renderPins();
+
+        const container = document.getElementById('mapPinsContainer');
+        container.addEventListener('pointerdown', this.onPointerDown.bind(this));
+        container.addEventListener('pointermove', this.onPointerMove.bind(this));
+        container.addEventListener('pointerup', this.onPointerUp.bind(this));
+        container.addEventListener('pointercancel', this.onPointerCancel.bind(this));
+        container.addEventListener('contextmenu', (e) => e.preventDefault());
+
+        document.addEventListener('click', (e) => {
+            const menu = document.getElementById('mapContextMenu');
+            if (menu && menu.style.display !== 'none') {
+                if (!menu.contains(e.target)) {
+                    menu.style.display = 'none';
+                }
+            }
+        });
+
+        this.initialized = true;
+    },
+    loadMapPins: function() {
+        const data = localStorage.getItem('OraculoMapPins');
+        if (data) {
+            try { this.pins = JSON.parse(data); } catch(e) { this.pins = []; }
+        } else {
+            this.pins = [];
+        }
+    },
+    saveMapPins: function() {
+        localStorage.setItem('OraculoMapPins', JSON.stringify(this.pins));
+    },
+    renderPins: function() {
+        const container = document.getElementById('mapPinsContainer');
+        container.innerHTML = '';
+        this.pins.forEach(pin => {
+            const el = document.createElement('div');
+            el.className = 'map-pin';
+            el.dataset.id = pin.id;
+            el.style.position = 'absolute';
+            el.style.width = '20px';
+            el.style.height = '20px';
+            el.style.background = 'red';
+            el.style.borderRadius = '50%';
+            el.style.transform = 'translate(-50%, -50%)';
+            el.style.left = pin.x + '%';
+            el.style.top = pin.y + '%';
+            el.style.boxShadow = '0 2px 4px rgba(0,0,0,0.4)';
+            el.style.cursor = 'grab';
+            container.appendChild(el);
+        });
+    },
+    onPointerDown: function(e) {
+        if (e.target.classList.contains('map-pin')) {
+            const pinId = e.target.dataset.id;
+            e.target.setPointerCapture(e.pointerId);
+            this.dragContext = { pinId: pinId, element: e.target };
+            e.target.style.cursor = 'grabbing';
+            e.preventDefault();
+        } else if (e.target.id === 'mapPinsContainer' || e.target.id === 'mapImage') {
+            this.longPressContext = { clientX: e.clientX, clientY: e.clientY };
+            this.longPressTimer = setTimeout(() => {
+                this.showContextMenu(this.longPressContext.clientX, this.longPressContext.clientY);
+                this.longPressTimer = null;
+            }, 500);
+            if (e.button === 2) {
+                clearTimeout(this.longPressTimer);
+                this.showContextMenu(e.clientX, e.clientY);
+            }
+        }
+    },
+    onPointerMove: function(e) {
+        if (this.dragContext) {
+            const container = document.getElementById('mapPinsContainer');
+            const rect = container.getBoundingClientRect();
+            let xPos = ((e.clientX - rect.left) / rect.width) * 100;
+            let yPos = ((e.clientY - rect.top) / rect.height) * 100;
+            xPos = Math.max(0, Math.min(100, xPos));
+            yPos = Math.max(0, Math.min(100, yPos));
+
+            this.dragContext.element.style.left = xPos + '%';
+            this.dragContext.element.style.top = yPos + '%';
+        } else if (this.longPressTimer) {
+            if (Math.abs(e.clientX - this.longPressContext.clientX) > 10 || Math.abs(e.clientY - this.longPressContext.clientY) > 10) {
+                clearTimeout(this.longPressTimer);
+                this.longPressTimer = null;
+            }
+        }
+    },
+    onPointerUp: function(e) {
+        if (this.longPressTimer) {
+            clearTimeout(this.longPressTimer);
+            this.longPressTimer = null;
+        }
+        if (this.dragContext) {
+            const pinId = this.dragContext.pinId;
+            const container = document.getElementById('mapPinsContainer');
+            const rect = container.getBoundingClientRect();
+            let xPos = ((e.clientX - rect.left) / rect.width) * 100;
+            let yPos = ((e.clientY - rect.top) / rect.height) * 100;
+            xPos = Math.max(0, Math.min(100, xPos));
+            yPos = Math.max(0, Math.min(100, yPos));
+
+            const pin = this.pins.find(p => p.id === pinId);
+            if (pin) {
+                pin.x = xPos;
+                pin.y = yPos;
+                this.saveMapPins();
+            }
+            this.dragContext.element.style.cursor = 'grab';
+            this.dragContext.element.releasePointerCapture(e.pointerId);
+            this.dragContext = null;
+        }
+    },
+    onPointerCancel: function(e) {
+        if (this.longPressTimer) {
+            clearTimeout(this.longPressTimer);
+            this.longPressTimer = null;
+        }
+        if (this.dragContext) {
+            this.dragContext.element.style.cursor = 'grab';
+            this.dragContext.element.releasePointerCapture(e.pointerId);
+            this.dragContext = null;
+        }
+    },
+    showContextMenu: function(x, y) {
+        const menu = document.getElementById('mapContextMenu');
+        menu.style.display = 'flex';
+
+        let rx = x;
+        let ry = y;
+        menu.style.visibility = 'hidden';
+        menu.style.display = 'flex';
+        const mw = menu.offsetWidth || 120;
+        const mh = menu.offsetHeight || 50;
+        menu.style.visibility = 'visible';
+
+        if (rx + mw > window.innerWidth) rx = window.innerWidth - mw - 10;
+        if (ry + mh > window.innerHeight) ry = window.innerHeight - mh - 10;
+
+        menu.style.left = rx + 'px';
+        menu.style.top = ry + 'px';
+        this.contextMenuPos = { x: x, y: y };
+    },
+    addPinFromContext: function() {
+        document.getElementById('mapContextMenu').style.display = 'none';
+        if (!this.contextMenuPos) return;
+
+        const container = document.getElementById('mapPinsContainer');
+        const rect = container.getBoundingClientRect();
+
+        let xPos = ((this.contextMenuPos.x - rect.left) / rect.width) * 100;
+        let yPos = ((this.contextMenuPos.y - rect.top) / rect.height) * 100;
+        xPos = Math.max(0, Math.min(100, xPos));
+        yPos = Math.max(0, Math.min(100, yPos));
+
+        const newPin = {
+            id: 'pin_' + Date.now() + '_' + Math.floor(Math.random()*1000),
+            x: xPos,
+            y: yPos
+        };
+        this.pins.push(newPin);
+        this.saveMapPins();
+        this.renderPins();
+    }
+};
 
 // --- MAIN APPLICATION LOGIC ---
 var App = {
@@ -1918,6 +2108,7 @@ Stack: ${e.stack}`;
     },
 
     goHome: function(fromPopState = false) {
+        document.getElementById('viewMap').style.display = 'none';
         this.openTimeline(fromPopState);
         this.calculateStorage();
     },
@@ -1925,6 +2116,7 @@ Stack: ${e.stack}`;
 
     openModule: function(type, name, icon, fromPopState = false) {
         this.currentView = 'list'; this.moduleType = type; this.moduleName = name; this.moduleIcon = icon;
+        document.getElementById('viewMap').style.display = 'none';
         document.getElementById('viewList').classList.add('active');
         document.getElementById('syncIconBtn').style.display = 'none';
         document.querySelector('.header-actions i[title="Imprimir Relatório"]').style.display = 'none';
@@ -1938,6 +2130,7 @@ Stack: ${e.stack}`;
     },
 
     focusEntity: async function(id, focusTerm = '', focusLogId = null) {
+        document.getElementById('viewMap').style.display = 'none';
         if (id === 'global-timeline') {
             this.openTimeline(false);
             if (focusLogId) {
@@ -2019,13 +2212,31 @@ Stack: ${e.stack}`;
     },
 
     goBack: function(fromPopState = false) {
-        if (this.currentView === 'list' || this.currentView === 'timeline') {
+        if (this.currentView === 'list' || this.currentView === 'timeline' || this.currentView === 'map') {
             if(!fromPopState) {
                 history.back();
             } else {
                 this.goHome(true);
             }
         }
+    },
+
+    openMap: function(fromPopState = false) {
+        this.currentView = 'map';
+        document.getElementById('viewTimeline').classList.remove('active');
+        document.getElementById('viewList').classList.remove('active');
+        document.getElementById('viewMap').style.display = 'block';
+        document.getElementById('headerText').innerText = 'Mapa';
+        document.getElementById('headerIcon').innerText = 'map';
+        document.getElementById('btnBack').style.display = 'inline-block';
+        document.getElementById('headerVersion').style.display = 'none';
+        document.getElementById('mainFab').style.display = 'none';
+        document.getElementById('syncIconBtn').style.display = 'none';
+        document.getElementById('menuWrapper').style.display = 'none';
+        document.querySelector('.header-actions i[title="Imprimir Relatório"]').style.display = 'none';
+
+        MapLogic.init();
+        if (!fromPopState) history.pushState({ view: 'map' }, '');
     },
 
     createEntityOnTheFly: async function(name, parentId = null) {
@@ -2269,6 +2480,7 @@ Stack: ${e.stack}`;
     openTimeline: async function(fromPopState = false) {
         this.currentView = 'timeline';
         MenuModal.closeUI();
+        document.getElementById('viewMap').style.display = 'none';
         document.getElementById('viewList').classList.remove('active');
         document.getElementById('viewTimeline').classList.add('active');
         document.getElementById('syncIconBtn').style.display = '';
