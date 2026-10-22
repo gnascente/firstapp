@@ -68,7 +68,7 @@
         .material-icons { pointer-events: none; -webkit-user-select: none !important; user-select: none !important; -webkit-touch-callout: none !important; }
         .action-icon, .tool-btn, .carousel-btn, .carousel-nav-btn { pointer-events: auto; -webkit-user-select: none !important; user-select: none !important; -webkit-touch-callout: none !important; }
 
-        .container { width: 100%; max-width: 480px; width: 100vw; background: var(--surface); border-radius: 0; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; overflow: hidden; position: relative; height: 100%; }
+        .container { width: 100%; width: 100vw; background: var(--surface); border-radius: 0; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; overflow: hidden; position: relative; height: 100%; }
 
         header { padding: 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--surface-variant); background: var(--surface); z-index: 20; flex-shrink: 0; }
         header h1 { font-size: 20px; font-weight: 500; display: flex; align-items: center; gap: 8px; flex-grow: 1; overflow: hidden; }
@@ -189,12 +189,12 @@
         /* Modals */
         .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: flex-end; z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
         .modal-overlay.active { opacity: 1; pointer-events: auto; }
-        .modal-content { background: var(--surface); width: 100%; max-width: 480px; border-radius: 24px 24px 0 0; padding: 24px; max-height: 90vh; overflow-y: auto; box-shadow: var(--shadow); transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .modal-content { background: var(--surface); width: 100%; border-radius: 24px 24px 0 0; padding: 24px; max-height: 90vh; overflow-y: auto; box-shadow: var(--shadow); transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         .modal-overlay.active .modal-content { transform: translateY(0); }
 
         .dialog-overlay, .progress-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: flex; justify-content: center; align-items: center; z-index: 3000; opacity: 0; pointer-events: none; transition: opacity 0.2s; padding: 24px; }
         .dialog-overlay.active, .progress-modal.active { opacity: 1; pointer-events: auto; }
-        .dialog-content, .progress-content { background: var(--surface); width: 100%; max-width: 340px; border-radius: 16px; padding: 24px; box-shadow: var(--shadow); transform: scale(0.9); opacity: 0; transition: transform 0.2s, opacity 0.2s; text-align: center; }
+        .dialog-content, .progress-content { background: var(--surface); width: 100%; border-radius: 16px; padding: 24px; box-shadow: var(--shadow); transform: scale(0.9); opacity: 0; transition: transform 0.2s, opacity 0.2s; text-align: center; }
         .dialog-overlay.active .dialog-content, .progress-modal.active .progress-content { transform: scale(1); opacity: 1; }
         .dialog-content h3 { margin-bottom: 16px; text-align: left;}
 
@@ -348,6 +348,7 @@
     <!-- MAP CONTEXT MENU -->
     <div id="mapContextMenu" class="dropdown-menu" style="position: fixed; display: none; flex-direction: column; z-index: 9999; box-shadow: 0 4px 12px rgba(0,0,0,0.5); min-width: 120px; width: 120px;">
         <div class="menu-item" id="mapContextAddItem" onclick="MapLogic.addPinFromContext()"><i class="material-icons">add_location</i> Adicionar item</div>
+        <div class="menu-item" id="mapContextMoveItem" onclick="MapLogic.enableMovePin()"><i class="material-icons">open_with</i> Mover</div>
     </div>
 
     <!-- MAP CONTENT -->
@@ -356,7 +357,14 @@
             <img id="mapImage" src="mapa_navio.jpg" style="display: block; width: 100%; height: auto; pointer-events: none; user-select: none;" />
             <div id="mapPinsContainer" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; touch-action: none;"></div>
         </div>
+        <div id="mapPinLogsContainer" style="padding: 16px; display: none; flex-direction: column; gap: 16px;">
+            <div id="mapPinLogsContent" style="display: flex; flex-direction: column; gap: 8px;"></div>
+        </div>
     </div>
+
+    <button class="fab" id="mapPinFab" style="display:none;" onclick="LogModal.open(null, MapLogic.selectedPinId)">
+        <i class="material-icons">add</i>
+    </button>
 
     <div id="viewList" class="view-section">
         <div class="search-container">
@@ -856,6 +864,8 @@ var MapLogic = {
     longPressTimer: null,
     longPressContext: null,
     dragContext: null,
+    movingPinId: null,
+    selectedPinId: null,
     init: function() {
         if (this.initialized) return;
         this.loadMapPins();
@@ -906,19 +916,38 @@ var MapLogic = {
             el.style.left = pin.x + '%';
             el.style.top = pin.y + '%';
             el.style.boxShadow = '0 2px 4px rgba(0,0,0,0.4)';
-            el.style.cursor = 'grab';
+            el.style.cursor = 'pointer';
+            if (this.movingPinId === pin.id) {
+                el.style.border = '2px solid yellow';
+            }
+            if (this.selectedPinId === pin.id) {
+                el.style.boxShadow = '0 0 10px rgba(0, 0, 0, 0.8)';
+                el.style.transform = 'translate(-50%, -50%) scale(1.3)';
+            }
             container.appendChild(el);
         });
     },
     onPointerDown: function(e) {
         if (e.target.classList.contains('map-pin')) {
             const pinId = e.target.dataset.id;
-            e.target.setPointerCapture(e.pointerId);
-            this.dragContext = { pinId: pinId, element: e.target };
-            e.target.style.cursor = 'grabbing';
-            e.preventDefault();
+            if (pinId === this.movingPinId) {
+                e.target.setPointerCapture(e.pointerId);
+                this.dragContext = { pinId: pinId, element: e.target };
+                e.target.style.cursor = 'grabbing';
+                e.preventDefault();
+            } else {
+                this.longPressContext = { clientX: e.clientX, clientY: e.clientY, isPin: true, pinId: pinId };
+                this.longPressTimer = setTimeout(() => {
+                    this.showContextMenu(this.longPressContext.clientX, this.longPressContext.clientY);
+                    this.longPressTimer = null;
+                }, 500);
+                if (e.button === 2) {
+                    clearTimeout(this.longPressTimer);
+                    this.showContextMenu(e.clientX, e.clientY);
+                }
+            }
         } else if (e.target.id === 'mapPinsContainer' || e.target.id === 'mapImage') {
-            this.longPressContext = { clientX: e.clientX, clientY: e.clientY };
+            this.longPressContext = { clientX: e.clientX, clientY: e.clientY, isPin: false };
             this.longPressTimer = setTimeout(() => {
                 this.showContextMenu(this.longPressContext.clientX, this.longPressContext.clientY);
                 this.longPressTimer = null;
@@ -951,6 +980,20 @@ var MapLogic = {
         if (this.longPressTimer) {
             clearTimeout(this.longPressTimer);
             this.longPressTimer = null;
+            if (this.longPressContext && this.longPressContext.isPin && this.longPressContext.pinId !== this.movingPinId) {
+                const pinId = this.longPressContext.pinId;
+                this.movingPinId = null;
+                this.selectedPinId = pinId;
+                this.renderPins();
+                document.getElementById('mapPinLogsContainer').style.display = 'flex';
+                document.getElementById('mapPinFab').style.display = 'grid';
+                this.renderPinLogs(pinId);
+            } else if (e.target.id === 'mapPinsContainer' || e.target.id === 'mapImage') {
+                if (this.movingPinId) {
+                    this.movingPinId = null;
+                    this.renderPins();
+                }
+            }
         }
         if (this.dragContext) {
             const pinId = this.dragContext.pinId;
@@ -967,7 +1010,7 @@ var MapLogic = {
                 pin.y = yPos;
                 this.saveMapPins();
             }
-            this.dragContext.element.style.cursor = 'grab';
+            this.dragContext.element.style.cursor = 'pointer';
             this.dragContext.element.releasePointerCapture(e.pointerId);
             this.dragContext = null;
         }
@@ -978,13 +1021,22 @@ var MapLogic = {
             this.longPressTimer = null;
         }
         if (this.dragContext) {
-            this.dragContext.element.style.cursor = 'grab';
+            this.dragContext.element.style.cursor = 'pointer';
             this.dragContext.element.releasePointerCapture(e.pointerId);
             this.dragContext = null;
         }
     },
     showContextMenu: function(x, y) {
         const menu = document.getElementById('mapContextMenu');
+
+        if (this.longPressContext && this.longPressContext.isPin) {
+            document.getElementById('mapContextAddItem').style.display = 'none';
+            document.getElementById('mapContextMoveItem').style.display = 'flex';
+        } else {
+            document.getElementById('mapContextAddItem').style.display = 'flex';
+            document.getElementById('mapContextMoveItem').style.display = 'none';
+        }
+
         menu.style.display = 'flex';
 
         let rx = x;
@@ -1001,6 +1053,16 @@ var MapLogic = {
         menu.style.left = rx + 'px';
         menu.style.top = ry + 'px';
         this.contextMenuPos = { x: x, y: y };
+    },
+    enableMovePin: function() {
+        document.getElementById('mapContextMenu').style.display = 'none';
+        if (this.longPressContext && this.longPressContext.isPin) {
+            this.movingPinId = this.longPressContext.pinId;
+            this.selectedPinId = null;
+            document.getElementById('mapPinLogsContainer').style.display = 'none';
+            document.getElementById('mapPinFab').style.display = 'none';
+            this.renderPins();
+        }
     },
     addPinFromContext: function() {
         document.getElementById('mapContextMenu').style.display = 'none';
@@ -1022,6 +1084,20 @@ var MapLogic = {
         this.pins.push(newPin);
         this.saveMapPins();
         this.renderPins();
+
+        AppDB.entities.put({ id: newPin.id, type: 'map_pin', name: 'Marcador', parentId: null, createdAt: Date.now() });
+        window.cachedEntitiesMap.set(newPin.id, 'Marcador');
+    },
+    renderPinLogs: async function(pinId) {
+        const container = document.getElementById('mapPinLogsContent');
+        container.innerHTML = '<div class="empty-state"><i class="material-icons" style="animation: spin 1s linear infinite;">sync</i><p>Aguarde...</p></div>';
+        let pinLogs = await AppDB.logs.filter(log => !log.isDeleted && ((log.relatedEntities && log.relatedEntities.some(rel => rel.id === pinId)) || log.originEntityId === pinId)).toArray();
+        if (pinLogs.length === 0) {
+            container.innerHTML = `<div class="empty-state"><p>Nenhum registro para este marcador.</p></div>`;
+            return;
+        }
+        pinLogs.sort((a, b) => b.createdAt - a.createdAt);
+        container.innerHTML = await App.buildLogsHTML(pinLogs, pinId, '');
     }
 };
 
