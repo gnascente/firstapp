@@ -19,7 +19,7 @@
     </script>
 
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <meta name="google" content="notranslate">
     <title>Linha do Tempo</title>
 
@@ -322,6 +322,30 @@
         .timeline-time { font-size: 12px !important; }
         .timeline-media-wrapper { width: 90px !important; height: 90px !important; }
     }
+
+  @media screen and (max-width: 850px) {
+    html, body {
+      width: 100vw !important;
+      max-width: 100vw !important;
+      min-width: 0 !important;
+      overflow-x: hidden !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      zoom: 1 !important;
+      -webkit-text-size-adjust: 100% !important;
+    }
+    /* Força o container principal que está centralizado a ocupar 100% da tela no celular */
+    body > div, main, #app, .container, .timeline-container, .wrapper {
+      width: 100% !important;
+      max-width: 100% !important;
+      min-width: 0 !important;
+      margin-left: 0 !important;
+      margin-right: 0 !important;
+      padding-left: 8px !important;
+      padding-right: 8px !important;
+      box-sizing: border-box !important;
+    }
+  }
 </style>
 </head>
 <body>
@@ -335,7 +359,7 @@
             <i class="material-icons" style="color:var(--primary);" id="headerIcon">timeline</i>
             <div style="display:flex; flex-direction:column; line-height:1; min-width: 0;">
                 <span id="headerText">Linha do Tempo</span>
-                <span id="headerVersion" style="font-size: 10px; color: var(--on-surface-variant); font-weight: normal; margin-top:2px;">v 4.8.20</span>
+                <span id="headerVersion" style="font-size: 10px; color: var(--on-surface-variant); font-weight: normal; margin-top:2px;">v4.8.22</span>
             </div>
         </h1>
         <div class="header-actions">
@@ -1103,6 +1127,7 @@ var MapLogic = {
         this.renderPins();
 
         AppDB.entities.put({ id: newPin.id, type: 'map_pin', name: 'Marcador', parentId: null, createdAt: Date.now() });
+        if (!window.cachedEntitiesMap) window.cachedEntitiesMap = new Map();
         window.cachedEntitiesMap.set(newPin.id, 'Marcador');
     },
     renderPinLogs: async function(pinId) {

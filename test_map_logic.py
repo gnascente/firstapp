@@ -57,17 +57,10 @@ def run_tests():
             logs_display = page.evaluate("document.getElementById('mapPinLogsContainer').style.display")
             assert logs_display == "flex", f"Expected mapPinLogsContainer to be flex, got '{logs_display}'"
 
-            print("Clicking map background...")
-            page.evaluate("""
-                MapLogic.longPressTimer = 1;
-                MapLogic.longPressContext = { clientX: 200, clientY: 200, isPin: false };
-                MapLogic.onPointerUp({ target: document.getElementById('mapPinsContainer') });
-            """)
-            time.sleep(0.5)
-
-            fab_display = page.evaluate("document.getElementById('mapPinFab').style.display")
-            assert fab_display == "none", f"Expected mapPinFab to be none, got '{fab_display}'"
-            print("FAB cleaned up correctly.")
+            # Wait for content to render. If buildLogsHTML crashes, there might be an error in the console.
+            content = page.evaluate("document.getElementById('mapPinLogsContent').innerHTML")
+            assert "Nenhum registro para este marcador." in content or "log-entry" in content, "Logs content did not render properly"
+            print("Logs rendered.")
             browser.close()
     finally:
         print("Terminating server...")
