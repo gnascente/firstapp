@@ -1,0 +1,10 @@
+--- public/index.html
++++ public/index.html
+@@ -1085,6 +1085,7 @@
+         this.renderPins();
+
+         AppDB.entities.put({ id: newPin.id, type: 'map_pin', name: 'Marcador', parentId: null, createdAt: Date.now() });
++        if (!window.cachedEntitiesMap) window.cachedEntitiesMap = new Map();
+         window.cachedEntitiesMap.set(newPin.id, 'Marcador');
+     },
+     renderPinLogs: async function(pinId) {
