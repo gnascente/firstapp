@@ -1,0 +1,5 @@
+<<<<<<< SEARCH
+    <div id="viewMap" class="view-section" style="display:none; height: calc(100vh - 60px); overflow: auto; position: relative; background: var(--background);">
+=======
+    <div id="viewMap" class="view-section" style="display:none; height: calc(100vh - 60px); overflow: auto; position: relative; background: #222;">
+>>>>>>> REPLACE

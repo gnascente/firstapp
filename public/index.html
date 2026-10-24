@@ -359,7 +359,7 @@
             <i class="material-icons" style="color:var(--primary);" id="headerIcon">timeline</i>
             <div style="display:flex; flex-direction:column; line-height:1; min-width: 0;">
                 <span id="headerText">Linha do Tempo</span>
-                <span id="headerVersion" style="font-size: 10px; color: var(--on-surface-variant); font-weight: normal; margin-top:2px;">v4.8.22</span>
+                <span id="headerVersion" style="font-size: 10px; color: var(--on-surface-variant); font-weight: normal; margin-top:2px;">v4.8.23</span>
             </div>
         </h1>
         <div class="header-actions">
@@ -383,15 +383,18 @@
 
 
     <!-- MAP CONTEXT MENU -->
-    <div id="mapContextMenu" class="dropdown-menu" style="position: fixed; display: none; flex-direction: column; z-index: 9999; box-shadow: 0 4px 12px rgba(0,0,0,0.5); min-width: 120px; width: 120px;">
-        <div class="menu-item" id="mapContextAddItem" onclick="MapLogic.addPinFromContext()"><i class="material-icons">add_location</i> Adicionar item</div>
+    <div id="mapContextMenu" class="dropdown-menu" style="position: fixed; display: none; flex-direction: column; z-index: 9999; box-shadow: 0 4px 12px rgba(0,0,0,0.5); min-width: 200px; width: auto;">
+        <div class="menu-item" id="mapContextAddItem" onclick="MapLogic.addPinFromContext()"><i class="material-icons">add_location</i> Relatar problema</div>
+        <div class="menu-item" id="mapContextDemarcateItem" onclick="MapLogic.enableDemarcationMode()"><i class="material-icons">format_paint</i> Demarcar fronteira de equipamento</div>
         <div class="menu-item" id="mapContextMoveItem" onclick="MapLogic.enableMovePin()"><i class="material-icons">open_with</i> Mover</div>
+        <div class="menu-item" id="mapContextDeleteItem" onclick="MapLogic.deletePinFromContext()" style="color: var(--danger);"><i class="material-icons" style="color: var(--danger);">delete</i> Excluir</div>
     </div>
 
     <!-- MAP CONTENT -->
-    <div id="viewMap" class="view-section" style="display:none; height: calc(100vh - 60px); overflow: auto; position: relative; background: #fff;">
+    <div id="viewMap" class="view-section" style="display:none; height: calc(100vh - 60px); overflow: auto; position: relative; background: #222;">
         <div style="position: relative; display: inline-block; min-width: 100%; width: 100%;">
             <img id="mapImage" src="mapa_navio.jpg" style="display: block; width: 100%; height: auto; pointer-events: none; user-select: none;" />
+            <canvas id="demarcationCanvas" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 5; pointer-events: none; opacity: 0.5;"></canvas>
             <div id="mapPinsContainer" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; touch-action: none;"></div>
         </div>
         <div id="mapPinLogsContainer" style="padding: 16px; display: none; flex-direction: column; gap: 16px;">
@@ -399,7 +402,7 @@
         </div>
     </div>
 
-    <button class="fab" id="mapPinFab" style="display:none;" onclick="LogModal.open(null, MapLogic.selectedPinId)">
+    <button class="fab" id="mapPinFab" style="display:none;" onclick="MapLogic.openLogModalForPin()">
         <i class="material-icons">add</i>
     </button>
 
@@ -488,6 +491,23 @@
     </div>
 </div>
 
+
+<div class="modal-overlay" id="demarcationModal">
+    <div class="modal-content">
+        <h2 style="margin-bottom: 24px;">Selecionar Equipamento</h2>
+
+        <div class="input-group">
+            <label style="font-size: 13px; font-weight: 500; color: var(--on-surface-variant); margin-bottom: 8px; display: block;">Buscar Equipamento:</label>
+            <input type="text" id="demarcationSearchInput" class="input-field" placeholder="Digite o nome do equipamento..." autocomplete="off" oninput="DemarcationModal.search()">
+            <div id="demarcationAutocomplete" class="autocomplete-dropdown"></div>
+        </div>
+
+        <div class="modal-actions" style="margin-top: 32px;">
+            <button class="btn btn-text" onclick="DemarcationModal.closeUI()">Cancelar</button>
+        </div>
+    </div>
+</div>
+
 <div class="modal-overlay" id="entityModal">
     <div class="modal-content">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
@@ -512,7 +532,7 @@
         </div>
 
         <div class="input-group" id="logLinkContainer">
-            <label style="font-size: 13px; font-weight: 500; color: var(--on-surface-variant); margin-bottom: 8px; display: block;">Vincular a:</label>
+            <label style="font-size: 13px; font-weight: 500; color: var(--on-surface-variant); margin-bottom: 8px; display: block;">Equipamento:</label>
             <input type="text" id="logLinkInput" name="q_log_link" class="input-field" placeholder="Buscar entidade primária..." autocomplete="new-password" role="presentation" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" onfocus="LogModal.searchLinks()" oninput="LogModal.searchLinks()">
             <div id="logLinkAutocomplete" class="autocomplete-dropdown"></div>
             <div id="logLinkPills" class="pills-container" style="margin-top: 12px;"></div>
@@ -903,6 +923,10 @@ var MapLogic = {
     dragContext: null,
     movingPinId: null,
     selectedPinId: null,
+    demarcationMode: false,
+    demarcationEntityId: null,
+    demarcationBoundaries: {},
+    gridSize: 32,
     init: function() {
         if (this.initialized) return;
         this.loadMapPins();
@@ -926,6 +950,48 @@ var MapLogic = {
 
         this.initialized = true;
     },
+    deletePinFromContext: async function() {
+        document.getElementById('mapContextMenu').style.display = 'none';
+        if (this.longPressContext && this.longPressContext.isPin) {
+            const pinId = this.longPressContext.pinId;
+            if (confirm('Tem certeza que deseja excluir esta marcação e todos os seus registros?')) {
+                // Remove the pin
+                this.pins = this.pins.filter(p => p.id !== pinId);
+                this.saveMapPins();
+
+                if (this.selectedPinId === pinId) {
+                    this.selectedPinId = null;
+                    document.getElementById('mapPinLogsContainer').style.display = 'none';
+                    document.getElementById('mapPinFab').style.display = 'none';
+                }
+                if (this.movingPinId === pinId) {
+                    this.movingPinId = null;
+                }
+
+                this.renderPins();
+
+                // Also mark related logs as deleted
+                try {
+                    const allLogs = await AppDB.logs.toArray();
+                    const logsToDelete = allLogs.filter(log => {
+                        const related = log.relatedEntities || [];
+                        return log.originEntityId === pinId || related.some(r => r.id === pinId);
+                    });
+
+                    if (logsToDelete.length > 0) {
+                        for (const log of logsToDelete) {
+                            log.isDeleted = true;
+                            log.updatedAt = Date.now();
+                            await AppDB.logs.put(log);
+                        }
+                        App.startAutoSyncCheck(); // Trigger sync
+                    }
+                } catch (e) {
+                    console.error("Erro ao excluir logs do pin", e);
+                }
+            }
+        }
+    },
     loadMapPins: function() {
         const data = localStorage.getItem('OraculoMapPins');
         if (data) {
@@ -933,13 +999,52 @@ var MapLogic = {
         } else {
             this.pins = [];
         }
+        const bData = localStorage.getItem('OraculoMapBoundaries');
+        if (bData) {
+            try { this.demarcationBoundaries = JSON.parse(bData); } catch(e) { this.demarcationBoundaries = {}; }
+        } else {
+            this.demarcationBoundaries = {};
+        }
     },
     saveMapPins: function() {
         localStorage.setItem('OraculoMapPins', JSON.stringify(this.pins));
+        localStorage.setItem('OraculoMapBoundaries', JSON.stringify(this.demarcationBoundaries));
     },
     renderPins: function() {
         const container = document.getElementById('mapPinsContainer');
         container.innerHTML = '';
+
+        const canvas = document.getElementById('demarcationCanvas');
+        if (!this.demarcationMode) {
+             // Read-only rendering of all boundaries
+             const img = document.getElementById('mapImage');
+             if (img.clientWidth > 0 && img.clientHeight > 0) {
+                 canvas.width = img.clientWidth;
+                 canvas.height = img.clientHeight;
+                 const ctx = canvas.getContext('2d');
+                 ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                 const cellW = canvas.width / this.gridSize;
+                 const cellH = canvas.height / this.gridSize;
+
+                 for (const entityId in this.demarcationBoundaries) {
+                     const boundaries = this.demarcationBoundaries[entityId];
+                     // Only draw boundaries of selected pin's linked equipment, or all? Let's draw all with low opacity for now
+                     ctx.fillStyle = 'rgba(0, 100, 255, 0.2)';
+                     if (this.selectedPinId) {
+                         // Find if selected pin is linked to this equipment
+                         const pin = this.pins.find(p => p.id === this.selectedPinId);
+                         if (pin && pin.linkedEntityId === entityId) {
+                             ctx.fillStyle = 'rgba(0, 255, 0, 0.4)'; // Highlight
+                         }
+                     }
+                     boundaries.forEach(cell => {
+                         ctx.fillRect(cell.x * cellW, cell.y * cellH, cellW, cellH);
+                     });
+                 }
+             }
+        }
+
         this.pins.forEach(pin => {
             const el = document.createElement('div');
             el.className = 'map-pin';
@@ -958,7 +1063,8 @@ var MapLogic = {
                 el.style.border = '2px solid yellow';
             }
             if (this.selectedPinId === pin.id) {
-                el.style.boxShadow = '0 0 10px rgba(0, 0, 0, 0.8)';
+                el.style.border = '3px solid var(--primary)';
+                el.style.boxShadow = '0 0 12px var(--primary)';
                 el.style.transform = 'translate(-50%, -50%) scale(1.3)';
             }
             container.appendChild(el);
@@ -1072,10 +1178,14 @@ var MapLogic = {
 
         if (this.longPressContext && this.longPressContext.isPin) {
             document.getElementById('mapContextAddItem').style.display = 'none';
+            document.getElementById('mapContextDemarcateItem').style.display = 'none';
             document.getElementById('mapContextMoveItem').style.display = 'flex';
+            document.getElementById('mapContextDeleteItem').style.display = 'flex';
         } else {
             document.getElementById('mapContextAddItem').style.display = 'flex';
+            document.getElementById('mapContextDemarcateItem').style.display = 'flex';
             document.getElementById('mapContextMoveItem').style.display = 'none';
+            document.getElementById('mapContextDeleteItem').style.display = 'none';
         }
 
         menu.style.display = 'flex';
@@ -1095,6 +1205,116 @@ var MapLogic = {
         menu.style.top = ry + 'px';
         this.contextMenuPos = { x: x, y: y };
     },
+    enableDemarcationMode: function() {
+        document.getElementById('mapContextMenu').style.display = 'none';
+
+        // Show an overlay/modal to select the equipment to demarcate
+        DemarcationModal.open();
+    },
+    startDemarcation: function(entityId) {
+        this.demarcationMode = true;
+        this.demarcationEntityId = entityId;
+        this.initDemarcationCanvas();
+    },
+    initDemarcationCanvas: function() {
+        const canvas = document.getElementById('demarcationCanvas');
+        const container = document.getElementById('mapPinsContainer');
+        const img = document.getElementById('mapImage');
+
+        canvas.width = img.clientWidth;
+        canvas.height = img.clientHeight;
+        canvas.style.pointerEvents = 'auto'; // allow drawing
+
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Load existing boundaries for this equipment if any
+        if (this.demarcationBoundaries[this.demarcationEntityId]) {
+             // Redraw existing painted cells
+             const boundaries = this.demarcationBoundaries[this.demarcationEntityId];
+             ctx.fillStyle = 'rgba(0, 255, 0, 0.4)';
+             const cellW = canvas.width / this.gridSize;
+             const cellH = canvas.height / this.gridSize;
+             boundaries.forEach(cell => {
+                 ctx.fillRect(cell.x * cellW, cell.y * cellH, cellW, cellH);
+             });
+        }
+
+        let isDrawing = false;
+
+        const paint = (e) => {
+            if (!isDrawing) return;
+            const rect = canvas.getBoundingClientRect();
+            // Handle touch vs mouse
+            let clientX, clientY;
+            if (e.touches && e.touches.length > 0) {
+                clientX = e.touches[0].clientX;
+                clientY = e.touches[0].clientY;
+            } else {
+                clientX = e.clientX;
+                clientY = e.clientY;
+            }
+
+            const x = clientX - rect.left;
+            const y = clientY - rect.top;
+
+            const cellW = canvas.width / this.gridSize;
+            const cellH = canvas.height / this.gridSize;
+
+            const gridX = Math.floor(x / cellW);
+            const gridY = Math.floor(y / cellH);
+
+            if (!this.demarcationBoundaries[this.demarcationEntityId]) {
+                this.demarcationBoundaries[this.demarcationEntityId] = [];
+            }
+
+            // Check if already painted
+            const exists = this.demarcationBoundaries[this.demarcationEntityId].find(c => c.x === gridX && c.y === gridY);
+            if (!exists) {
+                this.demarcationBoundaries[this.demarcationEntityId].push({x: gridX, y: gridY});
+                ctx.fillStyle = 'rgba(0, 255, 0, 0.4)';
+                ctx.fillRect(gridX * cellW, gridY * cellH, cellW, cellH);
+                this.saveMapPins(); // saving boundaries together for now
+            }
+        };
+
+        // Event listeners for drawing
+        canvas.onmousedown = (e) => { isDrawing = true; paint(e); };
+        canvas.onmousemove = paint;
+        canvas.onmouseup = () => { isDrawing = false; };
+        canvas.onmouseleave = () => { isDrawing = false; };
+
+        canvas.ontouchstart = (e) => { isDrawing = true; paint(e); e.preventDefault(); };
+        canvas.ontouchmove = (e) => { paint(e); e.preventDefault(); };
+        canvas.ontouchend = () => { isDrawing = false; };
+        canvas.ontouchcancel = () => { isDrawing = false; };
+
+        // Add a "Done" button temporarily
+        let doneBtn = document.getElementById('demarcationDoneBtn');
+        if (!doneBtn) {
+            doneBtn = document.createElement('button');
+            doneBtn.id = 'demarcationDoneBtn';
+            doneBtn.innerText = 'Concluir Demarcação';
+            doneBtn.style.position = 'absolute';
+            doneBtn.style.bottom = '20px';
+            doneBtn.style.left = '50%';
+            doneBtn.style.transform = 'translateX(-50%)';
+            doneBtn.style.zIndex = '9999';
+            doneBtn.style.padding = '12px 24px';
+            doneBtn.style.background = 'var(--primary)';
+            doneBtn.style.color = 'white';
+            doneBtn.style.border = 'none';
+            doneBtn.style.borderRadius = '8px';
+            doneBtn.onclick = () => {
+                this.demarcationMode = false;
+                this.demarcationEntityId = null;
+                canvas.style.pointerEvents = 'none'; // disable drawing
+                doneBtn.remove();
+                this.renderPins(); // Re-render to show/hide canvas or keep it as overlay
+            };
+            document.getElementById('viewMap').appendChild(doneBtn);
+        }
+    },
     enableMovePin: function() {
         document.getElementById('mapContextMenu').style.display = 'none';
         if (this.longPressContext && this.longPressContext.isPin) {
@@ -1105,6 +1325,19 @@ var MapLogic = {
             this.renderPins();
         }
     },
+
+    openLogModalForPin: function() {
+        if (!this.selectedPinId) return;
+        const pin = this.pins.find(p => p.id === this.selectedPinId);
+
+        let extraEntities = [];
+        if (pin && pin.linkedEntityId) {
+            extraEntities.push({ id: pin.linkedEntityId, type: 'equipamento' });
+        }
+
+        LogModal.open(null, this.selectedPinId, null, extraEntities);
+    },
+
     addPinFromContext: function() {
         document.getElementById('mapContextMenu').style.display = 'none';
         if (!this.contextMenuPos) return;
@@ -1117,10 +1350,34 @@ var MapLogic = {
         xPos = Math.max(0, Math.min(100, xPos));
         yPos = Math.max(0, Math.min(100, yPos));
 
+        let linkedEntityId = null;
+
+        // Auto-link logic based on boundaries
+        const canvas = document.getElementById('demarcationCanvas');
+        if (canvas.width > 0 && canvas.height > 0) {
+            const cellW = canvas.width / this.gridSize;
+            const cellH = canvas.height / this.gridSize;
+
+            const pixelX = (xPos / 100) * canvas.width;
+            const pixelY = (yPos / 100) * canvas.height;
+
+            const gridX = Math.floor(pixelX / cellW);
+            const gridY = Math.floor(pixelY / cellH);
+
+            for (const entityId in this.demarcationBoundaries) {
+                const boundaries = this.demarcationBoundaries[entityId];
+                if (boundaries.find(c => c.x === gridX && c.y === gridY)) {
+                    linkedEntityId = entityId;
+                    break;
+                }
+            }
+        }
+
         const newPin = {
             id: 'pin_' + Date.now() + '_' + Math.floor(Math.random()*1000),
             x: xPos,
-            y: yPos
+            y: yPos,
+            linkedEntityId: linkedEntityId
         };
         this.pins.push(newPin);
         this.saveMapPins();
@@ -1133,7 +1390,18 @@ var MapLogic = {
     renderPinLogs: async function(pinId) {
         const container = document.getElementById('mapPinLogsContent');
         container.innerHTML = '<div class="empty-state"><i class="material-icons" style="animation: spin 1s linear infinite;">sync</i><p>Aguarde...</p></div>';
-        let pinLogs = await AppDB.logs.filter(log => !log.isDeleted && ((log.relatedEntities && log.relatedEntities.some(rel => rel.id === pinId)) || log.originEntityId === pinId)).toArray();
+        let pinLogs = await AppDB.logs.filter(log => {
+             if (log.isDeleted) return false;
+             let relArray = [];
+             if (Array.isArray(log.relatedEntities)) {
+                 if (log.relatedEntities.length > 0 && typeof log.relatedEntities[0] === 'object') {
+                     relArray = log.relatedEntities.map(r => r.id);
+                 } else {
+                     relArray = log.relatedEntities;
+                 }
+             }
+             return relArray.includes(pinId) || log.originEntityId === pinId;
+        }).toArray();
         if (pinLogs.length === 0) {
             container.innerHTML = `<div class="empty-state"><p>Nenhum registro para este marcador.</p></div>`;
             return;
@@ -3245,9 +3513,74 @@ var EntityModal = {
     }
 };
 
+
+var DemarcationModal = {
+    el: null,
+    init: function() {
+        if(!this.el) this.el = document.getElementById('demarcationModal');
+    },
+    open: function() {
+        this.init();
+        document.getElementById('demarcationSearchInput').value = '';
+        document.getElementById('demarcationAutocomplete').style.display = 'none';
+        AppState.openModal(this);
+        setTimeout(() => document.getElementById('demarcationSearchInput').focus(), 300);
+    },
+    closeUI: function() {
+        AppState.closeModalUI();
+    },
+    search: async function() {
+        const term = document.getElementById('demarcationSearchInput').value.toLowerCase().trim();
+        const dropdown = document.getElementById('demarcationAutocomplete');
+
+        let allEntities = await AppDB.entities.toArray();
+        let available = allEntities.filter(e => !e.isDeleted && e.type !== 'tarefa');
+
+        if (term) available = available.filter(e => e.name.toLowerCase().includes(term));
+
+        if (available.length === 0 && term) {
+            dropdown.innerHTML = `<div class="autocomplete-item" onclick="DemarcationModal.createNew('${term}')"><i class="material-icons" style="font-size:16px; opacity:0.6;">add</i> Criar equipamento "${term}"</div>`;
+            dropdown.style.display = 'flex';
+            return;
+        } else if (available.length === 0) {
+            dropdown.style.display = 'none';
+            return;
+        }
+
+        dropdown.innerHTML = available.slice(0, 5).map(e => `<div class="autocomplete-item" onclick="DemarcationModal.selectEntity('${e.id}')"><i class="material-icons" style="font-size:16px; opacity:0.6;">devices</i> ${e.name}</div>`).join('');
+
+        if (term && !available.some(e => e.name.toLowerCase() === term)) {
+            dropdown.innerHTML += `<div class="autocomplete-item" onclick="DemarcationModal.createNew('${term}')" style="border-top: 1px solid var(--surface-variant);"><i class="material-icons" style="font-size:16px; opacity:0.6;">add</i> Criar "${term}"</div>`;
+        }
+
+        dropdown.style.display = 'flex';
+    },
+    selectEntity: function(id) {
+        this.closeUI();
+        MapLogic.startDemarcation(id);
+    },
+    createNew: async function(name) {
+        let entity = {
+            id: AppUtils.generateId(),
+            name: AppUtils.capitalizeMentions(name),
+            type: 'equipamento',
+            observations: '',
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
+            isDeleted: 0,
+            syncStatus: 0
+        };
+        await AppDB.entities.put(entity);
+        window.cachedEntitiesMap.set(entity.id, entity.name);
+        App.scheduleSync();
+        this.closeUI();
+        MapLogic.startDemarcation(entity.id);
+    }
+};
+
 var LogModal = {
     el: document.getElementById('logModal'), editLogId: null, tempMedia: [], tempRelations: [], originId: null, groupId: null,
-    open: async function(logId = null, targetEntityId = null, groupId = null) {
+    open: async function(logId = null, targetEntityId = null, groupId = null, extraEntities = []) {
         this.editLogId = logId;
         this.tempMedia = [];
         this.groupId = groupId || null;
@@ -3266,7 +3599,7 @@ var LogModal = {
         } else {
             this.originId = targetEntityId;
             textInput.value = '';
-            this.tempRelations = [];
+            this.tempRelations = [...(extraEntities || [])];
             document.getElementById('logModalTitle').innerText = 'Registar Evento';
             document.getElementById('logModalDeleteBtn').style.display = 'none';
         }

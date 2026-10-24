@@ -1,0 +1,14 @@
+<<<<<<< SEARCH
+    <!-- MAP CONTEXT MENU -->
+    <div id="mapContextMenu" class="dropdown-menu" style="position: fixed; display: none; flex-direction: column; z-index: 9999; box-shadow: 0 4px 12px rgba(0,0,0,0.5); min-width: 120px; width: 120px;">
+        <div class="menu-item" id="mapContextAddItem" onclick="MapLogic.addPinFromContext()"><i class="material-icons">add_location</i> Adicionar item</div>
+        <div class="menu-item" id="mapContextMoveItem" onclick="MapLogic.enableMovePin()"><i class="material-icons">open_with</i> Mover</div>
+    </div>
+=======
+    <!-- MAP CONTEXT MENU -->
+    <div id="mapContextMenu" class="dropdown-menu" style="position: fixed; display: none; flex-direction: column; z-index: 9999; box-shadow: 0 4px 12px rgba(0,0,0,0.5); min-width: 120px; width: 120px;">
+        <div class="menu-item" id="mapContextAddItem" onclick="MapLogic.addPinFromContext()"><i class="material-icons">add_location</i> Relatar problema</div>
+        <div class="menu-item" id="mapContextMoveItem" onclick="MapLogic.enableMovePin()"><i class="material-icons">open_with</i> Mover</div>
+        <div class="menu-item" id="mapContextDeleteItem" onclick="MapLogic.deletePinFromContext()" style="color: var(--danger);"><i class="material-icons" style="color: var(--danger);">delete</i> Excluir</div>
+    </div>
+>>>>>>> REPLACE
