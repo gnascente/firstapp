@@ -359,7 +359,7 @@
             <i class="material-icons" style="color:var(--primary);" id="headerIcon">timeline</i>
             <div style="display:flex; flex-direction:column; line-height:1; min-width: 0;">
                 <span id="headerText">Linha do Tempo</span>
-                <span id="headerVersion" style="font-size: 10px; color: var(--on-surface-variant); font-weight: normal; margin-top:2px;">v4.8.24</span>
+                <span id="headerVersion" style="font-size: 10px; color: var(--on-surface-variant); font-weight: normal; margin-top:2px;">v4.8.25</span>
             </div>
         </h1>
         <div class="header-actions">
@@ -397,7 +397,7 @@
             <canvas id="demarcationCanvas" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 5; pointer-events: none; opacity: 0.5;"></canvas>
             <div id="mapPinsContainer" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; touch-action: none;"></div>
         </div>
-        <div id="mapPinLogsContainer" style="padding: 16px; display: none; flex-direction: column; gap: 16px;">
+        <div id="mapPinLogsContainer" style="padding: 16px; padding-bottom: 96px; display: none; flex-direction: column; gap: 16px;">
             <div id="mapPinLogsContent" style="display: flex; flex-direction: column; gap: 8px;"></div>
         </div>
     </div>
@@ -956,11 +956,20 @@ var MapLogic = {
                 this.mapPinchStartScale = this.mapScale;
 
                 const rect = wrapper.getBoundingClientRect();
-                this.mapPinchStartX = ((e.touches[0].clientX + e.touches[1].clientX) / 2) - rect.left;
-                this.mapPinchStartY = ((e.touches[0].clientY + e.touches[1].clientY) / 2) - rect.top;
+                // Find the center of the pinch in screen coordinates
+                const pinchCenterX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+                const pinchCenterY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+
+                // Calculate the position of the pinch relative to the unscaled wrapper
+                this.mapPinchStartX = (pinchCenterX - rect.left) / this.mapScale;
+                this.mapPinchStartY = (pinchCenterY - rect.top) / this.mapScale;
+
+                this.mapPinchStartCurrentX = this.mapCurrentX;
+                this.mapPinchStartCurrentY = this.mapCurrentY;
+
                 e.preventDefault();
-            } else if (e.touches.length === 1 && this.mapScale > 1 && !this.demarcationMode) {
-                // Allow panning when zoomed in, but not in demarcation mode (since one finger is for drawing)
+            } else if (e.touches.length === 1 && (this.mapScale > 1 || this.demarcationMode)) {
+                // Allow panning when zoomed in or in demarcation mode
                 this.isPanning = true;
                 this.panStartX = e.touches[0].clientX;
                 this.panStartY = e.touches[0].clientY;
@@ -977,6 +986,12 @@ var MapLogic = {
 
                 let scale = this.mapPinchStartScale * (currentLen / this.mapPinchStartLen);
                 scale = Math.max(1, Math.min(scale, 5));
+
+                const scaleRatio = scale / this.mapPinchStartScale;
+
+                // Adjust translations to keep the pinch center fixed
+                this.mapCurrentX = this.mapPinchStartCurrentX - (this.mapPinchStartX * this.mapPinchStartScale * (scaleRatio - 1));
+                this.mapCurrentY = this.mapPinchStartCurrentY - (this.mapPinchStartY * this.mapPinchStartScale * (scaleRatio - 1));
 
                 this.mapScale = scale;
                 this.updateMapTransform(wrapper);
@@ -1001,13 +1016,39 @@ var MapLogic = {
         });
     },
     updateMapTransform: function(wrapper) {
-        if (this.mapScale === 1) {
+        if (this.mapScale <= 1) {
+            this.mapScale = 1;
             this.mapCurrentX = 0;
             this.mapCurrentY = 0;
         }
-        // Use translate and scale
+        // Boundaries to keep the map in view when zooming out
+        const img = document.getElementById('mapImage');
+        if (img) {
+            const w = img.clientWidth * this.mapScale;
+            const h = img.clientHeight * this.mapScale;
+            const vw = window.innerWidth;
+            const vh = window.innerHeight - 60; // Approx nav bar height
+
+            // Limit pan bounding
+            const maxTx = Math.max(0, (w - vw) / 2);
+            const maxTy = Math.max(0, (h - vh) / 2);
+
+            // if image is smaller than view, center it. If bigger, limit panning
+            // actually since transform origin is 0 0, boundaries are [ -(w-img.clientWidth), 0]
+
+            const maxPanX = 0;
+            const minPanX = - (w - img.clientWidth);
+            const maxPanY = 0;
+            const minPanY = - (h - img.clientHeight);
+
+            if (this.mapCurrentX > maxPanX) this.mapCurrentX = maxPanX;
+            if (this.mapCurrentX < minPanX) this.mapCurrentX = minPanX;
+            if (this.mapCurrentY > maxPanY) this.mapCurrentY = maxPanY;
+            if (this.mapCurrentY < minPanY) this.mapCurrentY = minPanY;
+        }
+
         wrapper.style.transform = `translate(${this.mapCurrentX}px, ${this.mapCurrentY}px) scale(${this.mapScale})`;
-        wrapper.style.transformOrigin = `${this.mapPinchStartX}px ${this.mapPinchStartY}px`;
+        wrapper.style.transformOrigin = `0 0`;
     },
 
 
@@ -1312,32 +1353,48 @@ var MapLogic = {
         canvas.style.zIndex = '20'; // bring above mapPinsContainer to receive touches
         container.style.pointerEvents = 'none'; // prevent pins from interfering
 
-        const ctx = canvas.getContext('2d');
+        const drawGridAndBoundaries = () => {
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const cellW = canvas.width / this.gridSize;
+            const cellH = canvas.height / this.gridSize;
 
-        // Load existing boundaries for this equipment if any
-        if (this.demarcationBoundaries[this.demarcationEntityId]) {
-             // Redraw existing painted cells
-             const boundaries = this.demarcationBoundaries[this.demarcationEntityId];
-             ctx.fillStyle = 'rgba(0, 255, 0, 0.4)';
-             const cellW = canvas.width / this.gridSize;
-             const cellH = canvas.height / this.gridSize;
-             boundaries.forEach(cell => {
-                 ctx.fillRect(cell.x * cellW, cell.y * cellH, cellW, cellH);
-             });
-        }
+            // Draw white grid lines
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            for (let i = 0; i <= this.gridSize; i++) {
+                ctx.moveTo(i * cellW, 0);
+                ctx.lineTo(i * cellW, canvas.height);
+                ctx.moveTo(0, i * cellH);
+                ctx.lineTo(canvas.width, i * cellH);
+            }
+            ctx.stroke();
 
-        let isDrawing = false;
+            // Load existing boundaries for this equipment if any
+            if (this.demarcationBoundaries[this.demarcationEntityId]) {
+                 const boundaries = this.demarcationBoundaries[this.demarcationEntityId];
+                 ctx.fillStyle = 'rgba(0, 255, 0, 0.4)';
+                 boundaries.forEach(cell => {
+                     ctx.fillRect(cell.x * cellW, cell.y * cellH, cellW, cellH);
+                 });
+            }
+        };
 
-        const paint = (e) => {
-            if (!isDrawing) return;
+        drawGridAndBoundaries();
+
+        let pointerDownX = 0;
+        let pointerDownY = 0;
+        let isPointerDown = false;
+
+        const toggleCell = (e) => {
             const rect = canvas.getBoundingClientRect();
             // Handle touch vs mouse
             let clientX, clientY;
-            if (e.touches && e.touches.length > 0) {
-                clientX = e.touches[0].clientX;
-                clientY = e.touches[0].clientY;
+            if (e.changedTouches && e.changedTouches.length > 0) {
+                clientX = e.changedTouches[0].clientX;
+                clientY = e.changedTouches[0].clientY;
             } else {
                 clientX = e.clientX;
                 clientY = e.clientY;
@@ -1358,37 +1415,60 @@ var MapLogic = {
             }
 
             // Check if already painted
-            const exists = this.demarcationBoundaries[this.demarcationEntityId].find(c => c.x === gridX && c.y === gridY);
-            if (!exists) {
+            const index = this.demarcationBoundaries[this.demarcationEntityId].findIndex(c => c.x === gridX && c.y === gridY);
+            if (index !== -1) {
+                // Remove it
+                this.demarcationBoundaries[this.demarcationEntityId].splice(index, 1);
+            } else {
+                // Add it
                 this.demarcationBoundaries[this.demarcationEntityId].push({x: gridX, y: gridY});
-                ctx.fillStyle = 'rgba(0, 255, 0, 0.4)';
-                ctx.fillRect(gridX * cellW, gridY * cellH, cellW, cellH);
-                this.saveMapPins(); // saving boundaries together for now
+            }
+            this.saveMapPins();
+            drawGridAndBoundaries();
+        };
+
+        // We only want to toggle if it was a tap (no drag)
+        const handlePointerDown = (e) => {
+            isPointerDown = true;
+            if (e.touches && e.touches.length > 0) {
+                pointerDownX = e.touches[0].clientX;
+                pointerDownY = e.touches[0].clientY;
+            } else {
+                pointerDownX = e.clientX;
+                pointerDownY = e.clientY;
             }
         };
 
-        // Event listeners for drawing
-        canvas.onmousedown = (e) => { isDrawing = true; paint(e); };
-        canvas.onmousemove = paint;
-        canvas.onmouseup = () => { isDrawing = false; };
-        canvas.onmouseleave = () => { isDrawing = false; };
+        const handlePointerUp = (e) => {
+            if (!isPointerDown) return;
+            isPointerDown = false;
 
+            let clientX, clientY;
+            if (e.changedTouches && e.changedTouches.length > 0) {
+                clientX = e.changedTouches[0].clientX;
+                clientY = e.changedTouches[0].clientY;
+            } else {
+                clientX = e.clientX;
+                clientY = e.clientY;
+            }
 
-        canvas.ontouchstart = (e) => {
-            if (e.touches.length === 1) {
-                isDrawing = true;
-                paint(e);
+            const dx = clientX - pointerDownX;
+            const dy = clientY - pointerDownY;
+
+            // If the finger moved less than 10px, treat it as a click/tap
+            if (Math.sqrt(dx*dx + dy*dy) < 10) {
+                toggleCell(e);
             }
         };
-        canvas.ontouchmove = (e) => {
-            if (e.touches.length === 1) {
-                paint(e);
-                e.preventDefault();
-            }
-        };
-        canvas.ontouchend = () => { isDrawing = false; };
-        canvas.ontouchcancel = () => { isDrawing = false; };
 
+        // Event listeners for drawing (click/tap to toggle)
+        canvas.onmousedown = handlePointerDown;
+        canvas.onmouseup = handlePointerUp;
+        canvas.onmouseleave = () => { isPointerDown = false; };
+
+        canvas.ontouchstart = handlePointerDown;
+        canvas.ontouchend = handlePointerUp;
+        canvas.ontouchcancel = () => { isPointerDown = false; };
 
         // Add a "Done" button temporarily
         let doneBtn = document.getElementById('demarcationDoneBtn');
