@@ -1,0 +1,15 @@
+--- public/index.html
++++ public/index.html
+@@ -998,7 +998,9 @@
+                 document.getElementById('mapPinLogsContainer').style.display = 'flex';
+                 document.getElementById('mapPinFab').style.display = 'grid';
+                 this.renderPinLogs(pinId);
+-            } else if (e.target.id === 'mapPinsContainer' || e.target.id === 'mapImage') {
++            } else if (e.target.id === 'mapPinsContainer' || e.target.id === 'mapImage' || e.target.id === 'viewMap') {
++                document.getElementById('mapPinLogsContainer').style.display = 'none';
++                document.getElementById('mapPinFab').style.display = 'none';
++                this.selectedPinId = null;
+                 if (this.movingPinId) {
+                     this.movingPinId = null;
+                 }
+                 this.renderPins();

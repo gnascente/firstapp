@@ -1,0 +1,14 @@
+<<<<<<< SEARCH
+    dragContext: null,
+    movingPinId: null,
+    selectedPinId: null,
+    init: function() {
+=======
+    dragContext: null,
+    movingPinId: null,
+    selectedPinId: null,
+    demarcationMode: false,
+    demarcationBoundaries: {},
+    gridSize: 32,
+    init: function() {
+>>>>>>> REPLACE

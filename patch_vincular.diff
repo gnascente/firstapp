@@ -1,0 +1,5 @@
+<<<<<<< SEARCH
+            <label style="font-size: 13px; font-weight: 500; color: var(--on-surface-variant); margin-bottom: 8px; display: block;">Vincular a:</label>
+=======
+            <label style="font-size: 13px; font-weight: 500; color: var(--on-surface-variant); margin-bottom: 8px; display: block;">Equipamento:</label>
+>>>>>>> REPLACE
