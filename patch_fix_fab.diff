@@ -1,0 +1,18 @@
+--- public/index.html
++++ public/index.html
+@@ -1014,6 +1014,7 @@
+         }
+         if (this.dragContext) {
+             const pinId = this.dragContext.pinId;
++            const wasDragging = true;
+             const container = document.getElementById('mapPinsContainer');
+             const rect = container.getBoundingClientRect();
+             let xPos = ((e.clientX - rect.left) / rect.width) * 100;
+@@ -2212,6 +2213,7 @@
+         document.getElementById('viewMap').style.display = 'none';
+         document.getElementById('mapPinLogsContainer').style.display = 'none';
+         document.getElementById('mapPinFab').style.display = 'none';
++        document.getElementById('mainFab').style.display = 'none';
+         MapLogic.selectedPinId = null;
+         MapLogic.movingPinId = null;
+         document.getElementById('viewList').classList.add('active');
