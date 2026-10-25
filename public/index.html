@@ -1560,12 +1560,14 @@
         </h1>
         <div class="header-actions">
           <i
+            id="globalSearchBtn"
             class="material-icons action-icon"
             onclick="App.toggleGlobalSearch()"
             title="Buscar"
             >search</i
           >
           <i
+            id="globalShareBtn"
             class="material-icons action-icon"
             onclick="App.toggleSelectionMode()"
             title="Compartilhar Registos"
@@ -1698,6 +1700,25 @@
           background: #222;
         "
       >
+        <div style="position: absolute; top: 16px; left: 16px; right: 16px; z-index: 1000; background: var(--surface); border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">
+          <div class="input-group" style="margin-bottom: 0;">
+            <input
+              type="text"
+              id="mapSearchInput"
+              class="input-field"
+              placeholder="Buscar equipamento..."
+              autocomplete="off"
+              oninput="MapLogic.searchEquipment()"
+              style="border: none; background: transparent; padding: 12px 16px; width: 100%; color: var(--on-surface);"
+            />
+            <div id="mapSearchAutocomplete" class="autocomplete-dropdown" style="top: 100%; max-height: 200px;"></div>
+          </div>
+          <div style="padding: 8px 16px; border-top: 1px solid var(--border);">
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--on-surface);">
+              <input type="checkbox" id="mapToggleProblems" checked onchange="MapLogic.renderPins()" style="width: 16px; height: 16px; accent-color: var(--primary);"> Mostrar problemas
+            </label>
+          </div>
+        </div>
         <div
           id="mapContentWrapper"
           style="
@@ -1754,6 +1775,11 @@
             display: none;
             flex-direction: column;
             gap: 16px;
+            position: relative;
+            z-index: 20;
+            background: var(--background);
+            min-height: 50vh;
+            border-top: 1px solid var(--outline);
           "
         >
           <div
@@ -2994,6 +3020,7 @@
         demarcationEntityId: null,
         demarcationBoundaries: {},
         gridSize: 32,
+        highlightedEquipmentId: null,
 
         mapScale: 1,
         mapCurrentX: 0,
@@ -3147,6 +3174,14 @@
 
         init: function () {
           this.initZoom();
+
+          document.addEventListener('click', (e) => {
+            const dropdown = document.getElementById("mapSearchAutocomplete");
+            const input = document.getElementById("mapSearchInput");
+            if (dropdown && dropdown.style.display !== "none" && e.target !== input && !dropdown.contains(e.target)) {
+              dropdown.style.display = "none";
+            }
+          });
           if (this.initialized) return;
           this.loadMapPins();
           this.renderPins();
@@ -3287,12 +3322,18 @@
                     ctx.fillStyle = "rgba(0, 255, 0, 0.4)"; // Highlight
                   }
                 }
+                if (this.highlightedEquipmentId === entityId) {
+                  ctx.fillStyle = "rgba(255, 255, 0, 0.6)";
+                }
                 boundaries.forEach((cell) => {
                   ctx.fillRect(cell.x * cellW, cell.y * cellH, cellW, cellH);
                 });
               }
             }
           }
+
+          const showProblems = document.getElementById("mapToggleProblems") ? document.getElementById("mapToggleProblems").checked : true;
+          if (!showProblems) return;
 
           this.pins.forEach((pin) => {
             const el = document.createElement("div");
@@ -3411,6 +3452,18 @@
               const pinId = this.longPressContext.pinId;
               this.movingPinId = null;
               this.selectedPinId = pinId;
+
+              // Populate search input with linked equipment name
+              const selectedPin = this.pins.find(p => p.id === pinId);
+              if (selectedPin && selectedPin.linkedEntityId) {
+                const entityName = window.cachedEntitiesMap.get(selectedPin.linkedEntityId);
+                if (entityName) {
+                  const searchInput = document.getElementById("mapSearchInput");
+                  if (searchInput) searchInput.value = entityName;
+                  this.highlightedEquipmentId = selectedPin.linkedEntityId;
+                }
+              }
+
               this.renderPins();
               document.getElementById("mapPinLogsContainer").style.display =
                 "flex";
@@ -3428,6 +3481,9 @@
               if (this.movingPinId) {
                 this.movingPinId = null;
               }
+              const searchInput = document.getElementById("mapSearchInput");
+              if (searchInput) searchInput.value = "";
+              this.highlightedEquipmentId = null;
               this.renderPins();
             }
           }
@@ -3511,6 +3567,60 @@
           this.demarcationMode = true;
           this.demarcationEntityId = entityId;
           this.initDemarcationCanvas();
+        },
+
+        searchEquipment: async function () {
+          const term = document.getElementById("mapSearchInput").value.toLowerCase().trim();
+          const dropdown = document.getElementById("mapSearchAutocomplete");
+
+          let allEntities = await AppDB.entities.toArray();
+          let available = allEntities.filter((e) => !e.isDeleted && e.type !== "tarefa");
+
+          if (term) available = available.filter((e) => e.name.toLowerCase().includes(term));
+
+          if (available.length === 0 && term) {
+            dropdown.innerHTML = `<div class="autocomplete-item" onclick="MapLogic.createHighlightEquipment('${term}')"><i class="material-icons" style="font-size:16px; opacity:0.6;">add</i> Criar equipamento "${term}"</div>`;
+            dropdown.style.display = "flex";
+            return;
+          } else if (available.length === 0) {
+            dropdown.style.display = "none";
+            this.highlightedEquipmentId = null;
+            this.renderPins();
+            return;
+          }
+
+          dropdown.innerHTML = available
+            .slice(0, 5)
+            .map((e) => `<div class="autocomplete-item" onclick="MapLogic.selectHighlightEquipment('${e.id}', '${e.name}')"><i class="material-icons" style="font-size:16px; opacity:0.6;">devices</i> ${e.name}</div>`)
+            .join("");
+
+          if (term && !available.some((e) => e.name.toLowerCase() === term)) {
+            dropdown.innerHTML += `<div class="autocomplete-item" onclick="MapLogic.createHighlightEquipment('${term}')" style="border-top: 1px solid var(--surface-variant);"><i class="material-icons" style="font-size:16px; opacity:0.6;">add</i> Criar "${term}"</div>`;
+          }
+          dropdown.style.display = "flex";
+        },
+
+        selectHighlightEquipment: function (id, name) {
+          document.getElementById("mapSearchInput").value = name;
+          document.getElementById("mapSearchAutocomplete").style.display = "none";
+          this.highlightedEquipmentId = id;
+          this.renderPins();
+        },
+
+        createHighlightEquipment: async function (name) {
+          let entity = {
+            id: AppUtils.generateId(),
+            type: App.moduleType || "equipamento",
+            name: name,
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
+            isDeleted: false,
+            parentId: null,
+          };
+          await AppDB.entities.put(entity);
+          App.startAutoSyncCheck();
+          window.cachedEntitiesMap.set(entity.id, entity.name);
+          this.selectHighlightEquipment(entity.id, entity.name);
         },
 
         initDemarcationCanvas: function () {
@@ -5274,6 +5384,8 @@ Stack: ${e.stack}`;
             '.header-actions i[title="Imprimir Relatório"]',
           ).style.display = "none";
           document.getElementById("menuWrapper").style.display = "none";
+          if (document.getElementById("globalSearchBtn")) document.getElementById("globalSearchBtn").style.display = "";
+          if (document.getElementById("globalShareBtn")) document.getElementById("globalShareBtn").style.display = "";
           document.getElementById("viewTimeline").classList.remove("active");
           document.getElementById("headerIcon").innerText = icon;
           document.getElementById("headerText").innerText = name;
@@ -5436,6 +5548,8 @@ Stack: ${e.stack}`;
           document.querySelector(
             '.header-actions i[title="Imprimir Relatório"]',
           ).style.display = "none";
+          if (document.getElementById("globalSearchBtn")) document.getElementById("globalSearchBtn").style.display = "none";
+          if (document.getElementById("globalShareBtn")) document.getElementById("globalShareBtn").style.display = "none";
 
           MapLogic.init();
           if (!fromPopState) history.pushState({ view: "map" }, "");
@@ -5780,6 +5894,8 @@ Stack: ${e.stack}`;
             '.header-actions i[title="Imprimir Relatório"]',
           ).style.display = "";
           document.getElementById("menuWrapper").style.display = "";
+          if (document.getElementById("globalSearchBtn")) document.getElementById("globalSearchBtn").style.display = "";
+          if (document.getElementById("globalShareBtn")) document.getElementById("globalShareBtn").style.display = "";
 
           document.getElementById("headerIcon").innerText = "timeline";
           document.getElementById("headerText").innerText = "Linha do Tempo";
